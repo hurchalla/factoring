@@ -69,7 +69,7 @@ add_library(hurchalla_factoring INTERFACE)
 
 
 target_sources(hurchalla_factoring INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/is_prime_monty.h>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/is_prime_miller_rabin.h>
     )
 
 

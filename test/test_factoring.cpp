@@ -1,6 +1,6 @@
 
 #include "is_prime_wheel210.h"
-#include "hurchalla/factoring/is_prime_monty.h"
+#include "hurchalla/factoring/is_prime_miller_rabin.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyFullRange.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyHalfRange.h"
@@ -13,15 +13,15 @@
 #include <cstdint>
 #include <limits>
 
-
 namespace {
+
 
     TEST(HurchallaFactoringIsPrimeMonty, super_simple_test) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
         uint64_t modulus = 53;
         ma::MontgomeryForm mont(modulus);
-        EXPECT_TRUE(hf::is_prime_monty(mont));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mont));
     }
 
     TEST(HurchallaFactoringIsPrimeMonty, exhaustive_uint16_t) {
@@ -30,7 +30,8 @@ namespace {
         using T = uint16_t;
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
             ma::MontgomeryForm mont(m);
-            EXPECT_TRUE(hf::is_prime_monty(mont) == hf::is_prime_wheel210(m));
+            EXPECT_TRUE(hf::is_prime_miller_rabin(mont) ==
+                                                      hf::is_prime_wheel210(m));
         }
     }
 
@@ -44,13 +45,14 @@ namespace {
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
             ma::MontgomeryForm mont(m);
 #  if 1
-            EXPECT_TRUE(hf::is_prime_monty(mont) == hf::is_prime_wheel210(m));
+            EXPECT_TRUE(hf::is_prime_miller_rabin(mont) ==
+                                                      hf::is_prime_wheel210(m));
 #  else
             // As of 6/1/20, find_factor_monty() is not yet implemented, and so
             // this section is blocked out with #if.  But once it's available it
             // should be preferred over is_prime_wheel210(), since it should be
             // far more efficient when m is believed to be composite:
-            bool is_pm = hf::is_prime_monty(mont);
+            bool is_pm = hf::is_prime_miller_rabin(mont);
             if (is_pm)
                 EXPECT_TRUE(hf::is_prime_wheel210(m));
             else {
@@ -80,11 +82,11 @@ namespace {
         ma::MontgomeryForm<T, ma::MontySqrtRange<T>> mSR(modulus);
 
         namespace hf = hurchalla::factoring;
-        EXPECT_TRUE(hf::is_prime_monty(mWSM));
-        EXPECT_TRUE(hf::is_prime_monty(mFR));
-        EXPECT_TRUE(hf::is_prime_monty(mHR));
-        EXPECT_TRUE(hf::is_prime_monty(mQR));
-        EXPECT_TRUE(hf::is_prime_monty(mSR));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mWSM));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mFR));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mHR));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mQR));
+        EXPECT_TRUE(hf::is_prime_miller_rabin(mSR));
     }
 
     TEST(HurchallaFactoringIsPrimeMonty, basic_test2) {
@@ -99,11 +101,11 @@ namespace {
         ma::MontgomeryForm<T, ma::MontySqrtRange<T>> mSR(modulus);
 
         namespace hf = hurchalla::factoring;
-        EXPECT_FALSE(hf::is_prime_monty(mWSM));
-        EXPECT_FALSE(hf::is_prime_monty(mFR));
-        EXPECT_FALSE(hf::is_prime_monty(mHR));
-        EXPECT_FALSE(hf::is_prime_monty(mQR));
-        EXPECT_FALSE(hf::is_prime_monty(mSR));
+        EXPECT_FALSE(hf::is_prime_miller_rabin(mWSM));
+        EXPECT_FALSE(hf::is_prime_miller_rabin(mFR));
+        EXPECT_FALSE(hf::is_prime_miller_rabin(mHR));
+        EXPECT_FALSE(hf::is_prime_miller_rabin(mQR));
+        EXPECT_FALSE(hf::is_prime_miller_rabin(mSR));
     }
 
     TEST(HurchallaFactoringIsPrimeMonty, primes_close_to_twoPow64) {
@@ -116,55 +118,86 @@ namespace {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
 
-        for (auto p : primes) {
-            using T = decltype(p);
-            ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(p);
-            ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(p);
-            EXPECT_TRUE(hf::is_prime_monty(mWSM));
-            EXPECT_TRUE(hf::is_prime_monty(mFR));
-        }
-        // hack based on knowing all the primes in the vec differ by at least 10
-        for (unsigned int i=2; i<10; i+=2) {
-            for (auto p : primes) {
-                using T = decltype(p);
-                ma::MontgomeryForm<T,ma::MontyWrappedStandardMath<T>> mWSM(p+i);
-                ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(p+i);
-                EXPECT_FALSE(hf::is_prime_monty(mWSM));
-                EXPECT_FALSE(hf::is_prime_monty(mFR));
+        size_t prime_index = 0;
+        for (auto i = zero - 1; i >= primes[9]; i-=2) {
+            using T = decltype(i);
+            ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(i);
+            ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(i);
+            bool is_primeWSM = hf::is_prime_miller_rabin(mWSM);
+            bool is_primeFR = hf::is_prime_miller_rabin(mFR);
+            if (i == primes[prime_index]) {
+                EXPECT_TRUE(is_primeWSM);
+                EXPECT_TRUE(is_primeFR);
+                ++prime_index;
+            } else {
+                EXPECT_FALSE(is_primeWSM);
+                EXPECT_FALSE(is_primeFR);
             }
         }
 
 #ifdef __SIZEOF_INT128__
-        for (auto p : primes) {
+        prime_index = 0;
+        for (__uint128_t i = zero - 1; i >= primes[9]; i-=2) {
             using T = __uint128_t;
-            ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(p);
-            ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(p);
-            ma::MontgomeryForm<T, ma::MontyHalfRange<T>> mHR(p);
-            ma::MontgomeryForm<T, ma::MontyQuarterRange<T>> mQR(p);
-            ma::MontgomeryForm<T, ma::MontySqrtRange<T>> mSR(p);
-            EXPECT_TRUE(hf::is_prime_monty(mWSM));
-            EXPECT_TRUE(hf::is_prime_monty(mFR));
-            EXPECT_TRUE(hf::is_prime_monty(mHR));
-            EXPECT_TRUE(hf::is_prime_monty(mQR));
-            EXPECT_TRUE(hf::is_prime_monty(mSR));
-        }
-        // hack based on knowing all the primes in the vec differ by at least 10
-        for (__uint128_t i=2; i<10; i+=2) {
-            for (auto p : primes) {
-                using T = __uint128_t;
-                ma::MontgomeryForm<T,ma::MontyWrappedStandardMath<T>> mWSM(p+i);
-                ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(p+i);
-                ma::MontgomeryForm<T, ma::MontyHalfRange<T>> mHR(p+i);
-                ma::MontgomeryForm<T, ma::MontyQuarterRange<T>> mQR(p+i);
-                ma::MontgomeryForm<T, ma::MontySqrtRange<T>> mSR(p+i);
-                EXPECT_FALSE(hf::is_prime_monty(mWSM));
-                EXPECT_FALSE(hf::is_prime_monty(mFR));
-                EXPECT_FALSE(hf::is_prime_monty(mHR));
-                EXPECT_FALSE(hf::is_prime_monty(mQR));
-                EXPECT_FALSE(hf::is_prime_monty(mSR));
+            ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(i);
+            ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(i);
+            ma::MontgomeryForm<T, ma::MontyHalfRange<T>> mHR(i);
+            ma::MontgomeryForm<T, ma::MontyQuarterRange<T>> mQR(i);
+            ma::MontgomeryForm<T, ma::MontySqrtRange<T>> mSR(i);
+            bool is_primeWSM = hf::is_prime_miller_rabin(mWSM);
+            bool is_primeFR = hf::is_prime_miller_rabin(mFR);
+            bool is_primeHR = hf::is_prime_miller_rabin(mHR);
+            bool is_primeQR = hf::is_prime_miller_rabin(mQR);
+            bool is_primeSR = hf::is_prime_miller_rabin(mSR);
+            if (i == primes[prime_index]) {
+                EXPECT_TRUE(is_primeWSM);
+                EXPECT_TRUE(is_primeFR);
+                EXPECT_TRUE(is_primeHR);
+                EXPECT_TRUE(is_primeQR);
+                EXPECT_TRUE(is_primeSR);
+                ++prime_index;
+            } else {
+                EXPECT_FALSE(is_primeWSM);
+                EXPECT_FALSE(is_primeFR);
+                EXPECT_FALSE(is_primeHR);
+                EXPECT_FALSE(is_primeQR);
+                EXPECT_FALSE(is_primeSR);
             }
         }
 #endif
     }
-}
 
+
+#ifdef __SIZEOF_INT128__
+    TEST(HurchallaFactoringIsPrimeMonty, primes_close_to_twoPow128) {
+        // Populate a vector of some of the largest primes less than 2^128.
+        // Primes obtained from  https://primes.utm.edu/lists/2small/100bit.html
+        __uint128_t zero = (__uint128_t)0;
+        // rely on wrap-around when subtracting on next line: 
+        std::vector<__uint128_t> primes = { zero-159, zero-173, zero-233,
+                               zero-237, zero-275, zero-357, zero-675, zero-713,
+                               zero-797, zero-1193 };
+        namespace ma = hurchalla::montgomery_arithmetic;
+        namespace hf = hurchalla::factoring;
+
+        size_t prime_index = 0;
+        for (auto i = zero - 1; i >= primes[9]; i-=2) {
+            using T = decltype(i);
+            ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(i);
+            ma::MontgomeryForm<T, ma::MontyFullRange<T>> mFR(i);
+            bool is_primeWSM = hf::is_prime_miller_rabin(mWSM);
+            bool is_primeFR = hf::is_prime_miller_rabin(mFR);
+            if (i == primes[prime_index]) {
+                EXPECT_TRUE(is_primeWSM);
+                EXPECT_TRUE(is_primeFR);
+                ++prime_index;
+            } else {
+                EXPECT_FALSE(is_primeWSM);
+                EXPECT_FALSE(is_primeFR);
+            }
+        }
+    }
+#endif
+
+
+} // end namespace

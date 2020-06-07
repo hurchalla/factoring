@@ -93,9 +93,9 @@ bool is_prime_miller_rabin(const MontType& mont)
         // number of bases.  According to
         // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Miller%E2%80%93Rabin_test
         // if k is the number of bases, then the probability is 4^(-k) that
-        // the trials will declare that a particular composite number as prime
+        // the trials will declare that a particular composite number is prime
         // (it will never declare a prime is composite).  So with 64 bases, if
-        // we tested every number from 1 to 2^128, we would expect very roughly
+        // we tested every number from 1 to 2^128, we might expect very roughly
         // about 1 false declaration of prime.  With an additional 64 bases (for
         // a total of 128), the probability that this single expected false
         // declaration would still remain would be very roughly 1/2^128, or 1

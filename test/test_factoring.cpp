@@ -1,6 +1,7 @@
 
 #include "is_prime_wheel210.h"
-#include "hurchalla/factoring/is_prime_miller_rabin.h"
+#include "hurchalla/factoring/is_prime.h"
+#include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyFullRange.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyHalfRange.h"
@@ -13,23 +14,49 @@
 #include <cstdint>
 #include <limits>
 
+#include <iostream>
+
 namespace {
 
+    TEST(HurchallaFactoringIsPrime, exhaustive_uint16_t) {
+        namespace hf = hurchalla::factoring;
+        using T = uint16_t;
+        for (T x = 0; x < std::numeric_limits<T>::max(); ++x) {
+            EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
+        }
+        T x = std::numeric_limits<T>::max();
+        EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
+    }
 
-    TEST(HurchallaFactoringIsPrimeMonty, super_simple_test) {
+#if 0
+// Ordinarily you don't want to run this since it takes ~2.5 hours to complete.
+// It passed when I tested it on 6/7/20.
+    TEST(HurchallaFactoringIsPrime, exhaustive_uint32_t) {
+        namespace hf = hurchalla::factoring;
+        using T = uint32_t;
+        for (T x = 0; x < std::numeric_limits<T>::max(); ++x) {
+            EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
+        }
+        T x = std::numeric_limits<T>::max();
+        EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
+    }
+#endif
+
+
+    TEST(HurchallaFactoringIsPrimeMillerRabin, super_simple_test) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
         uint64_t modulus = 53;
-        ma::MontgomeryForm mont(modulus);
+        ma::MontgomeryForm<uint64_t> mont(modulus);
         EXPECT_TRUE(hf::is_prime_miller_rabin(mont));
     }
 
-    TEST(HurchallaFactoringIsPrimeMonty, exhaustive_uint16_t) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
         using T = uint16_t;
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
-            ma::MontgomeryForm mont(m);
+            ma::MontgomeryForm<T> mont(m);
             EXPECT_TRUE(hf::is_prime_miller_rabin(mont) ==
                                                       hf::is_prime_wheel210(m));
         }
@@ -38,12 +65,12 @@ namespace {
 #if 0
 // Ordinarily you don't want to run this since it takes ~2.5 hours to complete.
 // It passed when I tested it on 6/1/20.
-    TEST(HurchallaFactoringIsPrimeMonty, exhaustive_uint32_t) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint32_t) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
         using T = uint32_t;
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
-            ma::MontgomeryForm mont(m);
+            ma::MontgomeryForm<T> mont(m);
 #  if 1
             EXPECT_TRUE(hf::is_prime_miller_rabin(mont) ==
                                                       hf::is_prime_wheel210(m));
@@ -70,7 +97,7 @@ namespace {
     }
 #endif
 
-    TEST(HurchallaFactoringIsPrimeMonty, basic_test1) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test1) {
         using T = uint32_t;
         T modulus = 127;
 
@@ -89,7 +116,7 @@ namespace {
         EXPECT_TRUE(hf::is_prime_miller_rabin(mSR));
     }
 
-    TEST(HurchallaFactoringIsPrimeMonty, basic_test2) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
         using T = uint32_t;
         T modulus = 141;
 
@@ -108,7 +135,7 @@ namespace {
         EXPECT_FALSE(hf::is_prime_miller_rabin(mSR));
     }
 
-    TEST(HurchallaFactoringIsPrimeMonty, primes_close_to_twoPow64) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         // Populate a vector of some of the largest primes less than 2^64.
         // Primes obtained from  https://primes.utm.edu/lists/2small/0bit.html
         uint64_t zero = (uint64_t)0;
@@ -169,7 +196,7 @@ namespace {
 
 
 #ifdef __SIZEOF_INT128__
-    TEST(HurchallaFactoringIsPrimeMonty, primes_close_to_twoPow128) {
+    TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow128) {
         // Populate a vector of some of the largest primes less than 2^128.
         // Primes obtained from  https://primes.utm.edu/lists/2small/100bit.html
         __uint128_t zero = (__uint128_t)0;

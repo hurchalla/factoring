@@ -18,6 +18,40 @@
 
 namespace {
 
+#if 0
+// A comparative performance test - we shouldn't normally run this.
+// 6/7/20 haswell results: for uint32_t, template version ran about 2.5x slower.
+//            changing both to uint64_t, template version ran about 5.5x slower.
+//            (These results were roughly as expected)
+
+    TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div) {
+        namespace hf = hurchalla::factoring;
+        using T = uint32_t;
+        T max = std::numeric_limits<T>::max();
+        T dummy = 0;
+        constexpr int factors_len = std::numeric_limits<T>::digits;
+        T factors[factors_len];
+        for (T x = max - 65336*32; x < max; ++x) {
+            T y = x;
+            dummy += (T)hf::small_trial_division(factors, factors_len, y);
+        }
+        EXPECT_TRUE(dummy != 0);
+    }
+    TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div_template) {
+        namespace hf = hurchalla::factoring;
+        using T = uint32_t;
+        T max = std::numeric_limits<T>::max();
+        T dummy = 0;
+        constexpr int factors_len = std::numeric_limits<T>::digits;
+        T factors[factors_len];
+        for (T x = max - 65336*32; x < max; ++x) {
+            T y = x;
+            dummy += (T)hf::small_trial_division<T>(factors, factors_len, y);
+        }
+        EXPECT_TRUE(dummy != 0);
+    }
+#endif
+
     TEST(HurchallaFactoringIsPrime, exhaustive_uint16_t) {
         namespace hf = hurchalla::factoring;
         using T = uint16_t;
@@ -138,7 +172,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         // Populate a vector of some of the largest primes less than 2^64.
         // Primes obtained from  https://primes.utm.edu/lists/2small/0bit.html
-        uint64_t zero = (uint64_t)0;
+        auto zero = (uint64_t)0;
         // rely on wrap-around when subtracting on next line:
         std::vector<uint64_t> primes = { zero-59, zero-83, zero-95, zero-179,
                    zero-189, zero-257, zero-279, zero-323, zero-353, zero-363 };
@@ -199,7 +233,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow128) {
         // Populate a vector of some of the largest primes less than 2^128.
         // Primes obtained from  https://primes.utm.edu/lists/2small/100bit.html
-        __uint128_t zero = (__uint128_t)0;
+        auto zero = (__uint128_t)0;
         // rely on wrap-around when subtracting on next line: 
         std::vector<__uint128_t> primes = { zero-159, zero-173, zero-233,
                                zero-237, zero-275, zero-357, zero-675, zero-713,

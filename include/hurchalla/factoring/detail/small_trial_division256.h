@@ -1,8 +1,10 @@
 
-#ifndef HURCHALLA_FACTORING_SMALL_TRIAL_DIVISION_H_INCLUDED
-#define HURCHALLA_FACTORING_SMALL_TRIAL_DIVISION_H_INCLUDED
+#ifndef HURCHALLA_FACTORING_SMALL_TRIAL_DIVISION256_H_INCLUDED
+#define HURCHALLA_FACTORING_SMALL_TRIAL_DIVISION256_H_INCLUDED
 
 
+#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
+#include "hurchalla/montgomery_arithmetic/detail/safely_promote_unsigned.h"
 #include "hurchalla/programming_by_contract/programming_by_contract.h"
 #include <cstdint>
 #include <type_traits>
@@ -11,15 +13,37 @@
 namespace hurchalla { namespace factoring {
 
 
-// Generally the overloaded versions of small_trial_division() (if available for
-// your type) should provide better performance than this template version.
-// By C++ rules the function overloads get first priority for argument matching.
-template <typename T>
-int small_trial_division(T* factors, int factors_len, T& x)
+// small_trial_division256 guarantees it will try at least all possible prime
+// factors less than 256.  It might someday try factors greater than 256 also.
+//
+// small_trial_division256 return values-
+// 0: The function couldn't find any factors and couldn't tell if x is composite
+//     --fca is left empty.
+// 1: Either the function determined x is not composite (and placed x as the
+//     single element in fca), or it found all factors (and placed them all in
+//     fca).  Either way, the return value is the quotient of x divided by all
+//     elements in fca.
+//   *Note this indicates all possible factoring is complete.
+//     --fca.size() == 1 indicates x is non-composite.  The single element is x.
+//     --fca.size() > 1 indicates all factors were found and placed in fca.
+// >1: This return value is the quotient of x divided by all the factors in fca.
+//     This return value may be factorable, or it may be prime (we don't know).
+//     --fca has all the factors found so far.
+//
+// Postcondition of small_trial_division256(): if the argument x passed in is
+// <= 65535, then the returned quotient == 1 and the final fca.size() >= 1.
+
+
+
+// The more specific overloads of small_trial_division256() below (if available
+// for your type) should provide better performance than this generic version.
+template <class C, typename T>
+typename std::enable_if<std::is_same<typename C::value_type, T>::value, T>::type
+small_trial_division256(C& fca, const T x)
 {
-    static_assert(std::numeric_limits<T>::is_integer, "");
-    static_assert(!std::numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(x >= 0);
+    namespace ma = hurchalla::modular_arithmetic;
+    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
+    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
 
     // We'll populate small_primes with all primes less than 256.
     const uint8_t small_primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
@@ -28,36 +52,85 @@ int small_trial_division(T* factors, int factors_len, T& x)
         193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
     constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
 
-    int num_factors = 0;
-
-    for (size_t i=0; i<array_len; ++i) {
-        uint8_t prime = small_primes[i];
-
-        // If no primes <= sqrt(x) are factors, x is prime or 0 or 1
-        if ((unsigned int)prime*(unsigned int)prime > x) {
-            if (num_factors > 0 && x > 1) {
-                if (num_factors == factors_len)
-                    return -1;
-                factors[num_factors] = x;
-                ++num_factors;
-            }
-            x = 1;  // lets caller know there is nothing more to factor
-            return num_factors;
-        }
-        HPBC_ASSERT2(x >= 4);
-
-        while (x % prime == 0) {
-            if (num_factors == factors_len)
-                return -1;
-            factors[num_factors] = prime;
-            ++num_factors;
-            x = static_cast<T>(x / prime);
-        }
-        HPBC_ASSERT2(x > 0);
+    if (x < 4) {
+        fca.push(x);
+        return 1;  // x is not composite
     }
-    return num_factors;
+
+    T q = x;
+    HPBC_INVARIANT2(q > 0);
+    for (size_t i=0; i<array_len; ++i) {
+        const unsigned int prime = small_primes[i];
+        // If no primes <= sqrt(q) are factors, q is prime or 0 or 1
+        if (prime * prime > q) {
+            if (q > 1)
+                fca.push(q);
+            return 1;
+        }
+        while (q % prime == 0) {
+            fca.push(static_cast<T>(prime));
+            q = static_cast<T>(q / prime);
+        }
+        HPBC_INVARIANT2(q > 0);
+    }
+
+    if (q <= 65535u) {  // 65535 is 256*256-1 (we checked all factors < 256)
+        if (q > 1)  // q is not composite since we checked all factors<256
+            fca.push(q);
+        return 1;
+    }
+    if (fca.size() == 0)
+        return 0;  // we found no factors and we don't know if x is composite
+    else {
+        HPBC_ASSERT2(q > 1);
+        return q;  // q is the quotient of x divided by all the factors found.
+    }
 }
 
+
+
+
+template <class C>
+typename std::enable_if<std::is_same<typename C::value_type, uint8_t>::value,
+                        uint8_t>::type
+small_trial_division256(C& fca, const uint8_t x)
+{
+    if (x < 4) {
+        fca.push(x);
+        return 1;
+    }
+    unsigned int q = x;  // use unsigned int to avoid integral promotion hassles
+
+    // we only need to try primes < 16, since 16*16==256 covers all of uint8_t.
+    while ((q & 1) == 0) {  // equivalent to (q % 2 == 0)
+        fca.push(2);
+        q = q >> 1;
+    }
+    while (q % 3 == 0) {
+        fca.push(3);
+        q /= 3;
+    }
+    while (q % 5 == 0) {
+        fca.push(5);
+        q /= 5;
+    }
+    while (q % 7 == 0) {
+        fca.push(7);
+        q /= 7;
+    }
+    while (q % 11 == 0) {
+        fca.push(11);
+        q /= 11;
+    }
+    while (q % 13 == 0) {
+        fca.push(13);
+        q /= 13;
+    }
+    HPBC_ASSERT2(q > 0);
+    if (q > 1)
+        fca.push(static_cast<uint8_t>(q));
+    return 1;
+}
 
 
 
@@ -70,81 +143,83 @@ struct PrimeInfoPair {
 };
 
 
-// Helper template function for the small_trial_division() overloads.
-template <typename T>
-int perform_trial_divisions(T* factors, int factors_len, T& x, const uint8_t*
-            small_primes, const PrimeInfoPair<T>* primes_info, size_t array_len)
+// Helper template function for the small_trial_division256() functions below.
+template <class C>
+typename C::value_type
+perform_trial_divisions(C& fca, const typename C::value_type x, const uint8_t*
+                      small_primes, const PrimeInfoPair<typename C::value_type>*
+                      primes_info, size_t array_len)
 {
+    using T = typename C::value_type;
+    namespace ma = montgomery_arithmetic;
+    using P = typename ma::safely_promote_unsigned<T>::type;
+
     static_assert(std::numeric_limits<T>::is_integer, "");
     static_assert(!std::numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(factors != nullptr);
-    HPBC_PRECONDITION2(factors_len > 0);
-    HPBC_PRECONDITION2(x >= 0);
     HPBC_PRECONDITION2(small_primes != nullptr);
     HPBC_PRECONDITION2(primes_info != nullptr);
     HPBC_PRECONDITION2(array_len > 0);
     HPBC_PRECONDITION2(small_primes[0] == 3);  // must start primes at 3, not 2.
+    // we must at least check all primes less than 256
+    HPBC_PRECONDITION2(small_primes[array_len-1] >= 251);
 
-    int num_factors = 0;
     if (x < 4) {
-        x = 1;  // lets caller know there is nothing more to factor
-        return num_factors;
+        fca.push(x);
+        return 1;  // x is not composite
     }
-    
-    while (x % 2 == 0) {
-        if (num_factors == factors_len)
-            return -1;
-        factors[num_factors] = 2;
-        ++num_factors;
-        x /= 2;
+
+    T q = x;
+    while ((q & 1) == 0) {  // equivalent to (q % 2 == 0)
+        fca.push(2);
+        q = static_cast<T>(q >> 1);
     }
     // See Hacker's Delight 2nd edition by Henry Warren, Section 10-17 "Test for
     // Zero Remainder after Division by a Constant", for a description of the
-    // algorithm we use below and for a proof of its correctness.
+    // algorithm used below and for a proof of its correctness.
 
-    HPBC_INVARIANT2(x > 0);
+    HPBC_INVARIANT2(q > 0);
     for (size_t i=0; i<array_len; ++i) {
-        uint8_t prime = small_primes[i];
-
-        // If no primes <= sqrt(x) are factors, x is prime or 0 or 1
-        if ((unsigned int)prime*(unsigned int)prime > x) {
-            if (num_factors > 0 && x > 1) {
-                if (num_factors == factors_len)
-                    return -1;
-                factors[num_factors] = x;
-                ++num_factors;
-            }
-            x = 1;  // lets caller know there is nothing more to factor
-            return num_factors;
+        const unsigned int prime = small_primes[i];
+        // If no primes <= sqrt(q) are factors, q is prime or 0 or 1
+        if (prime * prime > q) {
+            if (q > 1)
+                fca.push(q);
+            return 1;
         }
-        HPBC_ASSERT2(x >= 9);
 
         T inv = primes_info[i].inv_mod_R;
-        T tmp = static_cast<T>(x * inv);
-
+        T tmp = static_cast<T>(static_cast<P>(q) * inv);
         // Test  tmp <= UINT32_MAX / prime,  which is equivalent to testing
-        // (x % prime == 0).  For details see Hacker's Delight.
+        // (q % prime == 0).  For details see Hacker's Delight.
         while (tmp <= primes_info[i].maxuint_div_prime) {
-            if (num_factors == factors_len)
-                return -1;
-            factors[num_factors] = prime;
-            ++num_factors;
-            // Since the prime divides x, tmp=x*inv equals x/prime.
-            x = tmp;
-            tmp = static_cast<T>(x * inv);
+            fca.push(static_cast<T>(prime));
+            // Since the prime divides q, tmp=q*inv equals q/prime.
+            q = tmp;
+            tmp = static_cast<T>(static_cast<P>(q) * inv);
         }
-        HPBC_INVARIANT2(x > 0);
+        HPBC_INVARIANT2(q > 0);
     }
-    return num_factors;
+
+    if (q <= 65535u) {  // 65535 is 256*256-1 (we checked all factors < 256)
+        if (q > 1)  // q is not composite since we checked all factors<256
+            fca.push(q);
+        return 1;
+    }
+    if (fca.size() == 0)
+        return 0;  // we found no factors and we don't know if x is composite
+    else {
+        HPBC_ASSERT2(q > 1);
+        return q;  // q is the quotient of x divided by all the factors found.
+    }
 }
 
 
 
-inline int small_trial_division(uint16_t* factors, int factors_len, uint16_t& x)
+template <class C>
+typename std::enable_if<std::is_same<typename C::value_type, uint16_t>::value,
+                        uint16_t>::type
+small_trial_division256(C& fca, const uint16_t x)
 {
-    HPBC_PRECONDITION2(factors != nullptr);
-    HPBC_PRECONDITION2(factors_len > 0);
-
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
         41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
@@ -163,12 +238,12 @@ inline int small_trial_division(uint16_t* factors, int factors_len, uint16_t& x)
     return 0;
 #endif
     static const PrimeInfoPair<uint16_t> primes_info[] = {
-        { UINT16_C(43691), UINT16_C(21845)}, 
-        { UINT16_C(52429), UINT16_C(13107)}, 
-        { UINT16_C(28087), UINT16_C(9362) }, 
-        { UINT16_C(35747), UINT16_C(5957) }, 
-        { UINT16_C(20165), UINT16_C(5041) }, 
-        { UINT16_C(61681), UINT16_C(3855) }, 
+        { UINT16_C(43691), UINT16_C(21845)}, // corresponding small_primes[]==3,
+        { UINT16_C(52429), UINT16_C(13107)}, // 5,
+        { UINT16_C(28087), UINT16_C(9362) }, // 7,
+        { UINT16_C(35747), UINT16_C(5957) }, // 11,
+        { UINT16_C(20165), UINT16_C(5041) }, // 13, etc...
+        { UINT16_C(61681), UINT16_C(3855) },
         { UINT16_C(51739), UINT16_C(3449) }, 
         { UINT16_C(14247), UINT16_C(2849) }, 
         { UINT16_C(49717), UINT16_C(2259) }, 
@@ -217,19 +292,18 @@ inline int small_trial_division(uint16_t* factors, int factors_len, uint16_t& x)
         { UINT16_C(61457), UINT16_C(271)  }, 
         { UINT16_C(2611) , UINT16_C(261)  },
         };
-    constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
-    static_assert(array_len == sizeof(primes_info)/sizeof(primes_info[0]), "");
+    constexpr size_t arraylen = sizeof(small_primes)/sizeof(small_primes[0]);
+    static_assert(arraylen == sizeof(primes_info)/sizeof(primes_info[0]), "");
 
-    return perform_trial_divisions(factors, factors_len, x, small_primes,
-                                                        primes_info, array_len);
+    return perform_trial_divisions(fca, x, small_primes, primes_info, arraylen);
 }
 
 
-inline int small_trial_division(uint32_t* factors, int factors_len, uint32_t& x)
+template <class C>
+typename std::enable_if<std::is_same<typename C::value_type, uint32_t>::value,
+                        uint32_t>::type
+small_trial_division256(C& fca, const uint32_t x)
 {
-    HPBC_PRECONDITION2(factors != nullptr);
-    HPBC_PRECONDITION2(factors_len > 0);
-
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
         41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
@@ -248,16 +322,16 @@ inline int small_trial_division(uint32_t* factors, int factors_len, uint32_t& x)
     return 0;
 #endif
     static const PrimeInfoPair<uint32_t> primes_info[] = {
-        { UINT32_C(2863311531), UINT32_C(1431655765)}, // first prime is 3
+        { UINT32_C(2863311531), UINT32_C(1431655765)}, // first small_prime is 3
         { UINT32_C(3435973837), UINT32_C(858993459) },
         { UINT32_C(3067833783), UINT32_C(613566756) },
-        { UINT32_C(3123612579), UINT32_C(390451572) }, // up to 11 so far
+        { UINT32_C(3123612579), UINT32_C(390451572) }, // 11 here
         { UINT32_C(3303820997), UINT32_C(330382099) },
         { UINT32_C(4042322161), UINT32_C(252645135) },
-        { UINT32_C(678152731) , UINT32_C(226050910) }, // 19 so far
+        { UINT32_C(678152731) , UINT32_C(226050910) }, // 19 here
         { UINT32_C(3921491879), UINT32_C(186737708) },
         { UINT32_C(1332920885), UINT32_C(148102320) },
-        { UINT32_C(3186588639), UINT32_C(138547332) }, // 31 so far
+        { UINT32_C(3186588639), UINT32_C(138547332) }, // 31
         { UINT32_C(2437684141), UINT32_C(116080197) },
         { UINT32_C(3247414297), UINT32_C(104755299) },
         { UINT32_C(799063683) , UINT32_C(99882960)  }, // 43
@@ -302,19 +376,18 @@ inline int small_trial_division(uint32_t* factors, int factors_len, uint32_t& x)
         { UINT32_C(285143057),  UINT32_C(17821441)  }, // 241
         { UINT32_C(2583824947), UINT32_C(17111423)  }
         };
-    constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
-    static_assert(array_len == sizeof(primes_info)/sizeof(primes_info[0]), "");
+    constexpr size_t arraylen = sizeof(small_primes)/sizeof(small_primes[0]);
+    static_assert(arraylen == sizeof(primes_info)/sizeof(primes_info[0]), "");
 
-    return perform_trial_divisions(factors, factors_len, x, small_primes,
-                                                        primes_info, array_len);
+    return perform_trial_divisions(fca, x, small_primes, primes_info, arraylen);
 }
 
 
-inline int small_trial_division(uint64_t* factors, int factors_len, uint64_t& x)
+template <class C>
+typename std::enable_if<std::is_same<typename C::value_type, uint64_t>::value,
+                        uint64_t>::type
+small_trial_division256(C& fca, const uint64_t x)
 {
-    HPBC_PRECONDITION2(factors != nullptr);
-    HPBC_PRECONDITION2(factors_len > 0);
-
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
         41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
@@ -387,11 +460,10 @@ inline int small_trial_division(uint64_t* factors, int factors_len, uint64_t& x)
         { UINT64_C(17298606475760824337), UINT64_C(76542506529915151)  },
         { UINT64_C(2939720171109091891) , UINT64_C(73493004277727297)  }
         };
-    constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
-    static_assert(array_len == sizeof(primes_info)/sizeof(primes_info[0]), "");
+    constexpr size_t arraylen = sizeof(small_primes)/sizeof(small_primes[0]);
+    static_assert(arraylen == sizeof(primes_info)/sizeof(primes_info[0]), "");
 
-    return perform_trial_divisions(factors, factors_len, x, small_primes,
-                                                        primes_info, array_len);
+    return perform_trial_divisions(fca, x, small_primes, primes_info, arraylen);
 }
 
 

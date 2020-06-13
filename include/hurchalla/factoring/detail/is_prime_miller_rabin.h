@@ -37,7 +37,7 @@ bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
     int r = 0;
     while (d % 2 == 0) {
         ++r;
-        d /= 2;
+        d = static_cast<T>(d/2);
     }
     HPBC_ASSERT2(r > 0);
 

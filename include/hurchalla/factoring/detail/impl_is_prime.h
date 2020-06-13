@@ -3,13 +3,16 @@
 #define HURCHALLA_FACTORING_IMPL_IS_PRIME_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/small_trial_division.h"
+#include "hurchalla/factoring/detail/small_trial_division256.h"
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
+#include "hurchalla/factoring/detail/FactorsContainerAdapter.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/modular_arithmetic/traits/extensible_make_unsigned.h"
 #include "hurchalla/programming_by_contract/programming_by_contract.h"
 #include <type_traits>
 #include <limits>
+#include <array>
+#include <vector>
 
 namespace hurchalla { namespace factoring {
 
@@ -18,33 +21,38 @@ template <typename T>
 bool impl_is_prime(T x)
 {
     HPBC_PRECONDITION2(x >= 0);
+    namespace ma = hurchalla::montgomery_arithmetic;
+
+    if (x < 2)  // handle the noncomposite yet nonprime numbers
+        return false;
 
     // First try small trial divisions to find easy factors or easy primality.
     // If primality still unknown, use miller-rabin to prove prime or composite.
 
     {  // trial divisions
-        if (x < 2)
-            return false;
-        namespace ma = hurchalla::modular_arithmetic;
-        using U = typename ma::extensible_make_unsigned<T>::type;
-        // The longest possible array of factors results when all factors are 2.
-        // std::numeric_limits<U>::digits  gives this length.
-        constexpr int factors_len = std::numeric_limits<U>::digits;
-        auto factors_up = std::unique_ptr<U[]>(new U[factors_len]);
-        T* factors = factors_up.get();
-        // U factors[factors_len];   // alternative, on stack.
-                                     // Static would be no good- not thread safe
-        U u = static_cast<U>(x);
-        int num_factors_found = small_trial_division(factors, factors_len, u);
-        HPBC_ASSERT2(num_factors_found >= 0);
-        x = static_cast<T>(u);
-        if (num_factors_found > 0)
-            return false;
-        else if (x == 1)  // small_trial_division says there are no more factors
-            return true;
-    }
+        using U= typename modular_arithmetic::extensible_make_unsigned<T>::type;
 
-    namespace ma = hurchalla::montgomery_arithmetic;
+        // The max possible array length for factors is if all factors are 2
+        constexpr size_t max_factors = std::numeric_limits<U>::digits;
+#if 1 // use the stack (std::array).  Note: a 128 bit type T would take 2kb
+        std::array<U, max_factors> factors;
+#else // use the heap (std::vector)
+        std::vector<U> factors;
+#endif
+        FactorsContainerAdapter<decltype(factors)> fca(factors);
+        fca.reserve(max_factors);
+        small_trial_division256(fca, static_cast<U>(x));
+        if (fca.size() > 0)  //size>0 shows x is noncomposite, or we got factors
+            return (fca.size() == 1);  // size 1 indicates x is noncomposite.
+
+        // At this point we know fca.size() == 0, so we didn't find any factors
+        // and couldn't detect if x is composite.  We'll fallback to determining
+        // primality via the slower miller-rabin test below.
+        // Note: we also know x >= 65536, since a postcondition of
+        // small_trial_division256() is that if the number passed to it is
+        // <= 65535, then the final fca.size() >= 1.  Conversely, if fca.size()
+        // == 0, then the number passed in had to be > 65535.
+    }
 
     // miller-rabin
     HPBC_ASSERT2(x % 2 == 1);

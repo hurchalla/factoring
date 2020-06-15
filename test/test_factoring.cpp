@@ -172,7 +172,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         // Populate a vector of some of the largest primes less than 2^64.
         // Primes obtained from  https://primes.utm.edu/lists/2small/0bit.html
-        auto zero = (uint64_t)0;
+        uint64_t zero = 0;
         // rely on wrap-around when subtracting on next line:
         std::vector<uint64_t> primes = { zero-59, zero-83, zero-95, zero-179,
                    zero-189, zero-257, zero-279, zero-323, zero-353, zero-363 };
@@ -233,7 +233,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow128) {
         // Populate a vector of some of the largest primes less than 2^128.
         // Primes obtained from  https://primes.utm.edu/lists/2small/100bit.html
-        auto zero = (__uint128_t)0;
+        __uint128_t zero = 0;
         // rely on wrap-around when subtracting on next line: 
         std::vector<__uint128_t> primes = { zero-159, zero-173, zero-233,
                                zero-237, zero-275, zero-357, zero-675, zero-713,

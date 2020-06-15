@@ -69,7 +69,7 @@ class FactorsContainerAdapter<std::array<T, N>> {
     size_t num_factors_ = 0;
 public:
     using value_type = T;
-    FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {};
+    FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {}
     void reserve(size_t num)
     {
         (void)(num);  // stop compiler from complaining about unused parameter
@@ -94,7 +94,7 @@ class FactorsContainerAdapter<std::vector<Types...>> {
     std::vector<Types...>& c_;
 public:
     using value_type = typename std::vector<Types...>::value_type;
-    FactorsContainerAdapter(std::vector<Types...>& c) : c_(c) {};
+    FactorsContainerAdapter(std::vector<Types...>& c) : c_(c) {}
     void reserve(size_t num_elements)
     {
         c_.reserve(num_elements);

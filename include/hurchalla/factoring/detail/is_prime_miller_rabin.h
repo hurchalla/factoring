@@ -137,25 +137,28 @@ bool is_prime_miller_rabin(const MontType& mont)
             // are sufficient for num up to 154639673381.  We'll use this only
             // up to the max I've verified so far, which is given by
             // MAX_VERIFIED_NUMBER_MONTGOMERY_ISPRIME.
-            const T bases[] = { 15, (T)176006322, (T)4221622697 };
+            const T bases[] = { 15, static_cast<T>(176006322),
+                                static_cast<T>(4221622697) };
             size_t total_bases = sizeof(bases)/sizeof(bases[0]);
             return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);
         } else {
-            // According to http://miller-rabin.appspot.com, the 7 bases below
-            // are sufficient for num up to 2^64.  Practically speaking, I
+            // According to http://miller-rabin.appspot.com, the first 7 bases
+            // below are sufficient for num up to 2^64.  Practically speaking, I
             // can't verify this.  Note that an alternative (which I also can't
-            // verify) is to use the first 12 primes as bases for num < 2^64;
-            // for details see http://oeis.org/A014233
+            // verify) is to use the smallest 12 primes (2,3,5,7,11, etc) as
+            // bases for num < 2^64; for details see http://oeis.org/A014233
             //
             // For now I've combined these two sets of bases to make it extra
             // likely that they'll be sufficient for any num < 2^64.  We'll use
             // these bases for any number range I haven't brute force verified.
-            // Combining the bases is almost certainly overkill though.
+            // Combining the bases is almost certainly overkill.
             //
             // **TODO - use a less paranoid set of bases here**
             //
-            const T bases[] = { 2, (T)325, (T)9375, (T)28178, (T)450775,
-                                (T)9780504, (T)1795265022, 3, 5, 7, 11, 13, 17,
+            const T bases[] = { 2, static_cast<T>(325), static_cast<T>(9375),
+                                static_cast<T>(28178), static_cast<T>(450775),
+                                static_cast<T>(9780504),
+                                static_cast<T>(1795265022), 3, 5, 7, 11, 13, 17,
                                 19, 23, 27, 31, 37 };
             size_t total_bases = sizeof(bases)/sizeof(bases[0]);
             return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);
@@ -180,16 +183,16 @@ bool is_prime_miller_rabin(const MontType& mont)
             bases[2] = 61;    
         } else if (num32 >= UINT32_C(19471033)) {
             total_bases = 2;
-            bases[0] = (T)(UINT64_C(336781006125) % num32);
-            bases[1] = (T)(UINT64_C(9639812373923155) % num32);
+            bases[0] = static_cast<T>(UINT64_C(336781006125) % num32);
+            bases[1] = static_cast<T>(UINT64_C(9639812373923155) % num32);
         } else if (num32 >= UINT32_C(341531)) {
             total_bases = 2;
             // mod isn't needed here, since num is greater than all these bases.
             bases[0] = 2;
-            bases[1] = (T)299417;
+            bases[1] = static_cast<T>(299417);
         } else {   // From the precondition we know num is still >= 3.
             total_bases = 1;
-            bases[0] = (T)(UINT64_C(9345883071009581737) % num32);
+            bases[0] = static_cast<T>(UINT64_C(9345883071009581737) % num32);
         }
 #else
         if (num32 >= UINT32_C(360018361) {
@@ -203,13 +206,13 @@ bool is_prime_miller_rabin(const MontType& mont)
             total_bases = 2;
             uint32_t tmp = UINT32_C(1143370);
             if (tmp >= num32)
-                bases[0] = (T)(tmp % num32);
+                bases[0] = static_cast<T>(tmp % num32);
             else
-                bases[0] = (T)tmp;
-            bases[1] = (T)(UINT32_C(2350307676) % num32);
+                bases[0] = static_cast<T>(tmp);
+            bases[1] = static_cast<T>(UINT32_C(2350307676) % num32);
         } else {  // From the precondition we know num is still >= 3.
             total_bases = 1;
-            bases[0] = (T)(UINT32_C(921211727) % num32);
+            bases[0] = static_cast<T>(UINT32_C(921211727) % num32);
         }
 #endif
         return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);

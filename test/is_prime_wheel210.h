@@ -51,9 +51,10 @@ bool is_prime_wheel210(T x)
     // below - we already tested 2,3,5,7 and found they were not factors.
     // Note the wheel pattern cycles every 2*3*5*7 == 210 numbers.
     static const uint8_t cycle_len = 210;
-    for (T start=0; start + wheel[0] <= s; start = (T)(start + cycle_len)) {
+    for (T start=0; start + wheel[0] <= s;
+                                  start = static_cast<T>(start + cycle_len)) {
         for (size_t i=0; i < wheel_len; ++i) {
-            T maybe_factor = (T)(start + wheel[i]);
+            T maybe_factor = static_cast<T>(start + wheel[i]);
             if (x % maybe_factor == 0)
                 return (x == maybe_factor);
         }

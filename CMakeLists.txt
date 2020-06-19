@@ -61,13 +61,6 @@ endif()
 add_library(hurchalla_factoring INTERFACE)
 
 
-# Check for required C++ features only if the C++ compiler ID is non-empty.
-#target_compile_features(hurchalla_factoring INTERFACE 
-#          $<$<NOT:$<CXX_COMPILER_ID:>>:
-#               cxx_static_assert
-#           >)
-
-
 target_sources(hurchalla_factoring INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/is_prime.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/is_prime_miller_rabin.h>

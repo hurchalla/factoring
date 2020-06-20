@@ -6,8 +6,8 @@
 # The syntax is 
 # ./build_tests [-c=<compiler_name>] [-r] [-m=Release|Debug]
 #
-# Currently it supports clang, gcc, and icc but you'll want to customize the
-# section from lines 110-120 to match the compilers on your system.  The
+# Currently it supports clang, gcc, and icc but you'll need to customize the
+# section under "#Compiler commands" to match the compilers on your system.  The
 # script doesn't do anything fancy like auto detection or anything like that.
 #
 # Some examples of using the script:
@@ -139,6 +139,8 @@ if [ -z "$mode" ]; then
   mode=Debug
 fi
 
+
+# Compiler commands
 if [ "${compiler,,}" = "gcc" ] || [ "${compiler,,}" = "g++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc

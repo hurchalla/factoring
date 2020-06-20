@@ -100,7 +100,10 @@
 # sudo update-alternatives --config g++
 #   [ You *MUST* set the default g++ to be the same version as you just chose
 #     for update-alternatives --config gcc.  For me, that meant g++-7. ]
-
+#
+# [ I didn't need to run "update-alternatives --config icc" (or icpc), but if
+#   you install multiple versions of icc you'll no doubt need to do run
+#   update-alternatives for both icc and icpc. ]
 
 
 
@@ -149,14 +152,22 @@ elif [ "${compiler,,}" = "gcc-7" ] || [ "${compiler,,}" = "g++-7" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-7
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-7
   compiler_name=gcc7
+elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ]; then
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-10
+  cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-10
+  compiler_name=gcc10
 elif [ "${compiler,,}" = "clang" ] || [ "${compiler,,}" = "clang++" ]; then
-  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-10
-  cmake_c_compiler=-DCMAKE_C_COMPILER=clang-10
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-
+  cmake_c_compiler=-DCMAKE_C_COMPILER=clang
   compiler_name=clang
 elif [ "${compiler,,}" = "clang-6" ] || [ "${compiler,,}" = "clang++-6" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-6.0
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-6.0
   compiler_name=clang6
+elif [ "${compiler,,}" = "clang-10" ] || [ "${compiler,,}" = "clang++-10" ]; then
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-10
+  cmake_c_compiler=-DCMAKE_C_COMPILER=clang-10
+  compiler_name=clang10
 elif [ "${compiler,,}" = "icc" ] || [ "${compiler,,}" = "icpc" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=icpc
   cmake_c_compiler=-DCMAKE_C_COMPILER=icc

@@ -48,7 +48,7 @@ bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
         auto canonicalResult = mont.getCanonicalForm(result);
         if (canonicalResult == unity || canonicalResult == negativeOne)
             continue;
-        for (int j=0; j<r-1; ++j) {
+        for (int j=1; j<r; ++j) {
             result = mont.square(result);
             canonicalResult = mont.getCanonicalForm(result);
             if (canonicalResult == negativeOne)

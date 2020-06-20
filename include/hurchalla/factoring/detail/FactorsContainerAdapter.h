@@ -70,10 +70,7 @@ class FactorsContainerAdapter<std::array<T, N>> {
 public:
     using value_type = T;
     FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {}
-    void reserve(size_t num)
-    {
-        (void)(num);  // stop compiler from complaining about unused parameter
-    }
+    void reserve(size_t) {}
     size_t size() const
     {
         return num_factors_;

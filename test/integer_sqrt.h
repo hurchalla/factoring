@@ -18,9 +18,8 @@ namespace hurchalla { namespace factoring {
 template <int shift, typename T>
 HURCHALLA_FORCE_INLINE  typename std::enable_if<!(shift <
           hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits), T>::type
-safe_right_shift(T x1)
+safe_right_shift(T)
 {
-    (void)(x1);  // stop compiler from complaining about unused parameter
     return 0;
 }
 template <int shift, typename T>

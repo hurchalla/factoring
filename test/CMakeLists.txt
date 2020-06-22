@@ -5,7 +5,7 @@ if(TARGET test_hurchalla_factoring)
     return()
 endif()
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 
 
 include(FetchGoogleTest.cmake)

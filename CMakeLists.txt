@@ -5,7 +5,7 @@ if(TARGET hurchalla_factoring)
     return()
 endif()
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 
 project(hurchalla_factoring VERSION 1.0.0 LANGUAGES CXX)
 
@@ -74,26 +74,24 @@ target_include_directories(hurchalla_factoring INTERFACE
 
 
 
-# TODO: Currently we assume the programming_by_contract dependency is in a
-# folder at the relative location specified below.  This is a hack, since users
-# usually won't know this is a requirement, and it obligates the user to perform
-# a manual step (even if only once) to get the dependency from git and place it
-# in the correct location.  The dependency should be completely invisible to the
-# user, and this cmake script should "just work" without any extra steps.
-# Among the possible solutions might be git submodules, or FetchContent.  Git
-# submodules often seems to be warned against, making me more optimistic about
-# FetchContent or perhaps some other solution.  Note: the tests for this project
-# currently use FetchContent to get the Google Tests dependency.
-# ---------------------------
-add_subdirectory(../programming_by_contract
-            ${CMAKE_CURRENT_BINARY_DIR}/programming_by_contract)
-target_link_libraries(hurchalla_factoring
-                      INTERFACE programming_by_contract)
+include(FetchContent)
 
-# TODO: address the same issue as above, but for modular_arithmetic dependency
-# ---------------------------
-add_subdirectory(../modular_arithmetic
-            ${CMAKE_CURRENT_BINARY_DIR}/modular_arithmetic)
+FetchContent_Declare(
+    hurchalla_programming_by_contract
+    GIT_REPOSITORY https://github.com/hurchalla/programming_by_contract.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(hurchalla_programming_by_contract)
+target_link_libraries(hurchalla_factoring
+                      INTERFACE hurchalla_programming_by_contract)
+
+
+FetchContent_Declare(
+    hurchalla_modular_arithmetic
+    GIT_REPOSITORY https://github.com/hurchalla/modular_arithmetic.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(hurchalla_modular_arithmetic)
 target_link_libraries(hurchalla_factoring
                       INTERFACE hurchalla_modular_arithmetic)
 

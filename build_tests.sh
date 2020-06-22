@@ -157,7 +157,7 @@ elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ]; then
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-10
   compiler_name=gcc10
 elif [ "${compiler,,}" = "clang" ] || [ "${compiler,,}" = "clang++" ]; then
-  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang
   compiler_name=clang
 elif [ "${compiler,,}" = "clang-6" ] || [ "${compiler,,}" = "clang++-6" ]; then
@@ -339,15 +339,11 @@ gcc_asan="-fsanitize=address"
 
 # doxygen
 
-#if defined __INTEL_COMPILER
-#define COMPILER "Intel"
-#elif defined __GNUC__
-#define COMPILER "GCC"
-#endif
-
-# __INTEL_COMPILER
-
-#ifdef __INTEL_COMPILER
+# <LANG>_CLANG_TIDY: CMake 3.6+
+# <LANG>_CPPCHECK
+# <LANG>_CPPLINT
+# <LANG>_INCLUDE_WHAT_YOU_USE
+# LINK_WHAT_YOU_USE
 
 
 

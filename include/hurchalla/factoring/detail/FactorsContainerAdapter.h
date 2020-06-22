@@ -45,7 +45,7 @@ class FactorsContainerAdapter {
     T& c_;
 public:
     using value_type = typename T::value_type;
-    FactorsContainerAdapter(T& c) : c_(c) {};
+    explicit FactorsContainerAdapter(T& c) : c_(c) {};
     void reserve(size_t num_elements)
     {
         fca_detail::reserve_size(c_, num_elements);
@@ -69,7 +69,7 @@ class FactorsContainerAdapter<std::array<T, N>> {
     size_t num_factors_ = 0;
 public:
     using value_type = T;
-    FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {}
+    explicit FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {}
     void reserve(size_t) {}
     size_t size() const
     {
@@ -91,7 +91,7 @@ class FactorsContainerAdapter<std::vector<Types...>> {
     std::vector<Types...>& c_;
 public:
     using value_type = typename std::vector<Types...>::value_type;
-    FactorsContainerAdapter(std::vector<Types...>& c) : c_(c) {}
+    explicit FactorsContainerAdapter(std::vector<Types...>& c) : c_(c) {}
     void reserve(size_t num_elements)
     {
         c_.reserve(num_elements);

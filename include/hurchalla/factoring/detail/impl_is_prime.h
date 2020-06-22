@@ -14,6 +14,11 @@
 #include <array>
 #include <vector>
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4127)
+#endif
+
 namespace hurchalla { namespace factoring {
 
 
@@ -75,5 +80,10 @@ bool impl_is_prime(T x)
 
 
 }}  // end namespace
+
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 #endif

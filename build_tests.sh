@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# --- This file is distributed under the MIT Open Source License, as detailed
+# by the file "LICENSE.TXT" in the root of this repository ---
+
+
 # Description of this script -----------
 # This is my working rough-draft script for invoking the testing builds and
 # then running the tests.
@@ -19,9 +23,9 @@
 # [The above line uses the clang compiler in the default config (Debug), and
 # runs the tests after they're built]
 #
-# ./build_tests.sh -cgcc -mrelease
-# [The above line uses the clang compiler in the default config (Debug), and
-# runs the tests after they're built]
+# ./build_tests.sh -cgcc -mdebug
+# [The above line uses the gcc compiler in a debug config.  Although it builds
+# the tests, it does not run any of them]
 
 
 

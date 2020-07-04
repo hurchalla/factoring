@@ -8,7 +8,16 @@
 # This is my working rough-draft script for invoking the testing builds and
 # then running the tests.
 # The syntax is 
-# ./build_tests [-c=<compiler_name>] [-r] [-m=Release|Debug]
+# ./build_tests [-c=<compiler_name>] [-r] [-a] [-m=Release|Debug]
+#
+# -c allows you to select the compiler, rather than using the default.
+# -r specifies to run all tests after the build.  Without -r, no tests will run.
+# -a specifies you want to compile the code using all available inline assembly
+#    optimizations, which makes for the fastest binaries but of course has the
+#    downsides of inline asm - primarily that inline asm is extremely difficult
+#    to properly test.
+# -m allows you to choose between Release and Debug build configuration, rather
+#    than using the default.
 #
 # Currently it supports clang, gcc, and icc but you'll need to customize the
 # section under "#Compiler commands" to match the compilers on your system.  The
@@ -17,15 +26,16 @@
 # Some examples of using the script:
 # ./build_tests.sh -cicc -r -mrelease
 # [The above line uses the intel compiler (icc) in a release config, and
-# runs the tests after they're built]
+# runs the tests after they're built.  No inline assembly is used in the build.]
 #
-# ./build_tests.sh -cclang -r
+# ./build_tests.sh -cclang -r -a
 # [The above line uses the clang compiler in the default config (Debug), and
-# runs the tests after they're built]
+# runs the tests after they're built.  Inline assembly is used for the build
+# wherever possible.]
 #
 # ./build_tests.sh -cgcc -mdebug
 # [The above line uses the gcc compiler in a debug config.  Although it builds
-# the tests, it does not run any of them]
+# the tests, it does not run any of them.  No inline assembly is used.]
 
 
 
@@ -80,27 +90,64 @@
 # sudo apt update
 # sudo apt upgrade
 # source /opt/intel/bin/compilervars.sh intel64
-#   [ I've only installed Intel C++ (icc/icpc) a few days ago, but it appears
-#     that it is necessary to run the compilervars script every time you start
-#     a new terminal.  Probably there's some easy way to use compilervars.sh
-#     to set environment variables just once at boot time, but I haven't
-#     investigated this yet. ]
+#   [ Whenever you wish to compile with Intel C++ (icc/icpc), you will need to
+#     first run this compilervars script.  Probably you could set up your system
+#     so that compilervars.sh runs at boot time and so that its effects apply to
+#     any shell you start, but I would recommend *against* doing so.  The
+#     compilervars script alters the PATH environment variable and puts some
+#     intel bin directories as the first entries in the PATH.  Unfortunately
+#     those bin directories contain clang, clang++, gcc, and g++ symbolic links
+#     to (evidently) binaries that the Parallel Studio XE installer put on the
+#     system.  This seems to me to be a very bad choice by intel, because after
+#     sourcing the compilervars script, the commands gcc, g++, clang, clang++ no
+#     longer refer to any of the gcc or clang compilers that you may have
+#     installed on your system.  Instead these commands will refer to the intel-
+#     provided gcc/clang compilers, which will likely be a completely different
+#     version of those compilers from what you expect or want.
+#     The solution to this problem I am using is to start a subshell, then
+#     source compilervars.sh, then perform the compilation with icc, then exit
+#     back to the parent shell.  The commands I use to do this are:
+#          bash
+#          source /opt/intel/bin/compilervars.sh intel64
+#          ... run icc, or run cmake with icc, etc ...
+#          exit
+#     Any running script is already in a subshell (unless you use source or . ),
+#     so creating another subshell isn't necessary.  This present script here
+#     assumes it is already in a subshell, and just sources compilervars.sh if
+#     icc is chosen. ]
 # sudo update-alternatives --config gcc
-#   [ Surprisingly, Intel C++ relies on the gcc system includes and standard 
-#     library.  You *MUST* have gcc on your system and the default version of
-#     gcc that is invoked by the commands 'gcc' and 'g++' *MUST NOT* be more
-#     recent than your installation of Intel C++ supports.  I don't know what
-#     the most recent gcc version is that icc from Parallel Studio XE 2020
-#     (icc v19.1) supports, but I know that when update-alternatives was set to
-#     gcc-10 I had errors when I tried to compile icc with -std=c++17, and I
-#     know that when I set update-alternatives to gcc-7 all the errors with
-#     -std=c++17 wqent away.  Everything has worked fine for me with IntelC++
-#     after I set the default 'gcc' and 'g++' to be version 7.  It seems
-#     likely gcc 8 or perhaps 9 may work, but you'll have to try it with
-#     -std=c++17 in order to know: if you start getting inexplicable compile
-#     errors when you change this script's line that sets cpp_standard to use
-#     cpp_standard="-std=c++17",  then you'll know you need to default to an
-#     older gcc version (via update-alternatives).
+#   [ The above problems with compilervars.sh were bad, but there's more.  For
+#     whatever reason, I have experienced that the intel version of gcc/g++ is
+#     not always the one used after I have sourced compilervars.sh, presumably
+#     because the script altered the PATH variable to place the intel compiler
+#     directories *after* usr/bin where the normal gcc/g++ on my system lies.
+#     This is a problem for icc, because surprisingly, Intel C++ uses and needs
+#     gcc's system includes and standard library.  If icc mistakenly ends up
+#     using a version of gcc (for example, the very latest version of gcc) that
+#     is not compatible with icc, then icc may fail with compile errors that
+#     make it pretty obvious it is using your system gcc rather than the intel-
+#     placed gcc.  Therefore, the default version of gcc that is invoked by the
+#     commands 'gcc' and 'g++' *MUST NOT* be more recent than your installation
+#     of Intel C++ supports.  I don't know what the most recent gcc version is
+#     that icc from Parallel Studio XE 2020 (icc v19.1) supports, but I know
+#     that when update-alternatives was set to gcc-10 I had errors when I tried
+#     to compile icc with -std=c++17, and I know that when I set
+#     update-alternatives to gcc-7 all the errors with -std=c++17 went away.
+#     Everything has worked fine for me with IntelC++ after I set the default
+#     'gcc' and 'g++' to be version 7.  I would guess that none of this is an
+#     issue if/when compilervars.sh places the intel directories as the first
+#     entries in PATH, but I don't know.  I'm not sure why compilervars.sh seems
+#     to be inconsistent about entry placement in PATH for me.
+#     Regardless, for whatever version of gcc that you are currently using as
+#     the system default (via update-alteratives), you'll have to try compiling
+#     with icc using -std=c++17 in order to know if your default gcc version is
+#     making icc vulnerable to compile errors.  For example, with this present
+#     script here when using icc, if you start getting unexpected compile errors
+#     when you change this script's line that sets cpp_standard to use
+#     cpp_standard="-std=c++17", then you'll know you need to default to an
+#     older gcc version (via update-alternatives).  Either that, or figure out
+#     how to make sure compilervars.sh always consistently places the intel
+#     directories first in PATH. ]
 # sudo update-alternatives --config g++
 #   [ You *MUST* set the default g++ to be the same version as you just chose
 #     for update-alternatives --config gcc.  For me, that meant g++-7. ]
@@ -111,12 +158,12 @@
 
 
 
-while getopts ":m:c:h-:r" opt; do
+while getopts ":m:c:h-:ra" opt; do
   case $opt in
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c=<compiler_name>] [-r] [-m=Release|Debug]" >&2
+      echo "Usage: build_tests [-c=<compiler_name>] [-r] [-a] [-m=Release|Debug]" >&2
       exit 1
       ;;
     c)
@@ -127,6 +174,9 @@ while getopts ":m:c:h-:r" opt; do
       ;;
     r)
       run_tests=true
+      ;;
+    a)
+      use_inline_asm="-DHURCHALLA_TEST_INLINE_ASM=1"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -176,6 +226,7 @@ elif [ "${compiler,,}" = "icc" ] || [ "${compiler,,}" = "icpc" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=icpc
   cmake_c_compiler=-DCMAKE_C_COMPILER=icc
   compiler_name=icc
+  source /opt/intel/bin/compilervars.sh intel64
 elif [ -n "$compiler" ]; then
   echo "Invalid argument for option -c: $compiler"
   exit 1
@@ -368,6 +419,7 @@ if [ "${mode,,}" = "release" ]; then
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="$cpp_standard  \
+            $use_inline_asm  \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
@@ -380,6 +432,7 @@ elif [ "${mode,,}" = "debug" ]; then
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $clang_ubsan  $gcc_ubsan  \
+            $use_inline_asm  \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure

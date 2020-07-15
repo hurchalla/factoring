@@ -122,31 +122,31 @@
 #     because the script altered the PATH variable to place the intel compiler
 #     directories *after* usr/bin where the normal gcc/g++ on my system lies.
 #     This is a problem for icc, because surprisingly, Intel C++ uses and needs
-#     gcc's system includes and standard library.  If icc mistakenly ends up
-#     using a version of gcc (for example, the very latest version of gcc) that
-#     is not compatible with icc, then icc may fail with compile errors that
-#     make it pretty obvious it is using your system gcc rather than the intel-
-#     placed gcc.  Therefore, the default version of gcc that is invoked by the
-#     commands 'gcc' and 'g++' *MUST NOT* be more recent than your installation
-#     of Intel C++ supports.  I don't know what the most recent gcc version is
-#     that icc from Parallel Studio XE 2020 (icc v19.1) supports, but I know
-#     that when update-alternatives was set to gcc-10 I had errors when I tried
-#     to compile icc with -std=c++17, and I know that when I set
-#     update-alternatives to gcc-7 all the errors with -std=c++17 went away.
-#     Everything has worked fine for me with IntelC++ after I set the default
-#     'gcc' and 'g++' to be version 7.  I would guess that none of this is an
-#     issue if/when compilervars.sh places the intel directories as the first
-#     entries in PATH, but I don't know.  I'm not sure why compilervars.sh seems
-#     to be inconsistent about entry placement in PATH for me.
-#     Regardless, for whatever version of gcc that you are currently using as
-#     the system default (via update-alteratives), you'll have to try compiling
-#     with icc using -std=c++17 in order to know if your default gcc version is
-#     making icc vulnerable to compile errors.  For example, with this present
-#     script here when using icc, if you start getting unexpected compile errors
-#     when you change this script's line that sets cpp_standard to use
-#     cpp_standard="-std=c++17", then you'll know you need to default to an
-#     older gcc version (via update-alternatives).  Either that, or figure out
-#     how to make sure compilervars.sh always consistently places the intel
+#     gcc's system includes and standard library: see  https://software.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/compatibility-and-portability/gcc-compatibility-and-interoperability.html
+#     If icc mistakenly ends up using a version of gcc (for example, the very
+#     latest version of gcc) that is not compatible with icc, then icc may fail
+#     with compile errors that make it pretty obvious it is using your system
+#     gcc rather than the intel-placed gcc.  Therefore, the default version of
+#     gcc that is invoked by the commands 'gcc' and 'g++' *MUST NOT* be more
+#     recent than your installation of Intel C++ supports.  I don't know what
+#     the most recent gcc version is that icc from Parallel Studio XE 2020 (icc
+#     v19.1) supports, but I know that when update-alternatives was set to
+#     gcc-10 I had errors when I tried to compile icc with -std=c++17, and I
+#     know that when I set update-alternatives to gcc-7 all the errors with
+#     -std=c++17 went away.  Everything has worked fine for me with IntelC++
+#     after I set the default 'gcc' and 'g++' to be version 7.  I would guess
+#     that none of this is an issue if/when compilervars.sh places the intel
+#     directories as the first entries in PATH, but I don't know.  I'm not sure
+#     why compilervars.sh seems to be inconsistent about entry placement in PATH
+#     for me.  Regardless, for whatever version of gcc that you are currently
+#     using as the system default (via update-alteratives), you'll have to try
+#     compiling with icc using -std=c++17 in order to know if your default gcc
+#     version is making icc vulnerable to compile errors.  For example, with
+#     this present script here when using icc, if you start getting unexpected
+#     compile errors when you change this script's line that sets cpp_standard
+#     to use cpp_standard="-std=c++17", then you'll know you need to default to
+#     an older gcc version (via update-alternatives).  Either that, or figure
+#     out how to make sure compilervars.sh always consistently places the intel
 #     directories first in PATH. ]
 # sudo update-alternatives --config g++
 #   [ You *MUST* set the default g++ to be the same version as you just chose
@@ -176,7 +176,7 @@ while getopts ":m:c:h-:ra" opt; do
       run_tests=true
       ;;
     a)
-      use_inline_asm="-DHURCHALLA_TEST_INLINE_ASM=1"
+      use_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2

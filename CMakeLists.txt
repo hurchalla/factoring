@@ -77,21 +77,21 @@ target_include_directories(hurchalla_factoring INTERFACE
 include(FetchContent)
 
 FetchContent_Declare(
-    hurchalla_programming_by_contract
+    programming_by_contract
     GIT_REPOSITORY https://github.com/hurchalla/programming_by_contract.git
     GIT_TAG        master
 )
-FetchContent_MakeAvailable(hurchalla_programming_by_contract)
+FetchContent_MakeAvailable(programming_by_contract)
 target_link_libraries(hurchalla_factoring
                       INTERFACE hurchalla_programming_by_contract)
 
 
 FetchContent_Declare(
-    hurchalla_modular_arithmetic
+    modular_arithmetic
     GIT_REPOSITORY https://github.com/hurchalla/modular_arithmetic.git
     GIT_TAG        master
 )
-FetchContent_MakeAvailable(hurchalla_modular_arithmetic)
+FetchContent_MakeAvailable(modular_arithmetic)
 target_link_libraries(hurchalla_factoring
                       INTERFACE hurchalla_modular_arithmetic)
 

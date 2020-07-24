@@ -12,6 +12,11 @@
 #include <limits>
 #include <memory>
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4309)
+#endif
+
 namespace hurchalla { namespace factoring {
 
 
@@ -197,14 +202,14 @@ bool is_prime_miller_rabin(const MontType& mont)
             bases[0] = static_cast<T>(UINT64_C(9345883071009581737) % num32);
         }
 #else
-        if (num32 >= UINT32_C(360018361) {
+        if (num32 >= UINT32_C(360018361)) {
             total_bases = 3;
             // These bases should cover up to 4,759,123,141 (all uint32_t).
             // mod isn't needed here, since num is greater than all these bases.
             bases[0] = 2;
             bases[1] = 7;
             bases[2] = 61;
-        } else if (num32 >= UINT32_C(49141) {
+        } else if (num32 >= UINT32_C(49141)) {
             total_bases = 2;
             uint32_t tmp = UINT32_C(1143370);
             if (tmp >= num32)
@@ -223,5 +228,10 @@ bool is_prime_miller_rabin(const MontType& mont)
 
 
 }}  // end namespace
+
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 #endif

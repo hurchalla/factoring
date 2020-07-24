@@ -8,7 +8,7 @@
 # This is my working rough-draft script for invoking the testing builds and
 # then running the tests.
 # The syntax is 
-# ./build_tests [-c=<compiler_name>] [-r] [-a] [-m=Release|Debug]
+# ./build_tests [-c<compiler_name>] [-r] [-a] [-m<Release|Debug>]
 #
 # -c allows you to select the compiler, rather than using the default.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
@@ -202,11 +202,13 @@ if [ "${compiler,,}" = "gcc" ] || [ "${compiler,,}" = "g++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc
   compiler_name=gcc
-elif [ "${compiler,,}" = "gcc-7" ] || [ "${compiler,,}" = "g++-7" ]; then
+elif [ "${compiler,,}" = "gcc-7" ] || [ "${compiler,,}" = "g++-7" ] ||
+     [ "${compiler,,}" = "gcc7" ] || [ "${compiler,,}" = "g++7" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-7
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-7
   compiler_name=gcc7
-elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ]; then
+elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ] ||
+     [ "${compiler,,}" = "gcc10" ] || [ "${compiler,,}" = "g++10" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-10
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-10
   compiler_name=gcc10
@@ -214,11 +216,13 @@ elif [ "${compiler,,}" = "clang" ] || [ "${compiler,,}" = "clang++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang
   compiler_name=clang
-elif [ "${compiler,,}" = "clang-6" ] || [ "${compiler,,}" = "clang++-6" ]; then
+elif [ "${compiler,,}" = "clang-6" ] || [ "${compiler,,}" = "clang++-6" ] ||
+     [ "${compiler,,}" = "clang6" ] || [ "${compiler,,}" = "clang++6" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-6.0
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-6.0
   compiler_name=clang6
-elif [ "${compiler,,}" = "clang-10" ] || [ "${compiler,,}" = "clang++-10" ]; then
+elif [ "${compiler,,}" = "clang-10" ] || [ "${compiler,,}" = "clang++-10" ] ||
+     [ "${compiler,,}" = "clang10" ] || [ "${compiler,,}" = "clang++10" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-10
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-10
   compiler_name=clang10
@@ -324,10 +328,17 @@ fi
 if [ "$compiler_name" = "gcc" ]; then
   gcc_ubsan="-fsanitize=undefined -fno-sanitize-recover \
            -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow"
+
 elif [ "$compiler_name" = "clang" ]; then
+  # My installed version of clang doesn't support -fsanitize=implicit-conversion
   clang_ubsan="-fsanitize=undefined -fsanitize=nullability -fsanitize=bounds \
              -fsanitize=float-divide-by-zero"
-  # My installed version of clang doesn't support -fsanitize=implicit-conversion
+
+  # The next line in a perfect world wouldn't be needed, but for some versions
+  # of clang (clang 10 for me), the linker doesn't find __muloti4 when using the
+  # undefined behavior sanitizers.  __muloti4 is defined in compiler-rt.
+  # See https://bugs.llvm.org/show_bug.cgi?id=16404
+  clang_ubsan_link_flags="-rtlib=compiler-rt -lgcc_s"
 fi
 
 
@@ -417,7 +428,8 @@ if [ "${mode,,}" = "release" ]; then
     pushd script_dir > /dev/null 2>&1
     build_dir=build/release_$compiler_name
     mkdir -p $build_dir
-    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="$cpp_standard  \
             $use_inline_asm  \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
@@ -430,7 +442,9 @@ elif [ "${mode,,}" = "debug" ]; then
     pushd script_dir > /dev/null 2>&1
     build_dir=build/debug_$compiler_name
     mkdir -p $build_dir
-    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON -DCMAKE_BUILD_TYPE=Debug \
+    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXE_LINKER_FLAGS="$clang_ubsan_link_flags" \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $clang_ubsan  $gcc_ubsan  \
             $use_inline_asm  \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
@@ -451,12 +465,12 @@ fi
 
 
 if [ "$run_tests" = true ]; then
-  ./$build_dir/test_ndebug_programming_by_contract
+  ./$build_dir/test_ndebug_programming_by_contract --gtest_break_on_failure
   exit_on_failure
-  ./$build_dir/test_programming_by_contract
+  ./$build_dir/test_programming_by_contract --gtest_break_on_failure
   exit_on_failure
-  ./$build_dir/test_hurchalla_modular_arithmetic
+  ./$build_dir/test_hurchalla_modular_arithmetic --gtest_break_on_failure
   exit_on_failure
-  ./$build_dir/test_hurchalla_factoring
+  ./$build_dir/test_hurchalla_factoring --gtest_break_on_failure
   exit_on_failure
 fi

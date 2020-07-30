@@ -22,6 +22,7 @@ namespace hurchalla { namespace factoring {
 template <typename T>
 bool is_prime_wheel210(T x)
 {
+    using std::uint8_t;
     namespace ma = hurchalla::modular_arithmetic;
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");
     HPBC_PRECONDITION2(x >= 0);

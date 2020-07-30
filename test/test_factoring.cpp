@@ -28,7 +28,7 @@ namespace {
 
     TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div) {
         namespace hf = hurchalla::factoring;
-        using T = uint32_t;
+        using T = std::uint32_t;
         T max = std::numeric_limits<T>::max();
         T dummy = 0;
         constexpr int factors_len = std::numeric_limits<T>::digits;
@@ -41,7 +41,7 @@ namespace {
     }
     TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div_template) {
         namespace hf = hurchalla::factoring;
-        using T = uint32_t;
+        using T = std::uint32_t;
         T max = std::numeric_limits<T>::max();
         T dummy = 0;
         constexpr int factors_len = std::numeric_limits<T>::digits;
@@ -56,7 +56,7 @@ namespace {
 
     TEST(HurchallaFactoringIsPrime, exhaustive_uint16_t) {
         namespace hf = hurchalla::factoring;
-        using T = uint16_t;
+        using T = std::uint16_t;
         for (T x = 0; x < std::numeric_limits<T>::max(); ++x) {
             EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
         }
@@ -69,7 +69,7 @@ namespace {
 // It passed when I tested it on 6/7/20.
     TEST(HurchallaFactoringIsPrime, exhaustive_uint32_t) {
         namespace hf = hurchalla::factoring;
-        using T = uint32_t;
+        using T = std::uint32_t;
         for (T x = 0; x < std::numeric_limits<T>::max(); ++x) {
             EXPECT_TRUE(hf::is_prime(x) == hf::is_prime_wheel210(x));
         }
@@ -82,15 +82,15 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, super_simple_test) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
-        uint64_t modulus = 53;
-        ma::MontgomeryForm<uint64_t> mont(modulus);
+        std::uint64_t modulus = 53;
+        ma::MontgomeryForm<std::uint64_t> mont(modulus);
         EXPECT_TRUE(hf::is_prime_miller_rabin(mont));
     }
 
     TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
-        using T = uint16_t;
+        using T = std::uint16_t;
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
             ma::MontgomeryForm<T> mont(m);
             EXPECT_TRUE(hf::is_prime_miller_rabin(mont) ==
@@ -104,7 +104,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint32_t) {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
-        using T = uint32_t;
+        using T = std::uint32_t;
         for (T m=std::numeric_limits<T>::max(); m >= 3; m=static_cast<T>(m-2)) {
             ma::MontgomeryForm<T> mont(m);
 #  if 1
@@ -134,7 +134,7 @@ namespace {
 #endif
 
     TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test1) {
-        using T = uint32_t;
+        using T = std::uint32_t;
         T modulus = 127;
 
         namespace ma = hurchalla::montgomery_arithmetic;
@@ -153,7 +153,7 @@ namespace {
     }
 
     TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
-        using T = uint32_t;
+        using T = std::uint32_t;
         T modulus = 141;
 
         namespace ma = hurchalla::montgomery_arithmetic;
@@ -174,6 +174,7 @@ namespace {
     TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         // Populate a vector of some of the largest primes less than 2^64.
         // Primes obtained from  https://primes.utm.edu/lists/2small/0bit.html
+        using std::uint64_t;
         uint64_t zero = 0;
         // rely on wrap-around when subtracting on next line:
         std::vector<uint64_t> primes = { zero-59, zero-83, zero-95, zero-179,

@@ -48,10 +48,10 @@ small_trial_division256(C& fca, const T x)
     static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
 
     // We'll populate small_primes with all primes less than 256.
-    const uint8_t small_primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-        41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
-        113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191,
-        193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
+    const std::uint8_t small_primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+        31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103,
+        107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179,
+        181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
     constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
 
     if (x < 4) {
@@ -92,10 +92,10 @@ small_trial_division256(C& fca, const T x)
 
 
 
-template <class C>
-typename std::enable_if<std::is_same<typename C::value_type, uint8_t>::value,
-                        uint8_t>::type
-small_trial_division256(C& fca, const uint8_t x)
+template <class C> typename
+std::enable_if<std::is_same<typename C::value_type, std::uint8_t>::value,
+               std::uint8_t>::type
+small_trial_division256(C& fca, const std::uint8_t x)
 {
     if (x < 4) {
         fca.push(x);
@@ -130,7 +130,7 @@ small_trial_division256(C& fca, const uint8_t x)
     }
     HPBC_ASSERT2(q > 0);
     if (q > 1)
-        fca.push(static_cast<uint8_t>(q));
+        fca.push(static_cast<std::uint8_t>(q));
     return 1;
 }
 
@@ -148,9 +148,11 @@ struct PrimeInfoPair {
 // Helper template function for the small_trial_division256() functions below.
 template <class C>
 typename C::value_type
-perform_trial_divisions(C& fca, const typename C::value_type x, const uint8_t*
-                      small_primes, const PrimeInfoPair<typename C::value_type>*
-                      primes_info, size_t array_len)
+perform_trial_divisions(C& fca,
+                       const typename C::value_type x,
+                       const std::uint8_t* small_primes,
+                       const PrimeInfoPair<typename C::value_type>* primes_info,
+                       size_t array_len)
 {
     using T = typename C::value_type;
     namespace ma = montgomery_arithmetic;
@@ -217,29 +219,29 @@ perform_trial_divisions(C& fca, const typename C::value_type x, const uint8_t*
 
 
 
-template <class C>
-typename std::enable_if<std::is_same<typename C::value_type, uint16_t>::value,
-                        uint16_t>::type
-small_trial_division256(C& fca, const uint16_t x)
+template <class C> typename
+std::enable_if<std::is_same<typename C::value_type, std::uint16_t>::value,
+               std::uint16_t>::type
+small_trial_division256(C& fca, const std::uint16_t x)
 {
     // We'll populate small_primes with all primes (other than 2) less than 256.
-    const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-        41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
-        113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191,
-        193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
+    const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+        37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
+        109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
+        191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
  #if 0
 // I generated the uint16_t data for primes_info as follows:
     constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
     for (size_t i=0; i<array_len; ++i) {
         namespace ma = hurchalla::montgomery_arithmetic;
-        uint16_t inv = (uint16_t)0 -
-                        ma::negative_inverse_mod_r((uint16_t)(small_primes[i]));
+        std::uint16_t inv = (std::uint16_t)0 -
+                   ma::negative_inverse_mod_r((std::uint16_t)(small_primes[i]));
         std::cout << "{ UINT16_C(" << inv << "), UINT16_C(" <<
                                       UINT16_MAX / small_primes[i] << ") }, \n";
     }
     return 0;
 #endif
-    static const PrimeInfoPair<uint16_t> primes_info[] = {
+    static const PrimeInfoPair<std::uint16_t> primes_info[] = {
         { UINT16_C(43691), UINT16_C(21845)}, // corresponding small_primes[]==3,
         { UINT16_C(52429), UINT16_C(13107)}, // 5,
         { UINT16_C(28087), UINT16_C(9362) }, // 7,
@@ -301,29 +303,29 @@ small_trial_division256(C& fca, const uint16_t x)
 }
 
 
-template <class C>
-typename std::enable_if<std::is_same<typename C::value_type, uint32_t>::value,
-                        uint32_t>::type
-small_trial_division256(C& fca, const uint32_t x)
+template <class C> typename
+std::enable_if<std::is_same<typename C::value_type, std::uint32_t>::value,
+               std::uint32_t>::type
+small_trial_division256(C& fca, const std::uint32_t x)
 {
     // We'll populate small_primes with all primes (other than 2) less than 256.
-    const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-        41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
-        113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191,
-        193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
+    const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+        37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
+        109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
+        191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
  #if 0
 // I generated the uint32_t data for primes_info as follows:
     constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
     for (size_t i=0; i<array_len; ++i) {
         namespace ma = hurchalla::montgomery_arithmetic;
-        uint32_t inv = (uint32_t)0 -
-                        ma::negative_inverse_mod_r((uint32_t)(small_primes[i]));
+        std::uint32_t inv = (std::uint32_t)0 -
+                   ma::negative_inverse_mod_r((std::uint32_t)(small_primes[i]));
         std::cout << "{ UINT32_C(" << inv << "), UINT32_C(" <<
                                       UINT32_MAX / small_primes[i] << ") }, \n";
     }
     return 0;
 #endif
-    static const PrimeInfoPair<uint32_t> primes_info[] = {
+    static const PrimeInfoPair<std::uint32_t> primes_info[] = {
         { UINT32_C(2863311531), UINT32_C(1431655765)}, // first small_prime is 3
         { UINT32_C(3435973837), UINT32_C(858993459) },
         { UINT32_C(3067833783), UINT32_C(613566756) },
@@ -385,29 +387,29 @@ small_trial_division256(C& fca, const uint32_t x)
 }
 
 
-template <class C>
-typename std::enable_if<std::is_same<typename C::value_type, uint64_t>::value,
-                        uint64_t>::type
-small_trial_division256(C& fca, const uint64_t x)
+template <class C> typename
+std::enable_if<std::is_same<typename C::value_type, std::uint64_t>::value,
+               std::uint64_t>::type
+small_trial_division256(C& fca, const std::uint64_t x)
 {
     // We'll populate small_primes with all primes (other than 2) less than 256.
-    const uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-        41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
-        113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191,
-        193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
+    const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+        37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
+        109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
+        191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
  #if 0
 // I generated the uint64_t data for primes_info as follows:
     constexpr size_t array_len = sizeof(small_primes)/sizeof(small_primes[0]);
     for (size_t i=0; i<array_len; ++i) {
         namespace ma = hurchalla::montgomery_arithmetic;
-        uint64_t inv = (uint64_t)0 -
-                        ma::negative_inverse_mod_r((uint64_t)(small_primes[i]));
+        std::uint64_t inv = (std::uint64_t)0 -
+                   ma::negative_inverse_mod_r((std::uint64_t)(small_primes[i]));
         std::cout << "{ UINT64_C(" << inv << "), UINT64_C(" <<
                                       UINT64_MAX / small_primes[i] << ") }, \n";
     }
     return 0;
 #endif
-    static const PrimeInfoPair<uint64_t> primes_info[] = {
+    static const PrimeInfoPair<std::uint64_t> primes_info[] = {
         { UINT64_C(12297829382473034411), UINT64_C(6148914691236517205)},
         { UINT64_C(14757395258967641293), UINT64_C(3689348814741910323)},
         { UINT64_C(7905747460161236407) , UINT64_C(2635249153387078802)},

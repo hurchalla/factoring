@@ -163,7 +163,7 @@ while getopts ":m:c:h-:ra" opt; do
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c=<compiler_name>] [-r] [-a] [-m=Release|Debug]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-m<Release|Debug>]" >&2
       exit 1
       ;;
     c)
@@ -202,46 +202,68 @@ if [ "${compiler,,}" = "gcc" ] || [ "${compiler,,}" = "g++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc
   compiler_name=gcc
+  compiler_version=0
 elif [ "${compiler,,}" = "gcc-7" ] || [ "${compiler,,}" = "g++-7" ] ||
      [ "${compiler,,}" = "gcc7" ] || [ "${compiler,,}" = "g++7" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-7
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-7
-  compiler_name=gcc7
+  compiler_name=gcc
+  compiler_version=7
 elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ] ||
      [ "${compiler,,}" = "gcc10" ] || [ "${compiler,,}" = "g++10" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-10
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-10
-  compiler_name=gcc10
+  compiler_name=gcc
+  compiler_version=10
 elif [ "${compiler,,}" = "clang" ] || [ "${compiler,,}" = "clang++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang
   compiler_name=clang
+  compiler_version=0
+elif [ "${compiler,,}" = "clang-3" ] || [ "${compiler,,}" = "clang++-3" ] ||
+     [ "${compiler,,}" = "clang3" ] || [ "${compiler,,}" = "clang++3" ]; then
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-3.9
+  cmake_c_compiler=-DCMAKE_C_COMPILER=clang-3.9
+  compiler_name=clang
+  compiler_version=3
 elif [ "${compiler,,}" = "clang-6" ] || [ "${compiler,,}" = "clang++-6" ] ||
      [ "${compiler,,}" = "clang6" ] || [ "${compiler,,}" = "clang++6" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-6.0
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-6.0
-  compiler_name=clang6
+  compiler_name=clang
+  compiler_version=6
 elif [ "${compiler,,}" = "clang-10" ] || [ "${compiler,,}" = "clang++-10" ] ||
      [ "${compiler,,}" = "clang10" ] || [ "${compiler,,}" = "clang++10" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-10
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-10
-  compiler_name=clang10
+  compiler_name=clang
+  compiler_version=10
 elif [ "${compiler,,}" = "icc" ] || [ "${compiler,,}" = "icpc" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=icpc
   cmake_c_compiler=-DCMAKE_C_COMPILER=icc
   compiler_name=icc
+  compiler_version=0
   source /opt/intel/bin/compilervars.sh intel64
 elif [ -n "$compiler" ]; then
   echo "Invalid argument for option -c: $compiler"
   exit 1
 fi
 
-echo Using compiler $compiler_name ...
+
+if [ "$compiler_version" = "0" ]; then
+  echo Using compiler $compiler_name \(default version\) ...
+else
+  echo Using compiler $compiler_name v$compiler_version ...
+fi
 echo Using build mode $mode ...
 
 
+if [ "$compiler_name" = "clang" ] && [[ $compiler_version -lt 6 ]]; then
+: #  cpp_standard="-std=c++11"
+else
+  cpp_standard="-std=c++17"
+fi
 
-cpp_standard="-std=c++17"
 
 # A long note about issues setting the C++ standard when using CMake
 # ------------------------------------------------------------------
@@ -317,23 +339,36 @@ if [ "$compiler_name" = "gcc" ]; then
 
   : # do nothing, at least for now
 
+# note that clang-tidy includes the clang static analyzer
 elif [ "$compiler_name" = "clang" ]; then
-#  clang_static_analysis=(-DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=-*,clang-analyzer-*")
+#  clang_static_analysis=(-DCMAKE_CXX_CLANG_TIDY="clang-tidy;-extra-arg=-Wno-unknown-warning-option;-checks=*,clang-analyzer-*")
   : # do nothing, at least for now
 fi
+#-analyzer-checker=core
+#-analyzer-checker=cpp
+#-analyzer-checker=unix
+#-analyzer-checker=deadcode
 
 
 #undefined behavior sanitizers
-#-----
+#-----------------------------
+# note according to https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html:
+# "[The] UndefinedBehaviorSanitizer ... test suite is integrated into the CMake
+# build and can be run with check-ubsan command."
 if [ "$compiler_name" = "gcc" ]; then
   gcc_ubsan="-fsanitize=undefined -fno-sanitize-recover \
            -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow"
 
-elif [ "$compiler_name" = "clang" ]; then
-  # My installed version of clang doesn't support -fsanitize=implicit-conversion
-  clang_ubsan="-fsanitize=undefined -fsanitize=nullability -fsanitize=bounds \
-             -fsanitize=float-divide-by-zero"
-
+elif [ "$compiler_name" = "clang" ] && [[ $compiler_version -ge 6 ]]; then
+  # clang6 doesn't support -fsanitize=implicit-conversion.  Clang10 does support
+  # it.  I don't know if clang7,8,9 support it.
+  if [[ $compiler_version -ge 10 ]]; then
+    clang_ubsan="-fsanitize=undefined -fsanitize=nullability -fsanitize=bounds \
+                 -fsanitize=float-divide-by-zero -fsanitize=implicit-conversion"
+  else
+    clang_ubsan="-fsanitize=undefined -fsanitize=nullability -fsanitize=bounds \
+                 -fsanitize=float-divide-by-zero"
+  fi
   # The next line in a perfect world wouldn't be needed, but for some versions
   # of clang (clang 10 for me), the linker doesn't find __muloti4 when using the
   # undefined behavior sanitizers.  __muloti4 is defined in compiler-rt.
@@ -343,7 +378,7 @@ fi
 
 
 #address sanitizers
-#-----
+#------------------
 clang_asan=""
 gcc_asan="-fsanitize=address"
 # clang -fsanitize=address -O1 -fno-omit-frame-pointer -g   tests/use-after-free.c
@@ -390,6 +425,9 @@ gcc_asan="-fsanitize=address"
 # endif()
 
 
+#LeakSanitizer (LSan)
+#ThreadSanitizer (TSan)
+#MemorySanitizer (MSan)
 
 #modes
 # 1. Asan+UBsan+Lsan
@@ -426,7 +464,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 if [ "${mode,,}" = "release" ]; then
     pushd script_dir > /dev/null 2>&1
-    build_dir=build/release_$compiler_name
+    build_dir=build/release_$compiler_name$compiler_version
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
             -DCMAKE_BUILD_TYPE=Release \
@@ -440,7 +478,7 @@ if [ "${mode,,}" = "release" ]; then
     popd > /dev/null 2>&1
 elif [ "${mode,,}" = "debug" ]; then
     pushd script_dir > /dev/null 2>&1
-    build_dir=build/debug_$compiler_name
+    build_dir=build/debug_$compiler_name$compiler_version
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
             -DCMAKE_BUILD_TYPE=Debug \

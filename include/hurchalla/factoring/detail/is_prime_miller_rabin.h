@@ -35,9 +35,9 @@ bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
     HPBC_ASSERT2(num % 2 == 1);
 
     auto unity = mont.getUnityValue();
-    HPBC_ASSERT2(unity == mont.getCanonicalForm(unity));
+    HPBC_ASSERT2(unity == mont.getCanonicalValue(unity));
     auto negativeOne = mont.getNegativeOneValue();
-    HPBC_ASSERT2(negativeOne == mont.getCanonicalForm(negativeOne));
+    HPBC_ASSERT2(negativeOne == mont.getCanonicalValue(negativeOne));
 
     // write num−1 as 2^r * d by factoring powers of 2 from num−1
     T d = static_cast<T>(num - 1);
@@ -52,12 +52,12 @@ bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
         if (bases[i] == 0)
             continue;
         auto result = mont.pow(mont.convertIn(bases[i]), d);
-        auto canonicalResult = mont.getCanonicalForm(result);
+        auto canonicalResult = mont.getCanonicalValue(result);
         if (canonicalResult == unity || canonicalResult == negativeOne)
             continue;
         for (int j=1; j<r; ++j) {
             result = mont.square(result);
-            canonicalResult = mont.getCanonicalForm(result);
+            canonicalResult = mont.getCanonicalValue(result);
             if (canonicalResult == negativeOne)
                 break;
         }
@@ -72,12 +72,15 @@ bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
 // So far I've verified the correctness of is_prime() for all odd input values
 // from 0 to 34359738368 (== 2^35), looking for any mismatch compared to
 // is_prime_wheel210() in  test/is_prime_wheel210.h
-static constexpr uint64_t MAX_VERIFIED_NUMBER_MONTGOMERY_ISPRIME =
+static constexpr std::uint64_t MAX_VERIFIED_NUMBER_MONTGOMERY_ISPRIME =
                                                           UINT64_C(34359738368);
 
 template <typename MontType>
 bool is_prime_miller_rabin(const MontType& mont)
 {
+    using std::uint16_t;
+    using std::uint32_t;
+    using std::uint64_t;
     using T = typename MontType::T_type;
     namespace ma = hurchalla::modular_arithmetic;
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");

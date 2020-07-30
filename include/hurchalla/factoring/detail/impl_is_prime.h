@@ -15,6 +15,7 @@
 #include <limits>
 #include <array>
 #include <vector>
+#include <cstdint>
 
 #if defined(_MSC_VER)
 #  pragma warning(push)
@@ -60,6 +61,8 @@ bool impl_is_prime(T x)
         // <= 65535, then the final fca.size() >= 1.  Conversely, if fca.size()
         // == 0, then the number passed in had to be > 65535.
     }
+
+    using std::uint32_t; using std::uint64_t;
 
     // miller-rabin
     HPBC_ASSERT2(x % 2 == 1);

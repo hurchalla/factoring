@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <limits>
 #include <memory>
+#include <cstddef>
 
 #if defined(_MSC_VER)
 #  pragma warning(push)
@@ -27,8 +28,11 @@ namespace hurchalla { namespace factoring {
 // See also:
 // https://miller-rabin.appspot.com/
 template <typename T, typename MontType>
-bool is_prime_mr_trials(const T* bases,size_t total_bases, const MontType& mont)
+bool is_prime_mr_trials(const T* bases,
+                        std::size_t total_bases,
+                        const MontType& mont)
 {
+    using std::size_t;
     static_assert(std::is_same<T, typename MontType::T_type>::value, "");
     T num = mont.getModulus();
 
@@ -78,6 +82,7 @@ static constexpr std::uint64_t MAX_VERIFIED_NUMBER_MONTGOMERY_ISPRIME =
 template <typename MontType>
 bool is_prime_miller_rabin(const MontType& mont)
 {
+    using std::size_t;
     using std::uint16_t;
     using std::uint32_t;
     using std::uint64_t;

@@ -9,6 +9,7 @@
 #include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
 #include "hurchalla/programming_by_contract/programming_by_contract.h"
 #include <cstdint>
+#include <cstddef>
 
 namespace hurchalla { namespace factoring {
 
@@ -22,6 +23,7 @@ namespace hurchalla { namespace factoring {
 template <typename T>
 bool is_prime_wheel210(T x)
 {
+    using std::size_t;
     using std::uint8_t;
     namespace ma = hurchalla::modular_arithmetic;
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");

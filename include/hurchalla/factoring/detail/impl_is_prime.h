@@ -16,6 +16,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
+#include <cstddef>
 
 #if defined(_MSC_VER)
 #  pragma warning(push)
@@ -30,6 +31,8 @@ bool impl_is_prime(T x)
 {
     HPBC_PRECONDITION2(x >= 0);
     namespace ma = hurchalla::montgomery_arithmetic;
+    using std::uint32_t; using std::uint64_t;
+    using std::size_t;
 
     if (x < 2)  // handle the noncomposite yet nonprime numbers
         return false;
@@ -40,7 +43,7 @@ bool impl_is_prime(T x)
     {  // trial divisions
         using U= typename modular_arithmetic::extensible_make_unsigned<T>::type;
 
-        // The max possible array length for factors is if all factors are 2
+        // The max possible array length for factors is when all factors are 2
         constexpr size_t max_factors = std::numeric_limits<U>::digits;
 #if 1 // use the stack (std::array).  Note: a 128 bit type T would take 2kb
         std::array<U, max_factors> factors;
@@ -61,8 +64,6 @@ bool impl_is_prime(T x)
         // <= 65535, then the final fca.size() >= 1.  Conversely, if fca.size()
         // == 0, then the number passed in had to be > 65535.
     }
-
-    using std::uint32_t; using std::uint64_t;
 
     // miller-rabin
     HPBC_ASSERT2(x % 2 == 1);

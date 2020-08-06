@@ -28,7 +28,7 @@ template <typename T> class FactorsContainerAdapter {
 namespace fca_detail {
     // SFINAE: this function is enabled if reserve() exists for the container.
     template <class C>
-    auto reserve_size(C& container, size_t num_elements)
+    auto reserve_size(C& container, std::size_t num_elements)
         -> decltype(container.reserve(num_elements))
     {
         container.reserve(num_elements);
@@ -48,11 +48,11 @@ class FactorsContainerAdapter {
 public:
     using value_type = typename T::value_type;
     explicit FactorsContainerAdapter(T& c) : c_(c) {};
-    void reserve(size_t num_elements)
+    void reserve(std::size_t num_elements)
     {
         fca_detail::reserve_size(c_, num_elements);
     }
-    size_t size() const { return c_.size(); }
+    std::size_t size() const { return c_.size(); }
     void push(value_type val) { c_.insert(c_.end(), val); }
 };
 #endif
@@ -68,12 +68,12 @@ class FactorsContainerAdapter<std::array<T, N>> {
     static_assert(N == std::numeric_limits<T>::digits, "");
 
     std::array<T, N>& c_;
-    size_t num_factors_ = 0;
+    std::size_t num_factors_ = 0;
 public:
     using value_type = T;
     explicit FactorsContainerAdapter(std::array<T, N>& c) : c_(c) {}
-    void reserve(size_t) {}
-    size_t size() const
+    void reserve(std::size_t) {}
+    std::size_t size() const
     {
         return num_factors_;
     }
@@ -94,11 +94,11 @@ class FactorsContainerAdapter<std::vector<Types...>> {
 public:
     using value_type = typename std::vector<Types...>::value_type;
     explicit FactorsContainerAdapter(std::vector<Types...>& c) : c_(c) {}
-    void reserve(size_t num_elements)
+    void reserve(std::size_t num_elements)
     {
         c_.reserve(num_elements);
     }
-    size_t size() const
+    std::size_t size() const
     {
         return c_.size();
     }

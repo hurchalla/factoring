@@ -11,29 +11,27 @@
 #include <cstdint>
 #include <type_traits>
 #include <limits>
+#include <cstddef>
 
 namespace hurchalla { namespace factoring {
 
 
 // small_trial_division256 guarantees it will try at least all possible prime
-// factors less than 256.  It might someday try factors greater than 256 also.
+// factors less than 256.
 //
 // small_trial_division256 return values-
-// 0: The function couldn't find any factors and couldn't tell if x is composite
-//     --fca is left empty.
-// 1: Either the function determined x is not composite (and placed x as the
-//     single element in fca), or it found all factors (and placed them all in
-//     fca).  Either way, the return value is the quotient of x divided by all
-//     elements in fca.
-//   *Note this indicates all possible factoring is complete.
-//     --fca.size() == 1 indicates x is non-composite.  The single element is x.
-//     --fca.size() > 1 indicates all factors were found and placed in fca.
-// >1: This return value is the quotient of x divided by all the factors in fca.
+// 0: Indicates the function couldn't find any factors and couldn't determine
+//     whether x is composite or not.  fca is left empty.
+// 1: Indicates that the function completely factored x.  If x is non-composite
+//     then it was placed as the single element in fca (fca.size == 1).  If x
+//     is composite then every factor was placed into fca (fca.size > 1).
+// >1: Indicates the function found at least one factor, but was not able to
+//     finish the factorization.  All factors found so far were placed into fca.
+//     The return value is the quotient of x divided by all the factors in fca.
 //     This return value may be factorable, or it may be prime (we don't know).
-//     --fca has all the factors found so far.
 //
 // Postcondition of small_trial_division256(): if the argument x passed in is
-// <= 65535, then the returned quotient == 1 and the final fca.size() >= 1.
+// <= 65535, then the return value == 1 and the final fca.size() >= 1.
 
 
 
@@ -47,6 +45,7 @@ small_trial_division256(C& fca, const T x)
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");
     static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
 
+    using std::size_t;
     // We'll populate small_primes with all primes less than 256.
     const std::uint8_t small_primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
         31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103,
@@ -152,11 +151,12 @@ perform_trial_divisions(C& fca,
                        const typename C::value_type x,
                        const std::uint8_t* small_primes,
                        const PrimeInfoPair<typename C::value_type>* primes_info,
-                       size_t array_len)
+                       std::size_t array_len)
 {
     using T = typename C::value_type;
     namespace ma = montgomery_arithmetic;
     using P = typename ma::safely_promote_unsigned<T>::type;
+    using std::size_t;
 
     static_assert(std::numeric_limits<T>::is_integer, "");
     static_assert(!std::numeric_limits<T>::is_signed, "");
@@ -224,6 +224,7 @@ std::enable_if<std::is_same<typename C::value_type, std::uint16_t>::value,
                std::uint16_t>::type
 small_trial_division256(C& fca, const std::uint16_t x)
 {
+    using std::size_t;
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
         37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
@@ -308,6 +309,7 @@ std::enable_if<std::is_same<typename C::value_type, std::uint32_t>::value,
                std::uint32_t>::type
 small_trial_division256(C& fca, const std::uint32_t x)
 {
+    using std::size_t;
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
         37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
@@ -392,6 +394,7 @@ std::enable_if<std::is_same<typename C::value_type, std::uint64_t>::value,
                std::uint64_t>::type
 small_trial_division256(C& fca, const std::uint64_t x)
 {
+    using std::size_t;
     // We'll populate small_primes with all primes (other than 2) less than 256.
     const std::uint8_t small_primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
         37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,

@@ -15,7 +15,7 @@
 
 #include <cstdint>
 #include <limits>
-
+#include <cstddef>
 #include <iostream>
 
 namespace {
@@ -182,7 +182,7 @@ namespace {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
 
-        size_t prime_index = 0;
+        std::size_t prime_index = 0;
         for (auto i = zero - 1; i >= primes[9]; i-=2) {
             using T = decltype(i);
             ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(i);
@@ -244,7 +244,7 @@ namespace {
         namespace ma = hurchalla::montgomery_arithmetic;
         namespace hf = hurchalla::factoring;
 
-        size_t prime_index = 0;
+        std::size_t prime_index = 0;
         for (auto i = zero - 1; i >= primes[9]; i-=2) {
             using T = decltype(i);
             ma::MontgomeryForm<T, ma::MontyWrappedStandardMath<T>> mWSM(i);

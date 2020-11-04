@@ -36,7 +36,9 @@
 # ./build_tests.sh -cgcc -mdebug
 # [The above line uses the gcc compiler in a debug config.  Although it builds
 # the tests, it does not run any of them.  No inline assembly is used.]
-
+#
+#./build_tests.sh -r -a -cgcc10 -mdebug
+#
 
 
 # ------------ How to get/install the various compilers on Linux --------------
@@ -437,7 +439,7 @@ gcc_asan="-fsanitize=address"
 
 # a run of "splint" and/or cppcheck
 # cpplint
-# include what you use (iwyu), and lwyu
+# include what you use (iwyu), and lwyu (link what you use)
 # Clang-Tidy
 # CppCoreCheck
 
@@ -449,6 +451,10 @@ gcc_asan="-fsanitize=address"
 # <LANG>_INCLUDE_WHAT_YOU_USE
 # LINK_WHAT_YOU_USE
 
+
+# valgrind/purity
+
+# code coverage tools - gcov
 
 
 

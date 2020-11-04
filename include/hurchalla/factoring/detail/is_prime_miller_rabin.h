@@ -8,9 +8,6 @@
 #include "hurchalla/modular_arithmetic/detail/platform_specific/compiler_macros.h"
 #include "hurchalla/programming_by_contract/programming_by_contract.h"
 #include <cstdint>
-#include <type_traits>
-#include <limits>
-#include <memory>
 #include <cstddef>
 
 #if defined(_MSC_VER)
@@ -27,15 +24,20 @@ namespace hurchalla { namespace factoring {
 // subheading "Testing against small sets of bases".
 // See also:
 // https://miller-rabin.appspot.com/
-template <typename T, typename MontType>
-bool is_prime_mr_trials(const T* bases,
+template <typename B, typename MontType>
+bool is_prime_mr_trials(const B* bases,
                         std::size_t total_bases,
                         const MontType& mont)
 {
     using std::size_t;
-    static_assert(std::is_same<T, typename MontType::T_type>::value, "");
-    T num = mont.getModulus();
+    using T = typename MontType::T_type;
+    namespace ma = hurchalla::modular_arithmetic;
+    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
+    static_assert(ma::ma_numeric_limits<B>::is_integer, "");
+    static_assert(ma::ma_numeric_limits<T>::max() >=
+                  ma::ma_numeric_limits<B>::max(), "");
 
+    T num = mont.getModulus();
     HPBC_ASSERT2(num % 2 == 1);
 
     auto unity = mont.getUnityValue();
@@ -46,21 +48,24 @@ bool is_prime_mr_trials(const T* bases,
     // write num−1 as 2^r * d by factoring powers of 2 from num−1
     T d = static_cast<T>(num - 1);
     int r = 0;
-    while (d % 2 == 0) {
+    HPBC_ASSERT2(d > 0);
+    HPBC_ASSERT2(d % 2 == 0);
+    do {
         ++r;
         d = static_cast<T>(d/2);
-    }
+    } while (d % 2 == 0);
     HPBC_ASSERT2(r > 0);
 
     for (size_t i=0; i<total_bases; ++i) {
         if (bases[i] == 0)
             continue;
-        auto result = mont.pow(mont.convertIn(bases[i]), d);
+        auto basei = mont.convertIn(static_cast<T>(bases[i]));
+        auto result = mont.pow(basei, d);
         auto canonicalResult = mont.getCanonicalValue(result);
         if (canonicalResult == unity || canonicalResult == negativeOne)
             continue;
         for (int j=1; j<r; ++j) {
-            result = mont.square(result);
+            result = mont.multiply(result, result);
             canonicalResult = mont.getCanonicalValue(result);
             if (canonicalResult == negativeOne)
                 break;
@@ -89,23 +94,23 @@ bool is_prime_miller_rabin(const MontType& mont)
     using T = typename MontType::T_type;
     namespace ma = hurchalla::modular_arithmetic;
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(ma::ma_numeric_limits<T>::digits <= 128, "");
 
     T num = mont.getModulus();
 
     HPBC_PRECONDITION2(num >= 3);
     HPBC_ASSERT2(num % 2 == 1);
 
-    if (num > std::numeric_limits<uint64_t>::max()) {
+    static_assert(ma::ma_numeric_limits<T>::digits <= 128, "");
+    if (num > ma::ma_numeric_limits<uint64_t>::max()) {
         // Other algorithms for primality testing are likely to be far more
         // suitable for large 128 bit numbers than Miller-Rabin, but we can
         // still use Miller-Rabin.
         //
-        // Using Miller-Rabin for large 128 bit numbers, we don't have a known
-        // deterministic test.  Instead we'll depend upon setting up an
-        // incredibly low probability that the trials will ever declare that a
-        // composite number is prime.  We can do this by using a very large
-        // number of bases.  According to
+        // Using Miller-Rabin for large 128 bit numbers, there is no known set
+        // of bases to use for a deterministic test.  Instead we'll depend
+        // upon setting up an incredibly low probability that we will ever
+        // declare that a composite number is prime after completing the trials.
+        // We can do this by using a very large number of bases.  According to
         // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Miller%E2%80%93Rabin_test
         // if k is the number of bases, then the probability is 4^(-k) that
         // the trials will declare that a particular composite number is prime
@@ -133,14 +138,11 @@ bool is_prime_miller_rabin(const MontType& mont)
             479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569,
             571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643,
             647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719 };
-        constexpr size_t total_bases = 128;
-        static_assert(sizeof(bases)/sizeof(bases[0]) == total_bases, "");
-        auto basesT = std::unique_ptr<T[]>(new T[total_bases]);
-        for (size_t i=0; i<total_bases; ++i)
-            basesT[i] = static_cast<T>(bases[i]);
-        return is_prime_mr_trials<T, MontType>(basesT.get(), total_bases, mont);
+        constexpr size_t total_bases = sizeof(bases)/sizeof(bases[0]);
+        static_assert(total_bases == 128, "");
+        return is_prime_mr_trials(bases, total_bases, mont);
 
-    } else if (num > std::numeric_limits<uint32_t>::max()) {
+    } else if (num > ma::ma_numeric_limits<uint32_t>::max()) {
         uint64_t num64 = static_cast<uint64_t>(num);
 
         // All bases here are smaller than num (we know num is > UINT32_MAX), so
@@ -155,7 +157,7 @@ bool is_prime_miller_rabin(const MontType& mont)
             const T bases[] = { 15, static_cast<T>(176006322),
                                 static_cast<T>(4221622697) };
             size_t total_bases = sizeof(bases)/sizeof(bases[0]);
-            return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);
+            return is_prime_mr_trials(bases, total_bases, mont);
         } else {
             // According to http://miller-rabin.appspot.com, the first 7 bases
             // below are sufficient for num up to 2^64.  Practically speaking, I
@@ -176,11 +178,12 @@ bool is_prime_miller_rabin(const MontType& mont)
                                 static_cast<T>(1795265022), 3, 5, 7, 11, 13, 17,
                                 19, 23, 27, 31, 37 };
             size_t total_bases = sizeof(bases)/sizeof(bases[0]);
-            return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);
+            return is_prime_mr_trials(bases, total_bases, mont);
         }
     } else {   // num < 2^32
         // All initialization values for bases, and ranges of validity come from
         // http://miller-rabin.appspot.com/
+        // I have verified they produce correct results for all numbers in range
 
         uint32_t num32 = static_cast<uint32_t>(num);
         T bases[3];
@@ -230,7 +233,7 @@ bool is_prime_miller_rabin(const MontType& mont)
             bases[0] = static_cast<T>(UINT32_C(921211727) % num32);
         }
 #endif
-        return is_prime_mr_trials<T, MontType>(bases, total_bases, mont);
+        return is_prime_mr_trials(bases, total_bases, mont);
     }
 }
 

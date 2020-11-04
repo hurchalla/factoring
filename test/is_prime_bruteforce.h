@@ -17,15 +17,16 @@ bool is_prime_bruteforce(T x)
 {
     namespace ma = hurchalla::modular_arithmetic;
     static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    HPBC_PRECONDITION2(x >= 0);
+    static_assert(!std::numeric_limits<T>::is_signed, "");
 
     if (x < 2)
         return false;
     if (x%2 == 0)
         return (x==2);
 
-    T s = integer_sqrt(x);
-    for (T f=3; f<=s; f+=2) {  // skip even factors- we already checked them
+    T s = static_cast<T>(integer_sqrt(x) + 1);
+    // skip even factors- we already checked them
+    for (T f = 3; f < s; f = static_cast<T>(f + 2)) {
         if (x%f == 0) {
             HPBC_ASSERT2(f < x);
             return false;

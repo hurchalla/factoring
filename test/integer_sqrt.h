@@ -36,7 +36,7 @@ safe_right_shift(T x1)
 // The integer sqrt algorithm here is based on Newton's method.  For a detailed
 // description and proof of correctness of the algorithm, see "Hacker's Delight"
 // 2nd edition, chapter 11 section 1, by Henry S. Warren.  This function is
-// adapted from Warren's Figure 11-1 function isqrt(uint_32_t).
+// adapted from Warren's Figure 11-1 function isqrt(unsigned int).
 template <typename T>
 T integer_sqrt(T x)
 {

@@ -23,10 +23,12 @@ include(GoogleTest)
 add_executable(test_hurchalla_factoring)
 
 target_sources(test_hurchalla_factoring PRIVATE
-               test_factoring.cpp
-               is_prime_wheel210.h
-               is_prime_bruteforce.h
+               factorize_bruteforce.h
                integer_sqrt.h
+               is_prime_bruteforce.h
+               test_is_prime.cpp
+               test_is_prime_miller_rabin.cpp
+               test_wheel_factorization210.cpp
                )
 
 EnableMaxWarnings(test_hurchalla_factoring)

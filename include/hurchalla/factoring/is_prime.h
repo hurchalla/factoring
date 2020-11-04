@@ -6,8 +6,8 @@
 
 
 #include "hurchalla/factoring/detail/impl_is_prime.h"
+#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
 #include "hurchalla/programming_by_contract/programming_by_contract.h"
-#include <limits>
 
 namespace hurchalla { namespace factoring {
 
@@ -15,7 +15,9 @@ namespace hurchalla { namespace factoring {
 template <typename T>
 bool is_prime(T x)
 {
-    static_assert(std::numeric_limits<T>::is_integer, "");
+    namespace ma = hurchalla::modular_arithmetic;
+    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
+    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 0);
 
     return impl_is_prime(x);

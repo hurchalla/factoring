@@ -80,7 +80,7 @@ bool is_prime_mr_trials(const B* bases,
 
 // So far I've verified the correctness of is_prime() for all odd input values
 // from 0 to 34359738368 (== 2^35), looking for any mismatch compared to
-// is_prime_wheel210() in  test/is_prime_wheel210.h
+// is_prime_wheel210() in  is_prime_wheel210.h
 static constexpr std::uint64_t MAX_VERIFIED_NUMBER_MONTGOMERY_ISPRIME =
                                                           UINT64_C(34359738368);
 

@@ -16,6 +16,11 @@
 #include <numeric>
 #include <functional>
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+#endif
+
 namespace hurchalla { namespace factoring {
 
 
@@ -40,11 +45,17 @@ namespace hurchalla { namespace factoring {
 //   able to completely factor x and the destination range consists of all the
 //   factors.  If q > 1, then this indicates the function was not able to
 //   completely factorize x, and q represents the value still remaining to be
-//   factored.  q will never be set to zero (or a value < 0).
+//   factored.  q will never be set to zero (or a value < 0).  If max_factor
+//   is defaulted or set to a value >= sqrt(x), then the function will always
+//   completely factor x and set q = 1.
 //
 // wheel_factorization210 guarantees it will trial all potential prime factors
-// less than or equal to max_factor.
+// less than or equal to max_factor.  It will usually also trial a few factors
+// that are larger than max_factor.
 
+// for discussion purposes inside the function, let the theoretical constant
+// R == 1 << ma_numeric_limits<T>::digits.  For example, for a type T that is
+// uint16_t, R would equal 65536 and sqrtR would equal 256.
 
 template <class OutputIt, typename T>
 OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
@@ -93,19 +104,33 @@ OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
     // below - we already tested 2,3,5,7 via small_trial_division256().
     P maybe_factor;
     for (P start=cycle_start; ; start=static_cast<P>(start + cycle_len)) {
+        maybe_factor = start + wheel[0];
+        if (maybe_factor > max_factor)
+            break;
+        // Since the above clause leaves the loop, we know at this point
+        // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
+        // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
+        // which means (maybe_factor*maybe_factor) doesn't overflow.
+        HPBC_ASSERT2(maybe_factor < sqrtR);
+        if (maybe_factor * maybe_factor > q2)
+            break;   // no factors ever exist > sqrt(q)
+        // This inner loop will usually trial a few maybe_factor(s) that are
+        // greater than max_factor or sqrt(q2), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
-            HPBC_ASSERT2(q2 > 1);
+            // Assert that  start + wheel[i]  will never overflow.  Let
+            // S = ma_numeric_limits<P>::max().  Overflow would mean that
+            // start + wheel[i] > S, or equivalently  S - wheel[i] < start.  We
+            // asserted above that  start + wheel[0] == maybe_factor < sqrtR.
+            // So overflow woule mean  S - wheel[i] < start < sqrtR - wheel[0],
+            // which would mean  S - sqrtR < wheel[i] - wheel[0] < cycle_len ==
+            // 210.  But S - sqrtR < 210 is impossible because P is always at
+            // at least as large as uint16_t (due to promotion rules it's based
+            // upon), and thus S >= 65535, and sqrtR is always <= sqrt(S+1).
+            HPBC_ASSERT2(cycle_len == 210); // to support the preceding comment
+            HPBC_ASSERT2(start <= ma::ma_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
-            if (maybe_factor > max_factor)
-                goto endloop;
-            // Since the above clause leaves the loop, we know at this point
-            // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
-            // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
-            // which means (maybe_factor*maybe_factor) doesn't overflow.
-            HPBC_ASSERT2(maybe_factor < sqrtR);
-            if (maybe_factor * maybe_factor > q2)
-                goto endloop;   // no factors ever exist > sqrt(q)
             P div_result;
+            HPBC_ASSERT2(q2 > 1);
             // test whether  maybe_factor divides q2  without any remainder.
             while (trial_divide(div_result, q2, maybe_factor)) {
                 *iter++ = static_cast<T>(maybe_factor);
@@ -117,7 +142,6 @@ OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
             }
         }
     }
-endloop:
     if (maybe_factor >= sqrtR || maybe_factor * maybe_factor > q2) {
         // Since R > q2, we know sqrtR > sqrt(q2).  Therefore
         // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q2).
@@ -135,5 +159,9 @@ endloop:
 
 
 }}  // end namespace
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic pop
+#endif
 
 #endif

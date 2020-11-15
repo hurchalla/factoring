@@ -24,6 +24,12 @@
 namespace hurchalla { namespace factoring {
 
 
+// TODO: empirically find a decent value for max_trial_factor.
+#ifndef HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR
+#  define HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR 255
+#endif
+
+
 template <typename T>
 bool impl_is_prime(T x)
 {
@@ -38,9 +44,9 @@ bool impl_is_prime(T x)
     // First try small trial divisions to find easy factors or easy primality.
     // If primality still unknown, use miller-rabin to prove prime or composite.
 
-    // TODO: empirically find a decent value for max_trial_factor.  It will need
-    // to fit in a type T variable.
-    constexpr T max_trial_factor = 255;
+    constexpr T max_trial_factor =
+         (HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR <= ma::ma_numeric_limits<T>::max())
+         ? HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR : ma::ma_numeric_limits<T>::max();
     bool isSuccessful;
     bool isPrime = is_prime_wheel210(x, &isSuccessful, max_trial_factor);
     if (isSuccessful)

@@ -24,7 +24,12 @@ bool is_prime_bruteforce(T x)
     if (x%2 == 0)
         return (x==2);
 
+    // normally I'd use s = integer_sqrt(x), and test f <= s in the loop, but
+    // gcc complains about a missed loop optimization doing it that way because
+    // it can't prove overflow of f is impossible (even though it indeed would
+    // be impossible).  The following is equivalent and it silences gcc.
     T s = static_cast<T>(integer_sqrt(x) + 1);
+
     // skip even factors- we already checked them
     for (T f = 3; f < s; f = static_cast<T>(f + 2)) {
         if (x%f == 0) {

@@ -154,12 +154,12 @@ trial_divide(T& div_result, T x, T n)
 // technique.  Note that if this function is proven correct, it opens up the
 // ability for a SIMD version of this function to be created, and used by
 // clients, which could offer 2-4x the throughput of this version (for 128 bit
-// to 256 bit vectors).  Some quesions about performance that I don't have
-// answers to on this function's performance: depending on compiler flags could
-// there be slowdown due to the compiler handling the possibility of divide by
-// zero, or handling possibility of other floating point exceptions, or NaNs or
-// infinities?  In theory, the compiler should at least see NaNs/inifinites are
-// impossible in this function.
+// to 256 bit vectors).  Some quesions that I don't have answers to on this
+// function's performance: depending on compiler flags could there be slowdown
+// due to the compiler handling the possibility of divide by zero, or handling
+// possibility of other floating point exceptions, or NaNs or infinities?  In
+// theory, the compiler should at least see NaNs/inifinites are impossible in
+// this function.
 // This function is experimental because I have not proven that calculating
 // the quotient of two uint32_t variables via a double (floating point) division
 // produces the same result as a straightforward divide of the two uint32_t

@@ -62,8 +62,8 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
     if (q%7 == 0) return (q==7);
     if (q%11 == 0) return (q==11);
     if (q%13 == 0) return (q==13);
-    if (std::is_same<P, uint8_t>::value)
-        return true;   // uint8_t doesn't have any factors > 13
+    if (std::is_same<T, uint8_t>::value)
+        return true;   // if x is type uint8_t, it won't have any factors > 13
 
     // The wheel spans the 210 number range [17, 227), skipping all multiples
     // of 2,3,5,7 within that range
@@ -79,25 +79,38 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
     // Note the wheel pattern cycles every 2*3*5*7 == 210 numbers.
     P maybe_factor;
     for (P start=0; ; start=static_cast<P>(start + cycle_len)) {
+        maybe_factor = start + wheel[0];
+        if (maybe_factor > max_factor)
+            break;
+        // Since the above clause leaves the loop, we know at this point
+        // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
+        // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
+        // which means (maybe_factor*maybe_factor) doesn't overflow.
+        HPBC_ASSERT2(maybe_factor < sqrtR);
+        // if no primes <= sqrt(q) are factors of q, q must be prime.
+        if (maybe_factor * maybe_factor > q)
+            return true;
+        // This inner loop will usually trial a few maybe_factor(s) that are
+        // greater than max_factor or sqrt(q), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
+            // Assert that  start + wheel[i]  will never overflow.  Let
+            // S = ma_numeric_limits<P>::max().  Overflow would mean that
+            // start + wheel[i] > S, or equivalently  S - wheel[i] < start.  We
+            // asserted above that  start + wheel[0] == maybe_factor < sqrtR.
+            // So overflow woule mean  S - wheel[i] < start < sqrtR - wheel[0],
+            // which would mean  S - sqrtR < wheel[i] - wheel[0] < cycle_len ==
+            // 210.  But S - sqrtR < 210 is impossible because P is always at
+            // at least as large as uint16_t (due to promotion rules it's based
+            // upon), and thus S >= 65535, and sqrtR is always <= sqrt(S+1).
+            HPBC_ASSERT2(cycle_len == 210); // to support the preceding comment
+            HPBC_ASSERT2(start <= ma::ma_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
-            if (maybe_factor > max_factor)
-                goto endloop;
-            // Since the above clause leaves the loop, we know at this point
-            // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
-            // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
-            // which means (maybe_factor*maybe_factor) doesn't overflow.
-            HPBC_ASSERT2(maybe_factor < sqrtR);
-            // if no primes <= sqrt(q) are factors of q, q must be prime.
-            if (maybe_factor * maybe_factor > q)
-                return true;
             P div_result;
             // test whether  maybe_factor divides q  without any remainder.
             if (trial_divide(div_result, q, maybe_factor))
                 return false;
         }
     }
-endloop:
     if (maybe_factor >= sqrtR || maybe_factor * maybe_factor > q) {
         // Since R > q, we know sqrtR > sqrt(q).  Therefore
         // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q).

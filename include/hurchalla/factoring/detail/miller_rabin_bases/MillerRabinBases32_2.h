@@ -7,6 +7,8 @@
 
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"
+#include "hurchalla/util/compiler_macros.h"
+#include <cstdint>
 #include <type_traits>
 #include <array>
 
@@ -27,7 +29,8 @@ public:
     // 'num' is the unsigned 32 bit number being tested for primality.
     // This function returns 2 bases that can be used by miller-rabin testing
     // to correctly determine (non-probabilistically) the primality of num.
-    static std::array<std::uint16_t, 2> get(std::uint32_t num)
+    static HURCHALLA_FORCE_INLINE
+    std::array<std::uint16_t, 2> get(std::uint32_t num)
     {
         // I generated/verified the hash table and bases.  See README.TXT
         std::array<std::uint16_t, 2> bases;

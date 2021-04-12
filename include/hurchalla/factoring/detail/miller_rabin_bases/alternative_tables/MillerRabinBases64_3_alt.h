@@ -1,12 +1,16 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_ALT_H_INCLUDED
 #define HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_ALT_H_INCLUDED
 
 
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"
+#include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
 #include <type_traits>
+#include <array>
 
 namespace hurchalla { namespace detail {
 
@@ -22,33 +26,24 @@ namespace hurchalla { namespace detail {
 // Note however that montgomery arithmetic (which is one way to implement the
 // miller-rabin test) always requires odds.
 
-// Implementation note: this struct has a DUMMY parameter (defaulted by the
-// primary template to void), so that this specialization can be a partial
-// specialization that is templated on DUMMY rather than being a full explicit
-// specialization.  This allows it to out-of-line define its static member
-// variables within this header without any danger of ODR violations.
-// Unfortunately out-of-line definitions are necessary up until C++17 (17 allows
-// the inline keyword to be used on member variables, which is much cleaner):
-// https://stackoverflow.com/questions/8016780/undefined-reference-to-static-constexpr-char
-// Also, having a partial specialization (via DUMMY) ensures that if the struct
-// is never used, the struct's static table array will not exist and will thus
-// use no memory.  Since DUMMY is always void (enforced by static_assert), the
-// struct will be instantiated at most once, which ensures that there will never
-// be more than one copy of the table array in memory.
-
+// see MillerRabinBases.h for why this template uses a DUMMY parameter.
 template <typename DUMMY>
 struct MillerRabinBases<64, 3, DUMMY> {
     static_assert(std::is_same<DUMMY, void>::value, "");
 public:
     // 'num' is the unsigned 64 bit number being tested for primality.
-    // 'bases' will be set to 3 bases that can be used by miller-rabin testing
+    // This function returns 3 bases that can be used by miller-rabin testing
     // to correctly determine (non-probabilistically) the primality of num.
-    static void get(std::uint16_t (&bases)[3], std::uint64_t num)
+    static HURCHALLA_FORCE_INLINE
+    std::array<std::uint16_t, 3> get(std::uint64_t num)
     {
+        // I generated/verified these hash tables and bases.  See README.TXT
+        std::array<std::uint16_t, 3> bases;
         bases[0] = 2;
         std::uint32_t hash_bucket = static_cast<std::uint32_t>(num) >> 19;
         bases[1] = table[hash_bucket][0];
         bases[2] = table[hash_bucket][1];
+        return bases;
     }
 private:
     static constexpr int SIZE = 8192;
@@ -8257,3 +8252,5 @@ constexpr std::uint16_t MillerRabinBases<64, 3, DUMMY>::table[][2];
 
 
 }}  // end namespace
+
+#endif

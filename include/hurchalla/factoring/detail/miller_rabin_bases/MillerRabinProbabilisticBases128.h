@@ -6,6 +6,7 @@
 #define HURCHALLA_FACTORING_MILLER_RABIN_PROBABILISTIC_BASES128_H_INCLUDED
 
 
+#include <cstdint>
 #include <type_traits>
 #include <array>
 

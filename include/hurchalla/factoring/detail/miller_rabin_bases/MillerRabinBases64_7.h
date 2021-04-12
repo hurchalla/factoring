@@ -7,6 +7,8 @@
 
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"
+#include "hurchalla/util/compiler_macros.h"
+#include <cstdint>
 #include <type_traits>
 #include <array>
 
@@ -27,7 +29,8 @@ struct MillerRabinBases<64, 7, DUMMY> {
     // This function returns 7 bases that can be used by miller-rabin testing
     // to correctly determine (non-probabilistically) the primality of any 64
     // bit unsigned integer.
-    static std::array<std::uint32_t, 7> get(std::uint64_t)
+    static HURCHALLA_FORCE_INLINE
+    std::array<std::uint32_t, 7> get(std::uint64_t)
     {
         // These 7 bases were discovered by Jim Sinclair, according to
         // http://miller-rabin.appspot.com

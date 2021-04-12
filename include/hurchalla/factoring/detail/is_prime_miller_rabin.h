@@ -7,17 +7,28 @@
 
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinProbabilisticBases128.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_2.h"
-#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_3.h"
+#ifdef HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3
+# include "hurchalla/factoring/detail/miller_rabin_bases/alternative_tables/MillerRabinBases64_3_alt.h"
+#else
+# include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_3.h"
+#endif
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_4.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_5.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_6.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_7.h"
+
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_2.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_3.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_3.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_2.h"
+
 #include "hurchalla/montgomery_arithmetic/low_level_api/optimization_tag_structs.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
@@ -367,13 +378,21 @@ struct MillerRabinMontgomery {
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // We restrict the allowed types of T to only those types for which this
     // function would be an efficient choice:
-    static_assert(ut_numeric_limits<T>::digits == LOG2_MODULUS_LIMIT ||
-              (ut_numeric_limits<T>::digits > LOG2_MODULUS_LIMIT &&
+    static_assert((ut_numeric_limits<T>::digits/2 < LOG2_MODULUS_LIMIT &&
+                   LOG2_MODULUS_LIMIT <= ut_numeric_limits<T>::digits) ||
+              (LOG2_MODULUS_LIMIT < ut_numeric_limits<T>::digits &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    using U = typename sized_uint<LOG2_MODULUS_LIMIT>::type;
-    // the number tested must be in the interval (1, 1 << LOG2_MODULUS_LIMIT)
-    HPBC_PRECONDITION2(1 < num && num <= ut_numeric_limits<U>::max());
+    constexpr int POW2_LIMIT = []{
+        int val=1;
+        for (; val<LOG2_MODULUS_LIMIT; val*=2)
+            ;
+        return val;
+    }();
+    static_assert(POW2_LIMIT >= LOG2_MODULUS_LIMIT, "");
+    using U = typename sized_uint<POW2_LIMIT>::type;
+    HPBC_PRECONDITION2(1 < num &&
+                       num < (static_cast<U>(1) << LOG2_MODULUS_LIMIT));
     const auto bases = MillerRabinBases<LOG2_MODULUS_LIMIT, TOTAL_BASES>::
                                                        get(static_cast<U>(num));
     return miller_rabin_trials<TRIAL_SIZE>(mf, bases);
@@ -584,14 +603,22 @@ bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
 // The default functions for miller-rabin primality testing:
 // ----------------------------
 
-// Implementation Notes: there are two general principles guiding the choices
+// Implementation Notes: there are three general principles guiding the choices
 // in the default functions below.
 // First, we avoid optimizing speed via choosing to use a small number of bases,
 // whenever this would require a large hash table to be used.  We can't assume
 // large memory and cache usage would be justified for an average caller.
 // Nevertheless, we do use this optimization for the defaults if the associated
 // hash table is tiny (<= 320 bytes).
-// Second, we normally choose an odd number of TOTAL_BASES and a TRIAL_SIZE of
+// Second, in order to minimize the compiled machine code size, we try to avoid
+// causing additional function template instantiations when it's reasonable.
+// For example, the 64bit is_prime_miller_rabin template function below has an
+// optimization to call is_prime_miller_rabin64_3_350269456337 which fits nicely
+// with this guideline because the called function needs instantiations of
+// mr_trial() with TRIAL_SIZE 1 and 2 - those exact same instantiations are
+// also needed by the template function's MillerRabinMontgomery::is_prime call.
+// Thus it causes very little increase in machine code size.
+// Third, we normally choose an odd number of TOTAL_BASES and a TRIAL_SIZE of
 // 2, which ensures that the first miller-rabin trial has a trial size of 1 and
 // all the rest have a trial size of 2.  The first trial will almost always be
 // able to detect a composite number, so we maximize its speed at doing this by
@@ -614,11 +641,11 @@ bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
 // can be justified (probably) for the defaults, but nevertheless it increases
 // pressure on the instruction cache.  Increased use of i-cache always has the
 // potential for a net negative impact on program performance.  This is why we
-// do not use a TRIAL_SIZE of 3 or 4 in the defaults, despite the fact that when
-// testing primes, we might perhaps expect a doubling in performance compared to
-// TRIAL_SIZE 1, due to better instruction level parallelism.  The downside of a
-// 3-4x increase in code size (for the involved functions) seems too great a
-// cost for defaults.
+// generally avoid a TRIAL_SIZE of 3 or 4 in the defaults, despite the fact that
+// when testing primes, we might perhaps expect a doubling in performance
+// compared to TRIAL_SIZE 1, due to better instruction level parallelism.  The
+// downside of a 3-4x increase in code size (for the involved functions) seems
+// too great a cost for defaults.
 //
 // Just as a FYI reference, on Intel Haswell, performing a single miller-rabin
 // trial with TRIAL_SIZE 2 (processing 2 bases) takes roughly 1.2x longer than a
@@ -642,6 +669,10 @@ is_prime_miller_rabin(const MontType& mf)
     // but a trial size of 4 will usually significantly improve performance
     // over trial size 1, due to more efficient use of the CPU's pipelined
     // and/or superscalar execution units.
+    // We typically avoid a TRIAL_SIZE > 2 due to the machine code size increase
+    // it causes, but this function processes so many bases that any negative
+    // effect on instruction cache should be more than made up for by the
+    // repeated speed gain from processing more bases per trial.
     constexpr std::size_t TOTAL_BASES = 128;
     constexpr std::size_t TRIAL_SIZE = 4;
     return MillerRabinMontgomery

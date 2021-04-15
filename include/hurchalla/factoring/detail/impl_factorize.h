@@ -5,19 +5,22 @@
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/pollard_rho_factorize.h"
-#include "hurchalla/factoring/detail/wheel_factorization210.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/factoring/detail/small_trial_division2048.h"
 
-namespace hurchalla { namespace factoring {
+#include "hurchalla/factoring/detail/small_trial_division256.h"
+#include "hurchalla/factoring/detail/pollard_rho_factorize.h"
+#include "hurchalla/factoring/detail/factorize_wheel210.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
+
+namespace hurchalla { namespace detail {
 
 
 // TODO determine good max_factor
 #ifndef HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
-// 256 + 0*210  results in skipping wheel_factorization210(), and only using
+// 256 + 0*210  results in skipping factorize_wheel210(), and only using
 // small_division256().  We want to use 256 + some multiple of 210, since that
-// makes an optimal max trial factor for wheel_factorization210.
+// makes an optimal max trial factor for factorize_wheel210.
 #  define HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR (256 + 0*210)
 #endif
 
@@ -30,29 +33,64 @@ namespace hurchalla { namespace factoring {
 //#define HURCHALLA_USE_WHEEL_FACTORIZATION
 
 
+#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048
+
+// estimate min at 318
+// 1165 2541
+// estimate min at 320
+// 1147 2540
+
+//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 310
+// 1138 2538
+//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 200
+// 1157 2537
+//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 250
+// 1143 2537
+#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 280
+// 1139 2537
+// 1142 2540
+
+// 1098 2536
+
+// 1374 2548
+
+// 1101 2537
+
 
 template <template<class> class Functor, class OutputIt, typename T>
 T impl_factorize(OutputIt iter, T x)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
-    static_assert(ma::ma_numeric_limits<T>::digits % 2 == 0, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::digits % 2 == 0, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
+    constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
     T q;
+#ifdef HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048
+    T next_prime;
+    T index_limit = HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT;
+    iter = small_trial_division2048(iter, q, x, next_prime, index_limit);
+    HPBC_ASSERT2(q >= 1);  // small_trial_division2048 guarantees this
+    if (q == 1)   // if small_trial_division2048 completely factored x
+        return 0;
+    // small_trial_division2048() guarantees that any factor of x that is less
+    // than next_prime*next_prime must be prime.
+    T threshold_always_prime = (next_prime < sqrtR) ?
+          static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
+#else
 #ifdef HURCHALLA_USE_WHEEL_FACTORIZATION
-    constexpr T sqrtR = static_cast<T>(1)<<(ma::ma_numeric_limits<T>::digits/2);
     // Ensure max_trial_factor * max_trial_factor never overflows.
     // Note that no factors ever exist >= sqrtR, so limiting to sqrtR-1 is fine.
     constexpr T max_trial_factor =
-          (HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR < sqrtR)
-          ? HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR : static_cast<T>(sqrtR - 1);
-    iter = wheel_factorization210(iter, q, x, max_trial_factor);
-    HPBC_ASSERT2(q >= 1);  // wheel_factorization210 guarantees this
-    if (q == 1)   // if wheel_factorization210 completely factored x
+           (HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR < sqrtR)
+           ? HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR : static_cast<T>(sqrtR - 1);
+    iter = factorize_wheel210(iter, q, x, max_trial_factor);
+    HPBC_ASSERT2(q >= 1);  // factorize_wheel210 guarantees this
+    if (q == 1)   // if factorize_wheel210 completely factored x
         return 0;
-    T threshold_always_prime= static_cast<T>(max_trial_factor*max_trial_factor);
+    constexpr T threshold_always_prime =
+                              static_cast<T>(max_trial_factor*max_trial_factor);
 #else
     // factor out all primes < 256
     iter = small_trial_division256(iter, q, x);
@@ -61,7 +99,9 @@ T impl_factorize(OutputIt iter, T x)
         return 0;
     // small_trial_division256() guarantees that any factor of x that is less
     // than 257*257 must be prime.
-    T threshold_always_prime = static_cast<T>(257 * 257);
+    constexpr T threshold_always_prime = (257<sqrtR) ? static_cast<T>(257*257) :
+                                                    ut_numeric_limits<T>::max();
+#endif
 #endif
 
     T iterations_performed;

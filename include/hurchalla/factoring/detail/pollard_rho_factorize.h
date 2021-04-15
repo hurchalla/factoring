@@ -6,43 +6,39 @@
 
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
-#include "hurchalla/factoring/detail/wheel_factorization210.h"
+#include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/factoring/greatest_common_divisor.h"
-#include "hurchalla/montgomery_arithmetic/detail/MontyFullRange.h"
-#include "hurchalla/montgomery_arithmetic/detail/MontyHalfRange.h"
-#include "hurchalla/montgomery_arithmetic/detail/MontyQuarterRange.h"
-#include "hurchalla/montgomery_arithmetic/detail/MontySixthRange.h"
-#include "hurchalla/montgomery_arithmetic/detail/MontyWrappedStandardMath.h"
-#include "hurchalla/montgomery_arithmetic/detail/sized_uint.h"
+#include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/modular_arithmetic/detail/platform_specific/compiler_macros.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/sized_uint.h"
+#include "hurchalla/util/compiler_macros.h"
+#include "hurchalla/util/programming_by_contract.h"
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla { namespace detail {
 
 
+// defined lower in this file
 template <template<class> class Functor, class OutputIt, typename T>
 OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime = 0,
                                T base_c = 1, T* pIterations_performed = nullptr);
 
 
-namespace detail {
+namespace prf_detail {
 
 template <template<class> class Functor, class MF, class OutputIt, typename T>
 OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
                                                        T* pIterations_performed)
 {
-    namespace ma = hurchalla::modular_arithmetic;
     using S = typename MF::T_type;
     using C = typename MF::CanonicalValue;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
-    static_assert(ma::ma_numeric_limits<S>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<S>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<S>::is_integer, "");
+    static_assert(!ut_numeric_limits<S>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     HPBC_PRECONDITION2(x % 2 == 1);  // odd x is required for montgomery form
-    HPBC_PRECONDITION2(x <= ma::ma_numeric_limits<S>::max());
+    HPBC_PRECONDITION2(x <= ut_numeric_limits<S>::max());
 
     if (pIterations_performed) *pIterations_performed = 0;
 
@@ -110,18 +106,17 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
     // set the number of iterations to max possible, since Pollard Rho failed to
     // find any factor at all.
     if (pIterations_performed)
-        *pIterations_performed = ma::ma_numeric_limits<T>::max();
+        *pIterations_performed = ut_numeric_limits<T>::max();
 
     // Since we didn't find a factor, fall back to slow trial division
     T q;
-    iter = wheel_factorization210(iter, q, x);
-    // wheel_factorization210 should always completely factor x (and set q = 1)
+    iter = factorize_wheel210(iter, q, x);
+    // factorize_wheel210 should always completely factor x (and set q = 1)
     HPBC_ASSERT2(q == 1);
     return iter;
 }
 
-
-} // end namespace detail
+} // end namespace prf_detail
 
 
 
@@ -136,40 +131,29 @@ template <template<class> class Functor, class OutputIt, typename T>
 OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
                                              T base_c, T* pIterations_performed)
 {
-    namespace mont = hurchalla::montgomery_arithmetic;
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     HPBC_PRECONDITION2(x % 2 == 1);  // x odd is required for montgomery form
 
-    using S = mont::sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
+    using S = sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
     // factor using a native integer type whenever possible
-    if (x <= ma::ma_numeric_limits<S>::max()) {
+    if (x <= ut_numeric_limits<S>::max()) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
-        using MF = mont::MontgomeryForm<S, mont::MontyWrappedStandardMath<S>>;
-        return detail::pr_factorize<Functor, MF>(iter, x,
+        using MF = MontgomeryStandardMathWrapper<S>;
+        return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
 #else
         S Sdiv2 = static_cast<S>(static_cast<S>(1) <<
                                               (HURCHALLA_TARGET_BIT_WIDTH - 1));
         S Sdiv4 = static_cast<S>(Sdiv2 / 2);
-        S Sdiv6 = static_cast<S>(Sdiv2 / 3);
-        if (x < Sdiv6) {
-            using MF = mont::MontgomeryForm<S, mont::MontySixthRange<S>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
-                         threshold_always_prime, base_c, pIterations_performed);
-        } else if (x < Sdiv4) {
-            using MF = mont::MontgomeryForm<S, mont::MontyQuarterRange<S>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
-                         threshold_always_prime, base_c, pIterations_performed);
-        } else if (x < Sdiv2) {
-            using MF = mont::MontgomeryForm<S, mont::MontyHalfRange<S>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
+        if (x < Sdiv4) {
+            using MF = MontgomeryQuarter<S>;
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
-            using MF = mont::MontgomeryForm<S, mont::MontyFullRange<S>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
+            using MF = MontgomeryFull<S>;
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }
 #endif
@@ -177,31 +161,22 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
     // If we reach this point, the following clause will be true.  We explicitly
     // use an 'if' anyway, so that we can be sure the compiler will not generate
     // any code for it when T digits <= HURCHALLA_TARGET_BIT_WIDTH.
-    if (ma::ma_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
+    if (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
-        using MF = mont::MontgomeryForm<T, mont::MontyWrappedStandardMath<T>>;
-        return detail::pr_factorize<Functor, MF>(iter, x,
+        using MF = MontgomeryStandardMathWrapper<T>;
+        return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
 #else
         T Rdiv2 = static_cast<T>(static_cast<T>(1) <<
-                                        (ma::ma_numeric_limits<T>::digits - 1));
+                                            (ut_numeric_limits<T>::digits - 1));
         T Rdiv4 = static_cast<T>(Rdiv2 / 2);
-        T Rdiv6 = static_cast<T>(Rdiv2 / 3);
-        if (x < Rdiv6) {
-            using MF = mont::MontgomeryForm<T, mont::MontySixthRange<T>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
-                         threshold_always_prime, base_c, pIterations_performed);
-        } else if (x < Rdiv4) {
-            using MF = mont::MontgomeryForm<T, mont::MontyQuarterRange<T>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
-                         threshold_always_prime, base_c, pIterations_performed);
-        } else if (x < Rdiv2) {
-            using MF = mont::MontgomeryForm<T, mont::MontyHalfRange<T>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
+        if (x < Rdiv4) {
+            using MF = MontgomeryQuarter<T>;
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
-            using MF = mont::MontgomeryForm<T, mont::MontyFullRange<T>>;
-            return detail::pr_factorize<Functor, MF>(iter, x,
+            using MF = MontgomeryFull<T>;
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }
 #endif

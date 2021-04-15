@@ -6,11 +6,11 @@
 
 
 #include "integer_sqrt.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/programming_by_contract.h"
 #include <vector>
 #include <limits>
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla {
 
 
 // Postconditions:
@@ -61,6 +61,6 @@ std::vector<T> factorize_bruteforce(T x)
 }
 
 
-}}  // end namespace
+}  // end namespace
 
 #endif

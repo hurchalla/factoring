@@ -6,9 +6,10 @@
 
 
 #include "hurchalla/factoring/greatest_common_divisor.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla { namespace detail {
 
 
 // Note: We generally expect Pollard Rho Brent factorization will be faster than
@@ -85,14 +86,12 @@ namespace hurchalla { namespace factoring {
 
 #include "hurchalla/modular_arithmetic/modular_multiplication.h"
 #include "hurchalla/modular_arithmetic/modular_addition.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
 
 template <class T>
 T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<U>::is_integer, "");
-    static_assert(!(ma::ma_numeric_limits<U>::is_signed), "");
+    static_assert(ut_numeric_limits<U>::is_integer, "");
+    static_assert(!(ut_numeric_limits<U>::is_signed), "");
     HPBC_PRECONDITION2(num > 2);
     HPBC_PRECONDITION2(c < num);
 
@@ -123,17 +122,17 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
             ++current_iteration;
 
             // set a := (a*a + c) % num, while ensuring overflow doesn't happen.
-            a = ma::modular_multiplication_prereduced_inputs(a, a, num);
-            a = ma::modular_addition_prereduced_inputs(a, c, num);
+            a = modular_multiplication_prereduced_inputs(a, a, num);
+            a = modular_addition_prereduced_inputs(a, c, num);
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
-            b = ma::modular_multiplication_prereduced_inputs(b, b, num);
-            b = ma::modular_addition_prereduced_inputs(b, c, num);
+            b = modular_multiplication_prereduced_inputs(b, b, num);
+            b = modular_addition_prereduced_inputs(b, c, num);
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
-            b = ma::modular_multiplication_prereduced_inputs(b, b, num);
-            b = ma::modular_addition_prereduced_inputs(b, c, num);
+            b = modular_multiplication_prereduced_inputs(b, b, num);
+            b = modular_addition_prereduced_inputs(b, c, num);
 
             absValDiff = (a>b) ? a-b : b-a;
-            T result = ma::modular_multiplication_prereduced_inputs(product,
+            T result = modular_multiplication_prereduced_inputs(product,
                                                                absValDiff, num);
             if (result == 0)
             {
@@ -169,9 +168,18 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
 */
 
 
+template <typename T>
+struct PrtGcdFunctor {
+    HURCHALLA_FORCE_INLINE HURCHALLA_FLATTEN T operator()(T a, T b)
+    {
+        return greatest_common_divisor(a, b);
+    }
+};
+
+
 // The following functor is an adaptation of the function above, using a
 // Montgomery Form type M, and Montgomery domain values and arithmetic.
-// For type M, ordinarily you'll use a template class instantiation from
+// For type M, ordinarily you'll use a template class instantiation of
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 
 template <class M>
@@ -231,40 +239,9 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
             product = result;
         }
 
-        // For discussion purposes, let R = 2^(ma_numeric_limits<T>::digits).
-        // for example if T is uint64_t, then R = 2^64.
-        // Let the integer b = mf.convertOut(product).  We can note that b is
-        // the standard integer domain representation of product, or
-        // equivalently that product is the montgomery domain representation of
-        // b.
-        // Since product is a MontgomeryValue, if we use mathematical integers
-        // (infinite precision and no overflow), we know product satisfies:
-        // product ≡ b*R (mod num);  therefore there exists some integer k such
-        // that  product == b*R + k*num.  Since num is the montgomery form's
-        // modulus, num is odd, and therefore num and R are coprime.
-
-        // Proof that gcd(product, num) == gcd(b, num)
-        // -------------------------------------------
-        // If some integer d is a divisor of num, then obviously d divides
-        // k*num.  Since num and R are coprime, d can not be a divisor of R
-        // (unless d==1);  therefore d divides b*R if and only if d divides b.
-        // Thus if d divides b, d divides b*R, and since d always divides k*num,
-        // d divides b*R + k*num.  Thus d divides b implies d divides product.
-        // Likewise if d divides product, then d divides b*R.  And since num and
-        // R are coprime and d is a divisor of num, we know d does not divide R
-        // (unless d == 1), and thus d must be a divisor of b.
-        // Therefore d divides product if and only if d divides b.
-        // Let p be the greatest common divisor of product and num.  Since p
-        // divides product, p must divide b.  Let  q = gcd(b, num).  Since q
-        // divides b, q must divide product.  Since q also divides num, q is a
-        // common divisor of product and num, and thus q <= p.  Since p divides
-        // both b and num, p is a common divisor of b and num.  Since q is the
-        // gcd(b,num) and q<=p,  we therefore know q == p.  Thus:
-        // gcd(product, num) == gcd(b, num).
-
-        // We want to set  p = gcd(mf.convertOut(product), num).  By the proof
-        // above, we can use the more efficient  p = gcd(product, num).
-        T p = greatest_common_divisor(product.get(), num);
+        // The following is a more efficient way to compute
+        // p = greatest_common_divisor(mf.convertOut(product), num)
+        T p = mf.template gcd_with_modulus<PrtGcdFunctor>(product);
         // Since product is in the range [1,num) and num is required to be >1,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).

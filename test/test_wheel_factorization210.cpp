@@ -3,7 +3,7 @@
 
 #include "factorize_bruteforce.h"
 #include "hurchalla/factoring/detail/wheel_factorization210.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 
 #include "gtest/gtest.h"
 
@@ -27,7 +27,7 @@ namespace {
 //            (These results were roughly as expected)
 
     TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div) {
-        namespace hf = hurchalla::factoring;
+        namespace hd = hurchalla::detail;
         using T = std::uint32_t;
         T max = std::numeric_limits<T>::max();
         T dummy = 0;
@@ -35,12 +35,12 @@ namespace {
         T factors[factors_len];
         for (T x = max - 65336*32; x < max; ++x) {
             T y = x;
-            dummy += (T)hf::small_trial_division(factors, factors_len, y);
+            dummy += (T)hd::small_trial_division(factors, factors_len, y);
         }
         EXPECT_TRUE(dummy != 0);
     }
     TEST(HurchallaFactoringIsPrime, perf_uint32_small_trial_div_template) {
-        namespace hf = hurchalla::factoring;
+        namespace hd = hurchalla::detail;
         using T = std::uint32_t;
         T max = std::numeric_limits<T>::max();
         T dummy = 0;
@@ -48,7 +48,7 @@ namespace {
         T factors[factors_len];
         for (T x = max - 65336*32; x < max; ++x) {
             T y = x;
-            dummy += (T)hf::small_trial_division<T>(factors, factors_len, y);
+            dummy += (T)hd::small_trial_division<T>(factors, factors_len, y);
         }
         EXPECT_TRUE(dummy != 0);
     }
@@ -57,13 +57,14 @@ namespace {
 
 
     TEST(HurchallaFactoringWheelFactorization210, exhaustive_uint16_t) {
-        namespace hf = hurchalla::factoring;
+        namespace hc = hurchalla;
+        namespace hd = hurchalla::detail;
         using T = std::uint16_t;
         for (T x = std::numeric_limits<T>::max(); x >= 2; --x) {
-            std::vector<T> answer = hf::factorize_bruteforce(x);
+            std::vector<T> answer = hc::factorize_bruteforce(x);
             std::vector<T> factors;
             T q;
-            hf::wheel_factorization210(std::back_inserter(factors), q, x);
+            hd::wheel_factorization210(std::back_inserter(factors), q, x);
             std::sort(answer.begin(), answer.end());
             std::sort(factors.begin(), factors.end());
             SCOPED_TRACE(testing::Message() << "x == " << x);
@@ -75,13 +76,13 @@ namespace {
     template <typename T>
     void test_factor_wheel210(T x, const std::vector<T>& answer)
     {
-        namespace hf = hurchalla::factoring;
-        namespace ma = hurchalla::modular_arithmetic;
+        namespace hd = hurchalla::detail;
+        namespace hc = hurchalla;
         T q;
 
         // first test using std::vector
         std::vector<T> vec;
-        hf::wheel_factorization210(std::back_inserter(vec), q, x);
+        hd::wheel_factorization210(std::back_inserter(vec), q, x);
         EXPECT_TRUE(q == 1);
         // at this time, I haven't made a guarantee for wheel_factorization210()
         // that the destination range will be sorted, so we'll sort it here.
@@ -90,7 +91,7 @@ namespace {
 
         // second test using std::array
         // the max possible number of factors occurs when all factors equal 2
-        constexpr auto max_num_factors = ma::ma_numeric_limits<T>::digits;
+        constexpr auto max_num_factors = hc::ut_numeric_limits<T>::digits;
         std::array<T, max_num_factors> arr;
         struct FactorArrayAdapter {
             using value_type = T;
@@ -109,7 +110,7 @@ namespace {
         };
         FactorArrayAdapter faa(arr);
 
-        hf::wheel_factorization210(std::back_inserter(faa), q, x);
+        hd::wheel_factorization210(std::back_inserter(faa), q, x);
         auto num_factors = faa.size();
         EXPECT_TRUE(q == 1);
         EXPECT_TRUE(num_factors == answer.size());
@@ -119,24 +120,54 @@ namespace {
     }
 
 
-    TEST(HurchallaFactoringWheelFactorization210, basic_tests) {
+    TEST(HurchallaFactoringWheelFactorization210, basic_tests_8) {
+        using U = std::uint8_t;
+        std::vector<U> answer = { 7, 19 };
+        // multiply all the factors in answer to get the number to factorize.
+        U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
+                                                          std::multiplies<U>());
+        SCOPED_TRACE(testing::Message() << "x == " << x);
+        test_factor_wheel210(x, answer);
+    }
+
+    TEST(HurchallaFactoringWheelFactorization210, basic_tests_16) {
+        using U = std::uint16_t;
+        std::vector<U> answer = { 2, 3, 5, 13, 17 };
+        // multiply all the factors in answer to get the number to factorize.
+        U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
+                                                          std::multiplies<U>());
+        SCOPED_TRACE(testing::Message() << "x == " << x);
+        test_factor_wheel210(x, answer);
+    }
+
+    TEST(HurchallaFactoringWheelFactorization210, basic_tests_32) {
+        using U = std::uint32_t;
+        std::vector<U> answer = { 2, 3, 5, 13, 17 };
+        // multiply all the factors in answer to get the number to factorize.
+        U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
+                                                          std::multiplies<U>());
+        SCOPED_TRACE(testing::Message() << "x == " << x);
+        test_factor_wheel210(x, answer);
+    }
+
+    TEST(HurchallaFactoringWheelFactorization210, basic_tests_64) {
         using U = std::uint64_t;
         std::vector<U> answer = { 2, 3, 5, 13, 17 };
         // multiply all the factors in answer to get the number to factorize.
         U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
                                                           std::multiplies<U>());
         SCOPED_TRACE(testing::Message() << "x == " << x);
-        test_factor_wheel210<U>(x, answer);
+        test_factor_wheel210(x, answer);
     }
 
 #ifdef __SIZEOF_INT128__
-    TEST(HurchallaFactoringWheelFactorization210, basic_tests_128bit) {
+    TEST(HurchallaFactoringWheelFactorization210, basic_tests_128) {
         using U = __uint128_t;
         std::vector<U> answer = { 2, 3, 5, 13, 17 };
         // multiply all the factors in answer to get the number to factorize.
         U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
                                                           std::multiplies<U>());
-        test_factor_wheel210<U>(x, answer);
+        test_factor_wheel210(x, answer);
     }
 #endif
 

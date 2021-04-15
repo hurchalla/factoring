@@ -3,10 +3,10 @@
 #define HURCHALLA_FACTORING_GREATEST_COMMON_DIVISOR_H_INCLUDED
 
 
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla {
 
 
 // For details, see https://en.wikipedia.org/wiki/Greatest_common_divisor
@@ -17,9 +17,8 @@ namespace hurchalla { namespace factoring {
 template <typename T>
 T greatest_common_divisor(T a, T b)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(a > 0 || b > 0);
 
     while (a != 0) {
@@ -33,6 +32,6 @@ T greatest_common_divisor(T a, T b)
 }
 
 
-}}  // end namespace
+}  // end namespace
 
 #endif

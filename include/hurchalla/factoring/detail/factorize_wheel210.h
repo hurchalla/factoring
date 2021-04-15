@@ -1,15 +1,15 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
 
-#ifndef HURCHALLA_FACTORING_WHEEL_FACTORIZATION210_H_INCLUDED
-#define HURCHALLA_FACTORING_WHEEL_FACTORIZATION210_H_INCLUDED
+#ifndef HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
+#define HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
 
 
 #include "hurchalla/factoring/detail/small_trial_division256.h"
 #include "hurchalla/factoring/detail/trial_divide.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/montgomery_arithmetic/detail/safely_promote_unsigned.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/traits/safely_promote_unsigned.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
 #include <cstdint>
 #include <cstddef>
 #include <type_traits>
@@ -21,7 +21,7 @@
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 #endif
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla { namespace detail {
 
 
 // This algorithm is Wheel factorization
@@ -49,26 +49,25 @@ namespace hurchalla { namespace factoring {
 //   is defaulted or set to a value >= sqrt(x), then the function will always
 //   completely factor x and set q = 1.
 //
-// wheel_factorization210 guarantees it will trial all potential prime factors
+// factorize_wheel210 guarantees it will trial all potential prime factors
 // less than or equal to max_factor.  It will usually also trial a few factors
 // that are larger than max_factor.
 
 // for discussion purposes inside the function, let the theoretical constant
-// R == 1 << ma_numeric_limits<T>::digits.  For example, for a type T that is
+// R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
 template <class OutputIt, typename T>
-OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
-      T max_factor = hurchalla::modular_arithmetic::ma_numeric_limits<T>::max())
+OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
+                                     T max_factor = ut_numeric_limits<T>::max())
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
     // the maximum possible number of factors for a type T variable occurs when
     // all factors are 2.  Thus bitsT is >= to the number of factors of x.
-    static constexpr int bitsT = ma::ma_numeric_limits<T>::digits;
+    static constexpr int bitsT = ut_numeric_limits<T>::digits;
     static_assert(bitsT % 2 == 0, "");
     static constexpr T sqrtR = static_cast<T>(1) << (bitsT / 2);
     if (max_factor >= sqrtR)
@@ -83,7 +82,7 @@ OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
     using std::size_t;
     using std::uint8_t;
     // avoid integral promotion hassles
-    using P = typename montgomery_arithmetic::safely_promote_unsigned<T>::type;
+    using P = typename safely_promote_unsigned<T>::type;
     P q2 = q;
     HPBC_ASSERT2(q2 > 1);
 
@@ -94,11 +93,11 @@ OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
         157, 163, 167, 169, 173, 179, 181, 187, 191, 193, 197, 199, 209, 211,
         221, 223, 227, 229, 233, 239, 241, 247, 251, 253 };
     static constexpr size_t wheel_len = sizeof(wheel)/sizeof(wheel[0]);
-    static const uint8_t cycle_len = 210;
+    static constexpr uint8_t cycle_len = 210;
 
-    P cycle_start = 210;
+    static constexpr P cycle_start = 210;
     // 257 is the first prime > 256, so we need to resume trial division there
-    HPBC_ASSERT2(cycle_start + wheel[0] == 257);
+    static_assert(cycle_start + wheel[0] == 257, "");
 
     // Use the wheel to skip division by any multiple of 2,3,5,7 in the loop
     // below - we already tested 2,3,5,7 via small_trial_division256().
@@ -126,8 +125,8 @@ OutputIt wheel_factorization210(OutputIt iter, T& q, T x,
             // 210.  But S - sqrtR < 210 is impossible because P is always at
             // at least as large as uint16_t (due to promotion rules it's based
             // upon), and thus S >= 65535, and sqrtR is always <= sqrt(S+1).
-            HPBC_ASSERT2(cycle_len == 210); // to support the preceding comment
-            HPBC_ASSERT2(start <= ma::ma_numeric_limits<P>::max() - wheel[i]);
+            static_assert(cycle_len == 210, ""); //support the preceding comment
+            HPBC_ASSERT2(start <= ut_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
             P div_result;
             HPBC_ASSERT2(q2 > 1);

@@ -85,13 +85,13 @@ target_include_directories(hurchalla_factoring INTERFACE
 include(FetchContent)
 
 FetchContent_Declare(
-    programming_by_contract
-    GIT_REPOSITORY https://github.com/hurchalla/programming_by_contract.git
+    hurchalla_util
+    GIT_REPOSITORY https://github.com/hurchalla/util.git
     GIT_TAG        master
 )
-FetchContent_MakeAvailable(programming_by_contract)
+FetchContent_MakeAvailable(hurchalla_util)
 target_link_libraries(hurchalla_factoring
-                      INTERFACE hurchalla_programming_by_contract)
+                      INTERFACE hurchalla_util)
 
 
 FetchContent_Declare(

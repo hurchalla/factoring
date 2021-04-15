@@ -4,14 +4,13 @@
 #include "factorize_bruteforce.h"
 #include "hurchalla/factoring/factorize.h"
 //#include "hurchalla/factoring/detail/wheel_factorization210.h"
-//#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
+//#include "hurchalla/util/traits/ut_numeric_limits.h"
 
 #include "gtest/gtest.h"
 
 #include <cstdint>
 #include <limits>
 #include <vector>
-//#include <array>
 #include <algorithm>
 #include <numeric>
 #include <functional>
@@ -20,32 +19,32 @@ namespace {
 
 
     TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
-        namespace hf = hurchalla::factoring;
+        namespace hc = hurchalla;
         using T = std::uint16_t;
         for (T x = std::numeric_limits<T>::max(); x >= 2; --x) {
-            std::vector<T> answer = hf::factorize_bruteforce(x);
+            std::vector<T> answer = hc::factorize_bruteforce(x);
             std::sort(answer.begin(), answer.end());
             int num_factors;
-            auto arr = hf::factorize(x, num_factors);
+            auto arr = hc::factorize(x, num_factors);
             std::sort(arr.begin(), arr.begin()+num_factors);
-            EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
             SCOPED_TRACE(testing::Message() << "x == " << x);
+            EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
             EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,
                                                                answer.begin()));
         }
     }
 
-
+/*
 // I used this speed test to do a quick and dirty initial performance tuning of
 // the value for the macro HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD, used in
 // PollardRhoTrial.  This test is not needed normally.
     TEST(HurchallaFactoringFactorize, speed_test32) {
-        namespace hf = hurchalla::factoring;
+        namespace hc = hurchalla;
         using T = std::uint32_t;
         T max = std::numeric_limits<T>::max()/2;
         for (T x = max; x >= max - 4000000; x = x-2) {
             int num_factors;
-            auto arr = hf::factorize(x, num_factors);
+            auto arr = hc::factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
             // So we'll check arr[0] (which is never 0) just so it's used.
@@ -53,19 +52,19 @@ namespace {
         }
     }
     TEST(HurchallaFactoringFactorize, speed_test64) {
-        namespace hf = hurchalla::factoring;
+        namespace hc = hurchalla;
         using T = std::uint64_t;
         T max = std::numeric_limits<T>::max();
         for (T x = max; x >= max - 200000; x = x-2) {
             int num_factors;
-            auto arr = hf::factorize(x, num_factors);
+            auto arr = hc::factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
             // So we'll check arr[0] (which is never 0) just so it's used.
             EXPECT_TRUE(arr[0] != 0);
         }
     }
-
+*/
 
     template <typename T>
     T calculate_x(const std::vector<T>& answer)
@@ -78,9 +77,9 @@ namespace {
     {
         // multiply all the factors in answer to get the number to factorize.
         T x = calculate_x(answer);
-        namespace hf = hurchalla::factoring;
+        namespace hc = hurchalla;
         int num_factors;
-        auto arr = hf::factorize(x, num_factors);
+        auto arr = hc::factorize(x, num_factors);
         EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
         // at this time, I haven't made a guarantee for factorize()
         // that the destination range will be sorted, so we'll sort it here.

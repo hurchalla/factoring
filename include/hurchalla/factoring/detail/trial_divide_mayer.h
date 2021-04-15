@@ -1,19 +1,22 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
-#ifndef HURCHALLA_FACTORING_IS_TRIAL_DIVIDE_H_INCLUDED
-#define HURCHALLA_FACTORING_IS_TRIAL_DIVIDE_H_INCLUDED
+#ifndef HURCHALLA_FACTORING_IS_TRIAL_DIVIDE_MAYER_H_INCLUDED
+#define HURCHALLA_FACTORING_IS_TRIAL_DIVIDE_MAYER_H_INCLUDED
 
 
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/montgomery_arithmetic/detail/safely_promote_unsigned.h"
-#include "hurchalla/montgomery_arithmetic/detail/inverse_mod_r.h"
-#include "hurchalla/montgomery_arithmetic/detail/unsigned_multiply_to_hilo_product.h"
+#include "hurchalla/montgomery_arithmetic/low_level_api/inverse_mod_R.h"
+#include "hurchalla/montgomery_arithmetic/low_level_api/unsigned_multiply_to_hilo_product.h"
+#include "hurchalla/util/traits/safely_promote_unsigned.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/compiler_macros.h"
+#include "hurchalla/util/programming_by_contract.h"
 #include <cstdint>
 #include <type_traits>
 #include <limits>
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla { namespace detail {
 
 
 #if defined(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE)
@@ -45,91 +48,93 @@ namespace hurchalla { namespace factoring {
 // exists, which we will name inv_n.  Since x is type T, we know x < R, and
 // since n is type T and odd, n > 0.  Thus x < n*R.  This fulfills all of the
 // requirements to use the alternate REDC algorithm, which is described at
-// https://github.com/hurchalla/modular_arithmetic/blob/master/montgomery_arithmetic/include/hurchalla/montgomery_arithmetic/detail/platform_specific/README_REDC.md
+// https://github.com/hurchalla/modular_arithmetic/blob/master/montgomery_arithmetic/include/hurchalla/montgomery_arithmetic/low_level_api/detail/platform_specific/README_REDC.md
 //
 // Using the linked REDC algorithm, REDC(x, R, n, inv_n) outputs a value
 // t ≡ x * R^(-1)  (mod n).  Multiplying both sides by R,  t*R ≡ x (mod n).
 // Therefore if t ≡ 0 (mod n), then x ≡ 0 (mod n).
-// And if we assume x ≡ 0 (mod n), then  t ≡ 0 * R^(-1) ≡ 0  (mod n);  by the
-// converse, if t !≡ 0 (mod n), then x !≡ 0 (mod n).
+// If instead we assume x ≡ 0 (mod n), then  t ≡ 0 * R^(-1) ≡ 0  (mod n);  by
+// the converse, if t !≡ 0 (mod n), then x !≡ 0 (mod n).
 // Therefore, x ≡ 0 (mod n) iff t ≡ 0 (mod n).  Since REDC gives us  0 <= t < n,
 // x ≡ 0 (mod n) iff t == 0.  This finishes the proof.  The remainder of the
 // explanation fills in the details of using the REDC algorithm for our needs:
 //
 // Directly implementing the alternate REDC algorithm, we get
-//    T x_lo = x;   T x_hi = 0;
-//    T m = x_lo*inv_n;
+//    T x_lo = x;
+//    T x_hi = 0;
+//    T m = x_lo * inv_n;
 //    T mn_hi = multiply_to_hiword(m, n);  // ignore the low word of the product
 //    T t = x_hi - mn_hi;
 //    if (x_hi < mn_hi)
 //        t += n;
-// Since we know x ≡ 0 (mod n) iff t == 0, we return (x is divisible by n) via
+// Since we know x ≡ 0 (mod n) iff t == 0, we return "x is divisible by n" via
 //    return (t == 0);
 //
 // Since we know x_hi == 0, we can simplify the implementation to
-//    T m = x*inv_n;
+//    T m = x * inv_n;
 //    T mn_hi = multiply_to_hiword(m, n);
 //    T t;
-//    if (mn_hi != 0)
+//    if (mn_hi != 0)   // simplified using the fact that x_hi == 0
 //        t = n - mn_hi;
 //    else
-//        t = -mn_hi;  // to get here, mn_hi must == 0; thus this sets t = 0.
+//        t = -mn_hi;   // to get here, mn_hi must == 0; thus this sets t = 0.
 //    return (t == 0);
 //
 // We know mn_hi < n, due to the proof of Assertion #1 in REDC_non_finalized()
-// https://github.com/hurchalla/modular_arithmetic/blob/master/montgomery_arithmetic/include/hurchalla/montgomery_arithmetic/detail/platform_specific/Redc.h
+// https://github.com/hurchalla/modular_arithmetic/blob/master/montgomery_arithmetic/include/hurchalla/montgomery_arithmetic/low_level_api/detail/platform_specific/impl_REDC.h
 // so we therefore know  n - mn_hi != 0.  So we can further simplify:
-//    T m = x*inv_n;
+//    T m = x * inv_n;
 //    T mn_hi = multiply_to_hiword(m, n);
 //    if (mn_hi != 0)
 //        return false;
 //    else
 //        return true;
 
-// trial_divide:  returns true if n divides x, otherwise returns false.
+
+// trial_divide_mayer():  returns true if n divides x, otherwise returns false.
 // If n divides x, then the quotient is placed in div_result.  If n
-// does not divide x, then the value of div_result is undefined.
+// does not divide x, then the value of div_result is unspecified.
+//
+// Precondition: n must be odd.
 
 template <typename T>
+HURCHALLA_FLATTEN
 typename std::enable_if<(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
-                   hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits >
-                     HURCHALLA_TARGET_BIT_WIDTH), bool>::type
+                     ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH),
+                 bool>::type
 // Use our special algorithm described above.
-// Note 'x' is the numerator and 'n' is the denominator.
-trial_divide(T& div_result, T x, T n)
+// Note 'x' is the dividend and 'n' is the divisor.
+trial_divide_mayer(T& div_result, T x, T n)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(n%2 == 1);  // required for calling inverse_mod_r
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(n%2 == 1);  // required for calling inverse_mod_R
 
-    namespace mont = hurchalla::montgomery_arithmetic;
-    using P = typename mont::safely_promote_unsigned<T>::type;
+    using P = typename safely_promote_unsigned<T>::type;
 
-    T inv_n = mont::inverse_mod_r(n);
+    T inv_n = inverse_mod_R(n);
     T m = static_cast<T>(static_cast<P>(x) * inv_n);
     T mn_lo;
-    T mn_hi = mont::unsigned_multiply_to_hilo_product(&mn_lo, m, n);
+    T mn_hi = unsigned_multiply_to_hilo_product(&mn_lo, m, n);
     div_result = m;
     return (mn_hi == 0);
 }
 
 template <typename T>
 typename std::enable_if<!(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
-                   hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits >
-                     HURCHALLA_TARGET_BIT_WIDTH), bool>::type
+                     ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH),
+                 bool>::type
 // Don't use the algorithm described above.  Instead, just use plain standard
 // integer division.
-// Note 'x' is the numerator and 'n' is the denominator.
-trial_divide(T& div_result, T x, T n)
+// Note 'x' is the dividend and 'n' is the divisor.
+trial_divide_mayer(T& div_result, T x, T n)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(n > 0);  // disallow division by 0
-
-    namespace mont = hurchalla::montgomery_arithmetic;
-    using P = typename mont::safely_promote_unsigned<T>::type;
+    HPBC_PRECONDITION2(n%2 == 1); // for consistency with trial_divide_mayer
+                                // above, though this version doesn't need evens
+    using P = typename safely_promote_unsigned<T>::type;
     div_result = static_cast<T>(static_cast<P>(x) / n);
     // test whether the remainder (x - n*div_result) equals 0
     return (x == n*div_result);
@@ -150,9 +155,9 @@ trial_divide(T& div_result, T x, T n)
 // (depending on architecture).  According to uops.info this could provide
 // similar latency to integer division for uint32_t, but either similar or up to
 // 1.5x better throughput.  I expect it to provide similar or slightly better
-// performance than the generic version of trial_divide above that uses the REDC
-// technique.  Note that if this function is proven correct, it opens up the
-// ability for a SIMD version of this function to be created, and used by
+// performance than the generic version of trial_divide_mayer above that uses
+// the REDC technique.  Note that if this function is proven correct, it opens
+// up the ability for a SIMD version of this function to be created, and used by
 // clients, which could offer 2-4x the throughput of this version (for 128 bit
 // to 256 bit vectors).  Some quesions that I don't have answers to on this
 // function's performance: depending on compiler flags could there be slowdown
@@ -192,7 +197,7 @@ trial_divide(T& div_result, T x, T n)
 //#pragma GCC pop_options
 // but the gcc documentation states this is intended for debugging only.
 // Alternatively gcc lets us use a function attribute:
-// bool trial_divide(args) __attribute__ ((optimize(no-reciprocal-math)))
+// bool trial_divide_mayer(args) __attribute__ ((optimize(no-reciprocal-math)))
 // but again the docs state it is intended for debugging only.  Additionally
 // clang, icc, and msvc may all have different ways to disable the reciprocal.
 // And a possible reason why this is intended as debug only, is that link-time
@@ -212,15 +217,16 @@ trial_divide(T& div_result, T x, T n)
 // Until I have created a proof, or found a proof elsewhere, this function will
 // remain experimental.
 #include <immintrin.h>
-bool trial_divide(std::uint32_t& div_result, std::uint32_t x, std::uint32_t n)
+bool trial_divide_mayer(std::uint32_t& div_result, std::uint32_t x,
+                                                                std::uint32_t n)
 {
     // make sure type double is IEEE double precision fp (with 52 bit mantissa)
     static_assert(std::numeric_limits<double>::is_iec559, "");
     HPBC_PRECONDITION2(n > 0);   // disallow division by 0
     using std::uint32_t;
 
-    double numerator = static_cast<double>(x);
-    double denom = static_cast<double>(n);
+    double dividend = static_cast<double>(x);
+    double divisor = static_cast<double>(n);
 #if 0
     // SSE intrinsics: very likely the compiler will utilize SSE (and any other
     // SIMD instruction set) automatically if it is available for the target and
@@ -229,12 +235,12 @@ bool trial_divide(std::uint32_t& div_result, std::uint32_t x, std::uint32_t n)
     // there is unlikely to be any benefit in creating a dependence on a
     // particular SIMD ISA, and so I've disabled this SSE-specific section.
     double quotient;
-    __m128d nv = _mm_set_sd(numerator);
-    __m128d dv = _mm_set_sd(denom);
+    __m128d nv = _mm_set_sd(dividend);
+    __m128d dv = _mm_set_sd(divisor);
     __m128d qv = _mm_div_sd(nv, dv);
     _mm_store_sd(&quotient, qv);
 #else
-    double quotient = numerator / denom;
+    double quotient = dividend / divisor;
 #endif
     div_result = static_cast<uint32_t>(quotient);
 

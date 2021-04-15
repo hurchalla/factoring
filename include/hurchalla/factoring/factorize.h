@@ -7,31 +7,30 @@
 
 #include "hurchalla/factoring/detail/PollardRhoTrial.h"
 #include "hurchalla/factoring/detail/impl_factorize.h"
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
 #include <iterator>
 #include <limits>
 #include <array>
 #include <vector>
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla {
 
 
 #ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
+#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoTrial
 #endif
 
 
 template <typename T>
-std::array<T, hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits>
+std::array<T, ut_numeric_limits<T>::digits>
 factorize(T x, int& num_factors)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
 
     // The max possible number of factors occurs when all factors equal 2
-    constexpr auto max_num_factors = ma::ma_numeric_limits<T>::digits;
+    constexpr auto max_num_factors = ut_numeric_limits<T>::digits;
     std::array<T, max_num_factors> arr;
 
     struct FactorArrayAdapter {
@@ -50,7 +49,7 @@ factorize(T x, int& num_factors)
         std::size_t num_factors;
     };
     FactorArrayAdapter faa(arr);
-    impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
+    detail::impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
                                                     std::back_inserter(faa), x);
     num_factors = static_cast<int>(faa.size());
     // After calling this function, a client should never index the returned
@@ -77,15 +76,14 @@ factorize(T x, int& num_factors)
 template <typename T>
 std::vector<T> factorize_to_vector(T x)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
 
     // The max possible vector size needed for factors is when all of them are 2
-    constexpr auto max_num_factors = ma::ma_numeric_limits<T>::digits;
+    constexpr auto max_num_factors = ut_numeric_limits<T>::digits;
     std::vector<T> vec;
     vec.reserve(max_num_factors);
-    impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
+    detail::impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
                                                     std::back_inserter(vec), x);
 
     HPBC_POSTCONDITION(vec.size() > 0);
@@ -97,6 +95,6 @@ std::vector<T> factorize_to_vector(T x)
 }
 
 
-}}  // end namespace
+}  // end namespace
 
 #endif

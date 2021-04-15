@@ -5,15 +5,15 @@
 #define HURCHALLA_FACTORING_IS_PRIME_WHEEL210_H_INCLUDED
 
 
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/montgomery_arithmetic/detail/safely_promote_unsigned.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
 #include "hurchalla/factoring/detail/trial_divide.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/traits/safely_promote_unsigned.h"
+#include "hurchalla/util/programming_by_contract.h"
 #include <cstdint>
 #include <cstddef>
 #include <type_traits>
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla { namespace detail {
 
 
 // This algorithm is an adaptation of Wheel factorization, where we return false
@@ -29,18 +29,17 @@ namespace hurchalla { namespace factoring {
 // but it's only a constant time improvement and remains a brute force approach.
 
 template <typename T>
-bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
-                     hurchalla::modular_arithmetic::ma_numeric_limits<T>::max())
+bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
+                                     T max_factor = ut_numeric_limits<T>::max())
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(!ma::ma_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
 
     using std::size_t;
     using std::uint8_t;
     // avoid integral promotion hassles
-    using P = typename montgomery_arithmetic::safely_promote_unsigned<T>::type;
-    static constexpr int bitsT = ma::ma_numeric_limits<T>::digits;
+    using P = typename safely_promote_unsigned<T>::type;
+    static constexpr int bitsT = ut_numeric_limits<T>::digits;
     static_assert(bitsT % 2 == 0, "");
     static constexpr T sqrtR = static_cast<T>(1) << (bitsT / 2);
 
@@ -62,7 +61,7 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
     if (q%7 == 0) return (q==7);
     if (q%11 == 0) return (q==11);
     if (q%13 == 0) return (q==13);
-    if (std::is_same<T, uint8_t>::value)
+    if constexpr (std::is_same<T, uint8_t>::value)
         return true;   // if x is type uint8_t, it won't have any factors > 13
 
     // The wheel spans the 210 number range [17, 227), skipping all multiples
@@ -72,7 +71,7 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
         131, 137, 139, 143, 149, 151, 157, 163, 167, 169, 173, 179, 181, 187,
         191, 193, 197, 199, 209, 211, 221, 223 };
     static constexpr size_t wheel_len = sizeof(wheel)/sizeof(wheel[0]);
-    static const uint8_t cycle_len = 210;
+    static constexpr uint8_t cycle_len = 210;
 
     // Use the wheel to skip division by any multiple of 2,3,5,7 in the loop
     // below - we already tested 2,3,5,7 and found they were not factors.
@@ -94,7 +93,7 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
         // greater than max_factor or sqrt(q), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
             // Assert that  start + wheel[i]  will never overflow.  Let
-            // S = ma_numeric_limits<P>::max().  Overflow would mean that
+            // S = ut_numeric_limits<P>::max().  Overflow would mean that
             // start + wheel[i] > S, or equivalently  S - wheel[i] < start.  We
             // asserted above that  start + wheel[0] == maybe_factor < sqrtR.
             // So overflow woule mean  S - wheel[i] < start < sqrtR - wheel[0],
@@ -102,8 +101,8 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr, T max_factor =
             // 210.  But S - sqrtR < 210 is impossible because P is always at
             // at least as large as uint16_t (due to promotion rules it's based
             // upon), and thus S >= 65535, and sqrtR is always <= sqrt(S+1).
-            HPBC_ASSERT2(cycle_len == 210); // to support the preceding comment
-            HPBC_ASSERT2(start <= ma::ma_numeric_limits<P>::max() - wheel[i]);
+            static_assert(cycle_len == 210, ""); //support the preceding comment
+            HPBC_ASSERT2(start <= ut_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
             P div_result;
             // test whether  maybe_factor divides q  without any remainder.

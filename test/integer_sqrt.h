@@ -5,28 +5,28 @@
 #define HURCHALLA_FACTORING_INTEGER_SQRT_H_INCLUDED
 
 
-#include "hurchalla/modular_arithmetic/detail/ma_numeric_limits.h"
-#include "hurchalla/programming_by_contract/programming_by_contract.h"
-#include "hurchalla/modular_arithmetic/detail/platform_specific/compiler_macros.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/util/compiler_macros.h"
 #include <type_traits>
 #include <limits>
 #include <cstdint>
 
-namespace hurchalla { namespace factoring {
+namespace hurchalla {
 
 
 // this stops the compiler from complaining about "shift count >= width of type"
 // in cases where the shift wouldn't have actually been executed
 template <int shift, typename T>
-HURCHALLA_FORCE_INLINE  typename std::enable_if<!(shift <
-          hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits), T>::type
+HURCHALLA_FORCE_INLINE typename std::enable_if<!(shift <
+                                         ut_numeric_limits<T>::digits), T>::type
 safe_right_shift(T)
 {
     return 0;
 }
 template <int shift, typename T>
 HURCHALLA_FORCE_INLINE  typename std::enable_if<(shift <
-          hurchalla::modular_arithmetic::ma_numeric_limits<T>::digits), T>::type
+                                         ut_numeric_limits<T>::digits), T>::type
 safe_right_shift(T x1)
 {
     return static_cast<T>(x1 >> shift);
@@ -40,9 +40,8 @@ safe_right_shift(T x1)
 template <typename T>
 T integer_sqrt(T x)
 {
-    namespace ma = hurchalla::modular_arithmetic;
-    static_assert(ma::ma_numeric_limits<T>::is_integer, "");
-    static_assert(ma::ma_numeric_limits<T>::digits <= 128, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION2(x >= 0);
 
     if (x <= 1)
@@ -70,6 +69,6 @@ T integer_sqrt(T x)
 }
 
 
-}}  // end namespace
+}  // end namespace
 
 #endif

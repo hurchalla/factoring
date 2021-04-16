@@ -59,7 +59,11 @@ private:
     static constexpr int TABLE2_SIZE = 12288;
     // Much further below we also have
     // static constexpr std::uint16_t table2[] = ......
+#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+    static constexpr std::uint16_t table1[TABLE1_SIZE] = {
+#else
     static constexpr std::uint16_t table1[] = {
+#endif
         63375,
         4860,
         4860,
@@ -831,7 +835,11 @@ private:
     };
     static_assert(sizeof(table1)/sizeof(table1[0]) == TABLE1_SIZE, "");
 
+#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+    static constexpr std::uint16_t table2[TABLE2_SIZE] = {
+#else
     static constexpr std::uint16_t table2[] = {
+#endif
         1571,
         10962,
         7406,

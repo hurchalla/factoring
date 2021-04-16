@@ -46,7 +46,11 @@ public:
     }
 private:
     static constexpr int SIZE = 80;
+#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+    static constexpr std::uint16_t table[SIZE][2] = {
+#else
     static constexpr std::uint16_t table[][2] = {
+#endif
         {  5477,  8321 },
         { 14011, 36773 },
         {  1313, 55018 },

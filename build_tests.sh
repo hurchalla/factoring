@@ -263,7 +263,8 @@ echo Using build mode $mode ...
 if [ "$compiler_version" = "0" ]; then
   cpp_standard="-std=c++17"
 elif [ "$compiler_name" = "clang" ] && [[ $compiler_version -lt 6 ]]; then
-: #  cpp_standard="-std=c++11"
+  echo "Invalid compiler ($compiler_name v$compiler_version).  This repository requires C++17 support"
+  exit 1
 else
   cpp_standard="-std=c++17"
 fi

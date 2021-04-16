@@ -51,7 +51,7 @@ else()
         target_compile_options(${target} PRIVATE  -ferror-limit=3
                 -Wcast-align -Wmismatched-tags -Wabstract-vbase-init
                 -Warray-bounds-pointer-arithmetic -Wassign-enum
-                -Watomic-properties -Wauto-import -Wc++14-compat-pedantic
+                -Watomic-properties -Wauto-import
                 -Wc++14-extensions -Wclass-varargs -Wcomma
                 -Wconditional-uninitialized -Wconsumed -Wcuda-compat
                 -Wdeprecated -Wduplicate-enum -Wformat-non-iso -Wformat-pedantic

@@ -7,8 +7,8 @@ For good background information, and also to see some different miller-rabin has
 The website has great links to work on miller-rabin bases/hashes by (in no particular order) Jan Feitsma and William Galway, Bradley Berg, Michal Forisek and Jakub Jancina, Dana Jacobsen, Wojciech Izykowski and Marcin Panasiuk, Steve Worley, Gerhard Jaeschke, Jim Sinclair, and more.
 
 
-I don't believe there would be much benefit to trying to generate better tables, since I expect it would be extremely difficult to find size improvements over the tables in this folder for primality testing uint32_t/uint64_t values.
-Nonetheless, if you wish to generate your own miller-rabin bases/tables for primality testing uint64_t values, you might find the following files interesting:
+I don't believe there would be much benefit to trying to generate better tables for primality testing uint32_t/uint64_t values than the ones here, since I expect it would be extremely difficult to find tables that are even 5-10% smaller.  The possible exceptions are the files MillerRabinBases62_3.h, MillerRabinBases64_4.h, and MillerRabinBases64_5.h, due to their use of equal size tables.  I expect it perhaps might be possible to reduce the size of tables used in MillerRabinBases64_4 or MillerRabinBases62_3 by as much as 20-25% (assuming that level of difference merits attention) by generating unequal size tables as described below.  I would expect less improvement for MillerRabinBases64_5.  Keep in mind that as also described below, I chose equal size tables in order to get the minor advantages equal size tables provide, usually when the size difference wouldn't be large.
+If you wish to generate your own miller-rabin bases/tables for primality testing uint64_t values, you might find the following files interesting:
 https://github.com/hurchalla/Extra-Files/blob/9db1c93fe912f39ad0c23c445750ec0826fbf4ac/bases_2.txt
 https://github.com/hurchalla/Extra-Files/blob/9db1c93fe912f39ad0c23c445750ec0826fbf4ac/bases_2_15.txt
 https://github.com/hurchalla/Extra-Files/blob/9db1c93fe912f39ad0c23c445750ec0826fbf4ac/base_combos_2_15.txt

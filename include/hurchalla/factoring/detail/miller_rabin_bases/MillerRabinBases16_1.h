@@ -34,7 +34,7 @@ struct MillerRabinBases<16, 1, DUMMY> {
     {
         // I generated/verified the hash table for the base.  See README.TXT
         std::array<std::uint16_t, 1> bases;
-        std::uint16_t hash_bucket = (static_cast<std::uint16_t>(num) >> 1) & 3;
+        std::uint16_t hash_bucket = static_cast<std::uint16_t>((num >> 1) & 3);
         const std::array<std::uint16_t, 4> table = { 2779, 2, 19203, 3027 };
         bases[0] = table[hash_bucket];
         return bases;

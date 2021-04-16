@@ -37,7 +37,7 @@ public:
         bases[0] = 15;
         const std::array<std::uint16_t, 8> table =
                          { 21232, 56020, 5049, 7595, 13468, 54516, 5681, 4473 };
-        std::uint8_t hash_bucket = static_cast<std::uint8_t>(num >> 10) & 7;
+        std::uint8_t hash_bucket = static_cast<std::uint8_t>((num >> 10) & 7);
         bases[1] = table[hash_bucket];
         return bases;
     }

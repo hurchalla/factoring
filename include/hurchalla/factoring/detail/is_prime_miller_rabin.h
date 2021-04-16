@@ -367,6 +367,15 @@ miller_rabin_trials(
 // works for both even and odd moduli (though only the MontyWrappedStandardMath
 // MontyType supports an even modulus).
 
+// helper constexpr function
+template <int LOG2_MODULUS_LIMIT>
+constexpr int get_MRM_POW2_LIMIT()
+{
+    int val=1;
+    for (; val<LOG2_MODULUS_LIMIT; val*=2)
+        ;
+    return val;
+}
 // Primary template.  LOG2_MODULUS_LIMIT of 128 has a partial specialization
 template <typename MontType, int LOG2_MODULUS_LIMIT, std::size_t TRIAL_SIZE,
           std::size_t TOTAL_BASES>
@@ -383,16 +392,13 @@ struct MillerRabinMontgomery {
               (LOG2_MODULUS_LIMIT < ut_numeric_limits<T>::digits &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    constexpr int POW2_LIMIT = []{
-        int val=1;
-        for (; val<LOG2_MODULUS_LIMIT; val*=2)
-            ;
-        return val;
-    }();
+
+    constexpr int POW2_LIMIT = get_MRM_POW2_LIMIT<LOG2_MODULUS_LIMIT>();
     static_assert(POW2_LIMIT >= LOG2_MODULUS_LIMIT, "");
     using U = typename sized_uint<POW2_LIMIT>::type;
     HPBC_PRECONDITION2(1 < num &&
-                       num < (static_cast<U>(1) << LOG2_MODULUS_LIMIT));
+                    num <= (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)) - 1 +
+                           (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)));
     const auto bases = MillerRabinBases<LOG2_MODULUS_LIMIT, TOTAL_BASES>::
                                                        get(static_cast<U>(num));
     return miller_rabin_trials<TRIAL_SIZE>(mf, bases);
@@ -707,12 +713,12 @@ is_prime_miller_rabin(const MontType& mf)
     // to avoid testing 2 extra bases, and the hashed version's downside of
     // needing a 320 byte hash table in static memory (and accessing it) should
     // usually be a worthwhile trade-off for the speed improvement.
-    // You can switch the default to 7 base miller-rabin by changing the #if 1
-    // to #if 0.
-#if 1
-    constexpr std::size_t TOTAL_BASES = 5;
-#else
+    // You can switch the default to 7 base miller-rabin by pre-defining the
+    // macro HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
     constexpr std::size_t TOTAL_BASES = 7;
+#else
+    constexpr std::size_t TOTAL_BASES = 5;
 #endif
     constexpr std::size_t TRIAL_SIZE = 2;
     return MillerRabinMontgomery
@@ -733,11 +739,12 @@ is_prime_miller_rabin(const MontType& mf)
     // Some compilers may use 16 bytes of static memory for the hash table
     // rather than loading the values on the fly (which uses no static memory).
     // If this occurs and it is unacceptable for you, you can switch the default
-    // to 3 base miller-rabin by changing the #if 1 to #if 0.
-#if 1
-    constexpr std::size_t TOTAL_BASES = 2;
-#else
+    // to 3 base miller-rabin by pre-defining the macro
+    // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
     constexpr std::size_t TOTAL_BASES = 3;
+#else
+    constexpr std::size_t TOTAL_BASES = 2;
 #endif
     constexpr std::size_t TRIAL_SIZE = 1;
     return MillerRabinMontgomery
@@ -766,11 +773,12 @@ is_prime_miller_rabin(const MontType& mf)
     // Some compilers may use 8 bytes of static memory for the hash table rather
     // than loading the values on the fly (which uses no static memory).
     // If this occurs and it is unacceptable for you, you can switch the default
-    // to 2 base miller-rabin by changing the #if 1 to #if 0.
-#if 1
-    constexpr std::size_t TOTAL_BASES = 1;
-#else
+    // to 2 base miller-rabin by pre-defining the macro
+    // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
     constexpr std::size_t TOTAL_BASES = 2;
+#else
+    constexpr std::size_t TOTAL_BASES = 1;
 #endif
     constexpr std::size_t TRIAL_SIZE = 1;
     return MillerRabinMontgomery

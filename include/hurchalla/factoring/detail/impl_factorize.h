@@ -5,9 +5,10 @@
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/small_trial_division2048.h"
+#include "hurchalla/factoring/detail/TrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/TrialDivisionMayer.h"
 
-#include "hurchalla/factoring/detail/small_trial_division256.h"
+#include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/pollard_rho_factorize.h"
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -25,6 +26,10 @@ namespace hurchalla { namespace detail {
 #endif
 
 
+#define TRIAL_DIVISION_TEMPLATE TrialDivisionWarren
+//#define TRIAL_DIVISION_TEMPLATE TrialDivisionMayer
+
+
 // Initial tests so far suggest it might be fastest to entirely skip wheel
 // factorization prior to pollard rho.
 // A client should enable a wheel factorization stage (if desired) by
@@ -39,6 +44,8 @@ namespace hurchalla { namespace detail {
 // 1165 2541
 // estimate min at 320
 // 1147 2540
+
+#define HURCHALLA_NUM_PRIMES_UNDER_2048 309
 
 //#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 310
 // 1138 2538
@@ -69,8 +76,11 @@ T impl_factorize(OutputIt iter, T x)
     T q;
 #ifdef HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048
     T next_prime;
-    T index_limit = HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT;
-    iter = small_trial_division2048(iter, q, x, next_prime, index_limit);
+    int index_limit = HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT;
+
+    iter = factorize_trialdivision<TRIAL_DIVISION_TEMPLATE,
+                                   HURCHALLA_NUM_PRIMES_UNDER_2048>
+                                          (iter, q, next_prime, x, index_limit);
     HPBC_ASSERT2(q >= 1);  // small_trial_division2048 guarantees this
     if (q == 1)   // if small_trial_division2048 completely factored x
         return 0;
@@ -105,8 +115,8 @@ T impl_factorize(OutputIt iter, T x)
 #endif
 
     T iterations_performed;
-    iter = pollard_rho_factorize<Functor>(iter, q, threshold_always_prime,
-                                      static_cast<T>(1), &iterations_performed);
+    iter = pollard_rho_factorize<TRIAL_DIVISION_TEMPLATE, Functor>(iter, q,
+              threshold_always_prime, static_cast<T>(1), &iterations_performed);
     return iterations_performed;
 }
 

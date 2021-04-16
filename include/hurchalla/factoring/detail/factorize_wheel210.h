@@ -5,8 +5,8 @@
 #define HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/small_trial_division256.h"
-#include "hurchalla/factoring/detail/trial_divide.h"
+#include "hurchalla/factoring/detail/factorize_trialdivision.h"
+#include "hurchalla/factoring/detail/trial_divide_mayer.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -29,7 +29,7 @@ namespace hurchalla { namespace detail {
 // but with testing for potential factors only up to (and including) max_factor.
 
 // Postconditions:
-// (note these are the same as for small_trial_division256())
+// (note these are the same as for factorize_trialdivision())
 // 1) The return value is an output iterator to the position one past the last
 //   factor that the function wrote to the destination range (iterated by the
 //   function's parameter 'iter').  The destination range consists of all the
@@ -57,7 +57,9 @@ namespace hurchalla { namespace detail {
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-template <class OutputIt, typename T>
+// the template-template param TTD should be either TrialDivisionWarren or
+// TrialDivisionMayer.
+template <template<class,int> class TTD, class OutputIt, typename T>
 OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
                                      T max_factor = ut_numeric_limits<T>::max())
 {
@@ -74,9 +76,11 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
         max_factor = sqrtR - 1;
 
     // factor out all primes < 256
-    iter = small_trial_division256(iter, q, x);
-    HPBC_ASSERT2(q >= 1);  // small_trial_division256 guarantees this
-    if (q == 1)   // if small_trial_division256 completely factored x
+    constexpr int SIZE=54;   // there are 54 primes < 256
+    T next_prime;  // ignored for now
+    iter = factorize_trialdivision<TTD, SIZE>(iter, q, next_prime, x, SIZE);
+    HPBC_ASSERT2(q >= 1);  // factorize_trialdivision guarantees this
+    if (q == 1)   // if factorize_trialdivision completely factored x
         return iter;
 
     using std::size_t;
@@ -100,7 +104,7 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
     static_assert(cycle_start + wheel[0] == 257, "");
 
     // Use the wheel to skip division by any multiple of 2,3,5,7 in the loop
-    // below - we already tested 2,3,5,7 via small_trial_division256().
+    // below - we already tested 2,3,5,7 via factorize_trialdivision().
     P maybe_factor;
     for (P start=cycle_start; ; start=static_cast<P>(start + cycle_len)) {
         maybe_factor = start + wheel[0];
@@ -131,7 +135,7 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
             P div_result;
             HPBC_ASSERT2(q2 > 1);
             // test whether  maybe_factor divides q2  without any remainder.
-            while (trial_divide(div_result, q2, maybe_factor)) {
+            while (trial_divide_mayer(div_result, q2, maybe_factor)) {
                 *iter++ = static_cast<T>(maybe_factor);
                 q2 = div_result;
                 if (q2 == 1) {  // we completely factored x

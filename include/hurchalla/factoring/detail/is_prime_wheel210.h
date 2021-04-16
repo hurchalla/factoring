@@ -5,7 +5,7 @@
 #define HURCHALLA_FACTORING_IS_PRIME_WHEEL210_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/trial_divide.h"
+#include "hurchalla/factoring/detail/trial_divide_mayer.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -106,7 +106,7 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
             maybe_factor = start + wheel[i];
             P div_result;
             // test whether  maybe_factor divides q  without any remainder.
-            if (trial_divide(div_result, q, maybe_factor))
+            if (trial_divide_mayer(div_result, q, maybe_factor))
                 return false;
         }
     }

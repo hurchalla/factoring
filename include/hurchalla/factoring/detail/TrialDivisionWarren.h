@@ -13,8 +13,9 @@
 #include "hurchalla/util/programming_by_contract.h"
 #include <array>
 #include <type_traits>
+#include <cstddef>
 
-namespace hurchalla {
+namespace hurchalla { namespace detail {
 
 
 // See Hacker's Delight 2nd edition by Henry Warren, Section 10-17 "Test for
@@ -33,14 +34,14 @@ public:
     static constexpr T oddPrime(int divisor_index)
     {
         HPBC_CONSTEXPR_PRECONDITION(0 <= divisor_index && divisor_index < SIZE);
-        return oddprimes[divisor_index];
+        return oddprimes[static_cast<std::size_t>(divisor_index)];
     }
 
     // Returns oddPrime() squared without overflow.
     static constexpr auto oddPrimeSquared(int divisor_index)
     {
         HPBC_CONSTEXPR_PRECONDITION(0 <= divisor_index && divisor_index < SIZE);
-        U prime = oddprimes[divisor_index];
+        U prime = oddprimes[static_cast<std::size_t>(divisor_index)];
         // get the smallest type that can always square an element of oddprimes
         // without overflow.
         using U2 = decltype(get_constant_squared<U, oddprimes[SIZE-1]>());
@@ -72,8 +73,10 @@ public:
     static bool isDivisible(T& quotient, T dividend, int divisor_index)
     {
         HPBC_PRECONDITION2(0 <= divisor_index && divisor_index < SIZE);
-        T inverse = oddprimesinfo[divisor_index].inverse;
-        T umax_div_prime = oddprimesinfo[divisor_index].umax_div_prime;
+        T inverse =
+                 oddprimesinfo[static_cast<std::size_t>(divisor_index)].inverse;
+        T umax_div_prime =
+          oddprimesinfo[static_cast<std::size_t>(divisor_index)].umax_div_prime;
         using P = typename safely_promote_unsigned<T>::type;
         T tmp = static_cast<T>(static_cast<P>(dividend) * inverse);
         // Let prime = oddprimes[divisor_index].
@@ -90,9 +93,10 @@ public:
 private:
     // get the first N=SIZE odd primes
     static constexpr auto oddprimes = get_odd_primes<SIZE>();
+
     using U = typename decltype(oddprimes)::value_type;
     static_assert(std::is_same_v<
-                       const std::array<U,SIZE>, decltype(oddprimes)>);
+      const std::array<U,static_cast<std::size_t>(SIZE)>, decltype(oddprimes)>);
     // assert any element of the oddprimes array fits in type T
     static_assert(ut_numeric_limits<T>::max() >= ut_numeric_limits<U>::max());
 
@@ -100,22 +104,24 @@ private:
         T inverse;
         T umax_div_prime;
     };
-    static constexpr std::array<PrimeInfo, SIZE>
-    get_odd_primes_info(const std::array<U, SIZE>& odd_primes)
+    static constexpr std::array<PrimeInfo, static_cast<std::size_t>(SIZE)>
+    get_odd_primes_info(
+                const std::array<U, static_cast<std::size_t>(SIZE)>& odd_primes)
     {
-        std::array<PrimeInfo, SIZE> pia{};
-        for (int i=0; i<SIZE; ++i) {
+        using P = typename safely_promote_unsigned<T>::type;
+        std::array<PrimeInfo, static_cast<std::size_t>(SIZE)> pia{};
+        for (std::size_t i=0; i<SIZE; ++i) {
             HPBC_CONSTEXPR_ASSERT(odd_primes[i] % 2 == 1);
             pia[i].inverse = inverse_mod_R(static_cast<T>(odd_primes[i]));
-            pia[i].umax_div_prime = ut_numeric_limits<T>::max() / odd_primes[i];
+            pia[i].umax_div_prime = static_cast<T>(
+                   static_cast<P>(ut_numeric_limits<T>::max()) / odd_primes[i]);
         }
         return pia;
     }
-    static constexpr std::array<PrimeInfo, SIZE> oddprimesinfo =
-                                                 get_odd_primes_info(oddprimes);
+    static constexpr auto oddprimesinfo = get_odd_primes_info(oddprimes);
 };
 
 
-}  // end namespace
+}}  // end namespace
 
 #endif

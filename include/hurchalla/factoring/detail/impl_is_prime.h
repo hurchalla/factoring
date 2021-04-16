@@ -38,7 +38,7 @@ bool impl_is_prime(T x)
 
     // At this point, we didn't find any factors and we couldn't detect whether
     // x is prime.  We'll fall back to determining primality via miller-rabin.
-    return is_prime_integral_miller_rabin(x);
+    return is_prime_miller_rabin_integral(x);
 }
 
 

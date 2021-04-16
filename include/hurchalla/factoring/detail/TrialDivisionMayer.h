@@ -14,7 +14,7 @@
 #include <array>
 #include <type_traits>
 
-namespace hurchalla {
+namespace hurchalla { namespace detail {
 
 
 // See trial_divide_mayer.h for details of the algorithm used here and for a
@@ -32,14 +32,14 @@ public:
     static constexpr T oddPrime(int divisor_index)
     {
         HPBC_CONSTEXPR_PRECONDITION(0 <= divisor_index && divisor_index < SIZE);
-        return oddprimes[divisor_index];
+        return oddprimes[static_cast<std::size_t>(divisor_index)];
     }
 
     // Returns oddPrime() squared without overflow.
     static constexpr auto oddPrimeSquared(int divisor_index)
     {
         HPBC_CONSTEXPR_PRECONDITION(0 <= divisor_index && divisor_index < SIZE);
-        U prime = oddprimes[divisor_index];
+        U prime = oddprimes[static_cast<std::size_t>(divisor_index)];
         // get the smallest type that can always square an element of oddprimes
         // without overflow.
         using U2 = decltype(get_constant_squared<U, oddprimes[SIZE-1]>());
@@ -71,7 +71,7 @@ public:
     static bool isDivisible(T& quotient, T dividend, int divisor_index)
     {
         HPBC_PRECONDITION2(0 <= divisor_index && divisor_index < SIZE);
-        T divisor = oddprimes[divisor_index];
+        T divisor = oddprimes[static_cast<std::size_t>(divisor_index)];
         return trial_divide_mayer(quotient, dividend, divisor);
     }
 
@@ -80,12 +80,12 @@ private:
     static constexpr auto oddprimes = get_odd_primes<SIZE>();
     using U = typename decltype(oddprimes)::value_type;
     static_assert(std::is_same_v<
-                       const std::array<U,SIZE>, decltype(oddprimes)>);
+      const std::array<U,static_cast<std::size_t>(SIZE)>, decltype(oddprimes)>);
     // assert any element of the oddprimes array fits in type T
     static_assert(ut_numeric_limits<T>::max() >= ut_numeric_limits<U>::max());
 };
 
 
-}  // end namespace
+}}  // end namespace
 
 #endif

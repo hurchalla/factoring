@@ -260,7 +260,9 @@ fi
 echo Using build mode $mode ...
 
 
-if [ "$compiler_name" = "clang" ] && [[ $compiler_version -lt 6 ]]; then
+if [ "$compiler_version" = "0" ]; then
+  cpp_standard="-std=c++17"
+elif [ "$compiler_name" = "clang" ] && [[ $compiler_version -lt 6 ]]; then
 : #  cpp_standard="-std=c++11"
 else
   cpp_standard="-std=c++17"

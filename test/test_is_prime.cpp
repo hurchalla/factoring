@@ -1,7 +1,7 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
 
-#include "is_prime_bruteforce.h"
+#include "hurchalla/factoring/detail/is_prime_bruteforce.h"
 #include "hurchalla/factoring/is_prime.h"
 
 #include "gtest/gtest.h"

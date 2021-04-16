@@ -6,7 +6,6 @@
 #define HURCHALLA_FACTORING_FACTORIZE_TRIALDIVISION_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/TrialDivisionWarren.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <cstdint>
@@ -15,11 +14,14 @@ namespace hurchalla { namespace detail {
 
 
 // overload for uint8_t (not a partial specialization, which is impossible)
-template <class OutputIt>
-OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q, std::uint8_t x)
+template <template<class,int> class TTD, int SIZE=54, class OutputIt>
+OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
+    std::uint8_t& next_prime, std::uint8_t x, int)
 {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
+
+    next_prime = 0;  // we'll always completely factor x, so any value would do
 
     q = x;
     // we only need to try primes < 16, since 16*16==256 is greater than any
@@ -114,23 +116,26 @@ OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q, std::uint8_t x)
 // guarantee complete factoring of any value x < 257*257, which includes all
 // values of type uint16_t.
 
-// class TD can be a type of TrialDivisionWarren or TrialDivisionMayer.
-template <class TD, class OutputIt>
-OutputIt factorize_trialdivision(OutputIt iter,
-                                 typename TD::value_type& q,
-                                 typename TD::value_type& next_prime,
-                                 typename TD::value_type x,
-                                 int size_limit)
+// the template-template param TTD should be either TrialDivisionWarren or
+// TrialDivisionMayer.
+template <template<class,int> class TTD,
+          int SIZE=54, class OutputIt, typename T>
+OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
+                                                                 int size_limit)
 {
-    constexpr int SIZE = TD::size();
-    using T = typename TD::value_type;
-
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     static_assert(SIZE > 1);
-    static_assert(TD::oddPrime(0) == 3);
     HPBC_PRECONDITION2(size_limit > 0);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
+
+    // TrialDivisionWarren and TrialDivisionMayer include only odd primes -
+    // hence they don't use the prime 2, and so we set their TD_SIZE to SIZE-1
+    constexpr int TD_SIZE = SIZE-1;  
+    int td_size_limit = size_limit - 1;  // same as above
+
+    using TD = TTD<T, TD_SIZE>;  
+    static_assert(TD::oddPrime(0) == 3);
 
     // try the only even prime, 2, as a special case potential factor
     q = x;
@@ -143,8 +148,8 @@ OutputIt factorize_trialdivision(OutputIt iter,
 
     using U = decltype(TD::nextPrimePastEndSquared());
     U next_prime_squared;
-    if (size_limit >= SIZE) {
-        size_limit = SIZE;
+    if (td_size_limit >= TD_SIZE) {
+        td_size_limit = TD_SIZE;
         constexpr auto tmp = TD::nextPrimePastEnd();
         static_assert(ut_numeric_limits<decltype(tmp)>::is_integer);
         // assert the next prime fits in type T
@@ -153,17 +158,17 @@ OutputIt factorize_trialdivision(OutputIt iter,
         next_prime_squared = TD::nextPrimePastEndSquared();
     }
     else {
-        next_prime = TD::oddPrime(size_limit);
-        auto tmp = TD::oddPrimeSquared(size_limit);
+        next_prime = TD::oddPrime(td_size_limit);
+        auto tmp = TD::oddPrimeSquared(td_size_limit);
         static_assert(ut_numeric_limits<decltype(tmp)>::is_integer);
         static_assert(!ut_numeric_limits<decltype(tmp)>::is_signed);
         static_assert(ut_numeric_limits<U>::max() >=
                       ut_numeric_limits<decltype(tmp)>::max());
         next_prime_squared = tmp;
     }
-    HPBC_ASSERT2(size_limit <= SIZE);
+    HPBC_ASSERT2(td_size_limit <= TD_SIZE);
 
-    for (int i=0; i<size_limit; ++i) {
+    for (int i=0; i<td_size_limit; ++i) {
         HPBC_ASSERT2(q > 1);
         if (TD::oddPrimeSquared(i) > q) {
             // Since no primes <= sqrt(q) are factors of q, q must be a prime

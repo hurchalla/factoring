@@ -102,7 +102,7 @@ HURCHALLA_FLATTEN
 typename std::enable_if<(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
                      ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH),
                  bool>::type
-// Use our special algorithm described above.
+// Use the special algorithm described above.
 // Note 'x' is the dividend and 'n' is the divisor.
 trial_divide_mayer(T& div_result, T x, T n)
 {
@@ -141,114 +141,6 @@ trial_divide_mayer(T& div_result, T x, T n)
 }
 
 #undef HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE
-
-
-
-
-#ifdef HURCHALLA_ENABLE_EXPERIMENTAL_TRIAL_DIVIDE_UINT32_VIA_DOUBLE
-// This version of the function is unproven to be correct (or incorrect).  It
-// divides two uint32_t variables by casting to double and performing the
-// division with doubles.  In theory the compiler should use SIMD instructions
-// instructions for it (such as SSE) if available, which for x86_64 would
-// provide a divide with latency somewhere around 15-22 cycles (depending on
-// architecture) and throughput somewhere around 4-10 cycles per instruction
-// (depending on architecture).  According to uops.info this could provide
-// similar latency to integer division for uint32_t, but either similar or up to
-// 1.5x better throughput.  I expect it to provide similar or slightly better
-// performance than the generic version of trial_divide_mayer above that uses
-// the REDC technique.  Note that if this function is proven correct, it opens
-// up the ability for a SIMD version of this function to be created, and used by
-// clients, which could offer 2-4x the throughput of this version (for 128 bit
-// to 256 bit vectors).  Some quesions that I don't have answers to on this
-// function's performance: depending on compiler flags could there be slowdown
-// due to the compiler handling the possibility of divide by zero, or handling
-// possibility of other floating point exceptions, or NaNs or infinities?  In
-// theory, the compiler should at least see NaNs/inifinites are impossible in
-// this function.
-// This function is experimental because I have not proven that calculating
-// the quotient of two uint32_t variables via a double (floating point) division
-// produces the same result as a straightforward divide of the two uint32_t
-// variables.  I suspect that it is always a correct operation, but I have
-// neither made a proof nor found example input values that disprove it.
-// A further complication is that the compiler (if fast-math optimization flag
-// is enabled) might in some circumstances first calculate the double value
-// for the reciprocal of n, and then multiply x by that reciprocal to get the
-// quotient - this introduces additional rounding error, but I suspect that
-// getting the results via the reciprocal will always produce a correct answer
-// too, though it becomes an even more uncertain guess.  There are three ways I
-// can think to prevent the compiler from using the reciprocal, but none of them
-// are good ideas.  First way would be to use inline asm, but for x86 I would
-// want to use SSE asm instructions, and if the calling code happens to use AVX
-// there is the potential for the upper bits to be dirty which means a
-// performance penalty:
-// https://stackoverflow.com/questions/41303780/why-is-this-sse-code-6-times-slower-without-vzeroupper-on-skylake
-// and I'd prefer not to use AVX instructions in case the processor doesn't
-// support AVX.  Regardless, even with a perfect solution to that, inline asm
-// would require different code for ARM and x86 and whatever other ISA, and
-// carries with it all the downsides of inline asm:
-// https://gcc.gnu.org/wiki/DontUseInlineAsm
-// A second way would be for this function to explicitly disable
-// -freciprocal-math (the flag associated with fast-math that causes the
-// problem), but there appears to be no production worthy way to do this.  Gcc
-// allows us to do
-//#pragma GCC push_options
-//#pragma GCC optimize ("-fno-reciprocal-math")
-// ... insert function code here ...
-//#pragma GCC pop_options
-// but the gcc documentation states this is intended for debugging only.
-// Alternatively gcc lets us use a function attribute:
-// bool trial_divide_mayer(args) __attribute__ ((optimize(no-reciprocal-math)))
-// but again the docs state it is intended for debugging only.  Additionally
-// clang, icc, and msvc may all have different ways to disable the reciprocal.
-// And a possible reason why this is intended as debug only, is that link-time
-// optimization perhaps might reintroduce the optimization despite it being
-// locally disabled for the function.
-// A third way would work, which is to require clients of this library to
-// compile their code without using -freciprocal-math (hence no fast-math which
-// enables it), or explicitly disable it via -fno-reciprocal-math (and require
-// similar measures for MSVC, etc).  Regardless of compiler, placing this
-// requirement onto clients would be unacceptable because they might not know
-// it is a requirement and might therefore compile this code in a broken form.
-//
-// In the end, what I would need is proof of correctness for this function
-// both using standard double precision fp division, and with using the
-// alternative of double precision fp reciprocal followed by double precision
-// multiply (which might be generated due to -freciprocal-math).
-// Until I have created a proof, or found a proof elsewhere, this function will
-// remain experimental.
-#include <immintrin.h>
-bool trial_divide_mayer(std::uint32_t& div_result, std::uint32_t x,
-                                                                std::uint32_t n)
-{
-    // make sure type double is IEEE double precision fp (with 52 bit mantissa)
-    static_assert(std::numeric_limits<double>::is_iec559, "");
-    HPBC_PRECONDITION2(n > 0);   // disallow division by 0
-    using std::uint32_t;
-
-    double dividend = static_cast<double>(x);
-    double divisor = static_cast<double>(n);
-#if 0
-    // SSE intrinsics: very likely the compiler will utilize SSE (and any other
-    // SIMD instruction set) automatically if it is available for the target and
-    // if it can both meet the specifications for type double and improve
-    // performance over a non-SIMD floating point unit.  Therefore I believe
-    // there is unlikely to be any benefit in creating a dependence on a
-    // particular SIMD ISA, and so I've disabled this SSE-specific section.
-    double quotient;
-    __m128d nv = _mm_set_sd(dividend);
-    __m128d dv = _mm_set_sd(divisor);
-    __m128d qv = _mm_div_sd(nv, dv);
-    _mm_store_sd(&quotient, qv);
-#else
-    double quotient = dividend / divisor;
-#endif
-    div_result = static_cast<uint32_t>(quotient);
-
-    // test whether the remainder (x - n*div_result) equals 0
-    return (x == n*div_result);
-}
-
-#endif
 
 
 }}  // end namespace

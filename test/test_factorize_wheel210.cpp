@@ -2,7 +2,9 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 
 #include "factorize_bruteforce.h"
-#include "hurchalla/factoring/detail/wheel_factorization210.h"
+#include "hurchalla/factoring/detail/TrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/TrialDivisionMayer.h"
+#include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 
 #include "gtest/gtest.h"
@@ -62,13 +64,21 @@ namespace {
         using T = std::uint16_t;
         for (T x = std::numeric_limits<T>::max(); x >= 2; --x) {
             std::vector<T> answer = hc::factorize_bruteforce(x);
-            std::vector<T> factors;
-            T q;
-            hd::wheel_factorization210(std::back_inserter(factors), q, x);
             std::sort(answer.begin(), answer.end());
-            std::sort(factors.begin(), factors.end());
+
+            T q;
             SCOPED_TRACE(testing::Message() << "x == " << x);
+            std::vector<T> factors;
+            hd::factorize_wheel210<hd::TrialDivisionWarren>
+                                            (std::back_inserter(factors), q, x);
+            std::sort(factors.begin(), factors.end());
             EXPECT_TRUE(factors == answer);
+
+            std::vector<T> factors2;
+            hd::factorize_wheel210<hd::TrialDivisionMayer>
+                                           (std::back_inserter(factors2), q, x);
+            std::sort(factors2.begin(), factors2.end());
+            EXPECT_TRUE(factors2 == answer);
         }
     }
 
@@ -82,12 +92,22 @@ namespace {
 
         // first test using std::vector
         std::vector<T> vec;
-        hd::wheel_factorization210(std::back_inserter(vec), q, x);
+        hd::factorize_wheel210<hd::TrialDivisionWarren>(
+                                                 std::back_inserter(vec), q, x);
         EXPECT_TRUE(q == 1);
-        // at this time, I haven't made a guarantee for wheel_factorization210()
+        // at this time, I haven't made a guarantee for factorize_wheel210()
         // that the destination range will be sorted, so we'll sort it here.
         std::sort(vec.begin(), vec.end());
         EXPECT_TRUE(vec == answer);
+
+        std::vector<T> vec2;
+        hd::factorize_wheel210<hd::TrialDivisionMayer>(
+                                                std::back_inserter(vec2), q, x);
+        EXPECT_TRUE(q == 1);
+        // at this time, I haven't made a guarantee for factorize_wheel210()
+        // that the destination range will be sorted, so we'll sort it here.
+        std::sort(vec2.begin(), vec2.end());
+        EXPECT_TRUE(vec2 == answer);
 
         // second test using std::array
         // the max possible number of factors occurs when all factors equal 2
@@ -108,14 +128,25 @@ namespace {
             std::array<T, max_num_factors>& arr;
             std::size_t num_factors;
         };
-        FactorArrayAdapter faa(arr);
 
-        hd::wheel_factorization210(std::back_inserter(faa), q, x);
+        FactorArrayAdapter faa(arr);
+        hd::factorize_wheel210<hd::TrialDivisionWarren>(
+                                                 std::back_inserter(faa), q, x);
         auto num_factors = faa.size();
         EXPECT_TRUE(q == 1);
         EXPECT_TRUE(num_factors == answer.size());
         std::sort(arr.begin(), arr.begin()+num_factors);
         EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,
+                                                               answer.begin()));
+
+        FactorArrayAdapter faa2(arr);
+        hd::factorize_wheel210<hd::TrialDivisionMayer>(
+                                                std::back_inserter(faa2), q, x);
+        auto num_factors2 = faa2.size();
+        EXPECT_TRUE(q == 1);
+        EXPECT_TRUE(num_factors2 == answer.size());
+        std::sort(arr.begin(), arr.begin()+num_factors2);
+        EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors2,
                                                                answer.begin()));
     }
 

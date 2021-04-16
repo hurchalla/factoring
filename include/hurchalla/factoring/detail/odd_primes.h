@@ -14,6 +14,7 @@
 #include <array>
 #include <type_traits>
 #include <cstdint>
+#include <cstddef>
 
 namespace hurchalla { namespace detail {
 
@@ -21,13 +22,14 @@ namespace hurchalla { namespace detail {
 // Intended for use at compile-time, to assist get_odd_primes() below.
 // Returns a uint64_t std::array of the first N=SIZE odd primes.
 template <int SIZE>
-constexpr std::array<std::uint64_t, SIZE> get_odd_primes_helper()
+constexpr std::array<std::uint64_t, static_cast<std::size_t>(SIZE)>
+get_odd_primes_helper()
 {
     static_assert(SIZE > 0);
     using T = std::uint64_t;
-    std::array<T, SIZE> oddprimes64{};
-    int i = 0;
-    for (T x=3; i < SIZE; x=static_cast<T>(x+2)) {
+    std::array<T, static_cast<std::size_t>(SIZE)> oddprimes64{};
+    std::size_t i = 0;
+    for (T x=3; i < static_cast<std::size_t>(SIZE); x=static_cast<T>(x+2)) {
         if (is_prime_bruteforce(x))
             oddprimes64[i++] = x;
         // Use a compile-time assert that the next loop iteration will not
@@ -44,10 +46,15 @@ template <int SIZE>
 constexpr auto get_odd_primes()
 {
     static_assert(SIZE > 0);
-    constexpr std::array<std::uint64_t, SIZE> oddprimes64 =
-                                                  get_odd_primes_helper<SIZE>();
+    constexpr std::array<std::uint64_t, static_cast<std::size_t>(SIZE)>
+                                    oddprimes64 = get_odd_primes_helper<SIZE>();
     constexpr std::uint64_t lastprime = oddprimes64[SIZE - 1];
+
     // get the smallest type that we can use to store all the primes
+#if defined(__GNUC__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
     using T = typename std::conditional<
                  (lastprime <= ut_numeric_limits<std::uint8_t>::max()),
                  std::uint8_t,
@@ -61,8 +68,12 @@ constexpr auto get_odd_primes()
                      >::type
                  >::type
               >::type;
-    std::array<T, SIZE> oddprimes{};
-    for (int i = 0; i < SIZE; ++i)
+#if defined(__GNUC__)
+#  pragma GCC diagnostic pop
+#endif
+
+    std::array<T, static_cast<std::size_t>(SIZE)> oddprimes{};
+    for (std::size_t i = 0; i < static_cast<std::size_t>(SIZE); ++i)
         oddprimes[i] = static_cast<T>(oddprimes64[i]);
     return oddprimes;
 }

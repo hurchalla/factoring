@@ -9,6 +9,7 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
+#include <cstddef>
 #include <type_traits>
 #include <array>
 
@@ -55,11 +56,12 @@ public:
         return bases;
     }
 private:
-    static constexpr int TABLE1_SIZE = 768;
-    static constexpr int TABLE2_SIZE = 12288;
+    static constexpr std::size_t TABLE1_SIZE = 768;
+    static constexpr std::size_t TABLE2_SIZE = 12288;
     // Much further below we also have
     // static constexpr std::uint16_t table2[] = ......
-#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+#if defined(__INTEL_COMPILER) || defined(_MSC_VER)
+    // unless array size is explicit, icc and msvc fail on sizeof() later
     static constexpr std::uint16_t table1[TABLE1_SIZE] = {
 #else
     static constexpr std::uint16_t table1[] = {
@@ -835,7 +837,8 @@ private:
     };
     static_assert(sizeof(table1)/sizeof(table1[0]) == TABLE1_SIZE, "");
 
-#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+#if defined(__INTEL_COMPILER) || defined(_MSC_VER)
+    // unless array size is explicit, icc and msvc fail on sizeof() later
     static constexpr std::uint16_t table2[TABLE2_SIZE] = {
 #else
     static constexpr std::uint16_t table2[] = {
@@ -13132,9 +13135,9 @@ private:
     static_assert(sizeof(table2)/sizeof(table2[0]) == TABLE2_SIZE, "");
 };
 template <typename DUMMY>
-constexpr int MillerRabinBases<64, 3, DUMMY>::TABLE1_SIZE;
+constexpr std::size_t MillerRabinBases<64, 3, DUMMY>::TABLE1_SIZE;
 template <typename DUMMY>
-constexpr int MillerRabinBases<64, 3, DUMMY>::TABLE2_SIZE;
+constexpr std::size_t MillerRabinBases<64, 3, DUMMY>::TABLE2_SIZE;
 template <typename DUMMY>
 constexpr std::uint16_t MillerRabinBases<64, 3, DUMMY>::table1[];
 template <typename DUMMY>

@@ -166,6 +166,10 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
     // If we reach this point, the following clause will be true.  We explicitly
     // use an 'if' anyway, so that we can be sure the compiler will not generate
     // any code for it when T digits <= HURCHALLA_TARGET_BIT_WIDTH.
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4127)
+#endif
     if (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<T>;
@@ -189,6 +193,9 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
         HPBC_ASSERT2(false);  // it ought to be impossible to reach this code.
         return iter;
     }
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 }
 
 

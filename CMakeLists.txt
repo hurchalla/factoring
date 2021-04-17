@@ -85,6 +85,8 @@ target_include_directories(hurchalla_factoring INTERFACE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 
+target_compile_features(hurchalla_factoring INTERFACE cxx_std_17)
+
 
 include(FetchContent)
 

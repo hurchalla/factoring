@@ -9,6 +9,7 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
+#include <cstddef>
 #include <type_traits>
 #include <array>
 
@@ -41,8 +42,9 @@ public:
         return bases;
     }
 private:
-    static constexpr int SIZE = 256;
-#if defined(__INTEL_COMPILER)  // avoid icc incomplete type errors in sizeof()
+    static constexpr std::size_t SIZE = 256;
+#if defined(__INTEL_COMPILER) || defined(_MSC_VER)
+    // unless array size is explicit, icc and msvc fail on sizeof() later
     static constexpr std::uint16_t table[SIZE] = {
 #else
     static constexpr std::uint16_t table[] = {
@@ -307,7 +309,7 @@ private:
     static_assert(sizeof(table)/sizeof(table[0]) == SIZE, "");
 };
 template <typename DUMMY>
-constexpr int MillerRabinBases<32, 1, DUMMY>::SIZE;
+constexpr std::size_t MillerRabinBases<32, 1, DUMMY>::SIZE;
 template <typename DUMMY>
 constexpr std::uint16_t MillerRabinBases<32, 1, DUMMY>::table[];
 

@@ -79,10 +79,12 @@ private:
     // get the first N=SIZE odd primes
     static constexpr auto oddprimes = get_odd_primes<SIZE>();
     using U = typename decltype(oddprimes)::value_type;
+    static_assert(ut_numeric_limits<U>::is_integer);
+    static_assert(!ut_numeric_limits<U>::is_signed);
     static_assert(std::is_same_v<
       const std::array<U,static_cast<std::size_t>(SIZE)>, decltype(oddprimes)>);
     // assert any element of the oddprimes array fits in type T
-    static_assert(ut_numeric_limits<T>::max() >= ut_numeric_limits<U>::max());
+    static_assert(ut_numeric_limits<T>::digits >= ut_numeric_limits<U>::digits);
 };
 
 

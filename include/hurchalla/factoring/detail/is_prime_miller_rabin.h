@@ -336,9 +336,9 @@ miller_rabin_trials(
 // preconditions on the modulus size.
 // -----------------
 // Template parameters:
-// LOG2_MODULUS_LIMIT can be 128, 64, 32, or 16, and creates a precondition of
-// modulus < (1 << LOG2_MODULUS_LIMIT).  Typically the type T satisfies this at
-// compile time (e.g. a type T of uint64_t with a LOG2_MODULUS_LIMIT of 64), 
+// LOG2_MODULUS_LIMIT can be 128, 64, 62, 32, or 16, and creates a precondition
+// of modulus < (1 << LOG2_MODULUS_LIMIT).  Typically the type T satisfies this
+// at compile time (e.g. a type T of uint64_t with a LOG2_MODULUS_LIMIT of 64),
 // but if a type T bit-width is larger than LOG2_MODULUS_LIMIT, then the caller
 // needs to ensure at run-time that the precondition will be satisfied.
 // Primality testing is generally faster with smaller LOG2_MODULUS_LIMIT.
@@ -353,6 +353,9 @@ miller_rabin_trials(
 //   32 bit, 1 base - 512 byte hash table
 //   32 bit, 2 bases - 16 bytes
 //   32 bit, 3 bases - 0 bytes (no hash table used)
+//
+//   62 bit, 2 bases - 288 KB hash table
+//   62 bit, 3 bases - 20 KB hash table
 //
 //   64 bit, 2 bases - 448 KB hash table
 //   64 bit, 3 bases - 25.5 KB
@@ -396,6 +399,7 @@ struct MillerRabinMontgomery {
     constexpr int POW2_LIMIT = get_MRM_POW2_LIMIT<LOG2_MODULUS_LIMIT>();
     static_assert(POW2_LIMIT >= LOG2_MODULUS_LIMIT, "");
     using U = typename sized_uint<POW2_LIMIT>::type;
+    // Ensure that 1 < num < (1 << LOG2_MODULUS_LIMIT)
     HPBC_PRECONDITION2(1 < num &&
                     num <= (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)) - 1 +
                            (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)));

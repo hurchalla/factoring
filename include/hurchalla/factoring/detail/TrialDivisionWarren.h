@@ -120,7 +120,20 @@ private:
         }
         return pia;
     }
+    // Suppress a false positive warning MSVC++ 2017 issues about (unsigned)
+    // integral overflow that occurs fairly deep in the call chain at
+    // impl_inverse_mod_R.  Unfortunately suppressing it there isn't possible,
+    // probably due to VC2017 awkwardly compiling constexpr functions.  Unsigned
+    // overflow is well defined and correct there.  MS fixed/removed this false
+    // warning with VC++ 2019.
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4307)
+#endif
     static constexpr auto oddprimesinfo = get_odd_primes_info(oddprimes);
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 };
 
 

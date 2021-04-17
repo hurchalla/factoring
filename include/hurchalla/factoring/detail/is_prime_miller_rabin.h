@@ -129,8 +129,10 @@ bool mr_trial(const MontType& mf,
     for (int j=1; j<r; ++j) {
         HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t i=0; i<TRIAL_SIZE; ++i)
             result[i] = mf.multiply(result[i], result[i]);
-        HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t i=0; i<TRIAL_SIZE; ++i)
-            isProbPrime[i] |= (mf.getCanonicalValue(result[i]) == negativeOne);
+        HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t i=0; i<TRIAL_SIZE; ++i) {
+            isProbPrime[i] = isProbPrime[i]
+                             | (mf.getCanonicalValue(result[i]) == negativeOne);
+        }
     }
 
     HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t i=0; i<TRIAL_SIZE; ++i) {

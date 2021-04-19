@@ -356,8 +356,8 @@ miller_rabin_trials(
 //   32 bit, 2 bases - 16 bytes
 //   32 bit, 3 bases - 0 bytes (no hash table used)
 //
-//   62 bit, 2 bases - 288 KB hash table
-//   62 bit, 3 bases - 20 KB hash table
+//   62 bit, 2 bases - 240 KB hash table
+//   62 bit, 3 bases - 16 KB hash table
 //
 //   64 bit, 2 bases - 448 KB hash table
 //   64 bit, 3 bases - 25.5 KB

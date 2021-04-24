@@ -33,7 +33,7 @@ The basic idea we can use is to try a particular base for a particular bucket1 (
 
 It may help to view code I wrote for the process:
 
-**Disclaimer- I'd intended to essentially discard this generator code after I'd used it to create the miller-rabin hash tables that are in this folder; it's quick/ugly for getting a job done.  But maybe it will be useful as a way to illustrate the process.  To make the code simpler to understand, I removed optimizations that sped it up 4x (one of the most significant optimizations is not to loop through the uint16_t values in numerical order, but instead to loop through the uint16_t bases sorted by total pseudoprimes, e.g. https://github.com/hurchalla/Extra-Files/blob/9db1c93fe912f39ad0c23c445750ec0826fbf4ac/bases_2.txt ).
+**Disclaimer- I'd intended to essentially discard this generator code after I'd used it to create the miller-rabin hash tables that are in this folder; it's quick/ugly for getting a job done.  But maybe it will be useful as a way to illustrate the process.  To make the code simpler to understand, I removed optimizations that sped it up 4x.
 
 See the comments at the beginning of main() for info on the command line arguments.
 
@@ -43,7 +43,7 @@ See the comments at the beginning of main() for info on the command line argumen
 
 // This code uses my github repos: factoring, modular_arithmetic, and util
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
-#include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
+#include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/util/compiler_macros.h"
 
 #include <vector>
@@ -62,7 +62,7 @@ template <typename T, typename B>
 HURCHALLA_FORCE_INLINE
 bool miller_rabin_trial(T number, B base)
 {
-    hurchalla::MontgomeryFull<T> mf(number);
+    hurchalla::MontgomeryForm<T> mf(number);
     const std::array<T, 1> bases = { base };
     return hurchalla::detail::miller_rabin_trials<1>(mf, bases);
 }

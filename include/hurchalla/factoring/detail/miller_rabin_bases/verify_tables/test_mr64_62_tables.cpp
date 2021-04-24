@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
     // test the bases that cover the full range of uint64_t
     for (auto psp : psps) {
-        hurchalla::MontgomeryFull<decltype(psp)> mf(psp);
+        hurchalla::MontgomeryForm<decltype(psp)> mf(psp);
 
 // this bunch all succeeded.
         if (is_prime_mr<64, 7, 7>(mf)) {
@@ -210,26 +210,92 @@ int main(int argc, char* argv[])
         hurchalla::MontgomeryQuarter<decltype(psp)> mf(psp);
 
 // this bunch all succeeded.
-        if (is_prime_mr<62, 3, 3>(mf)) {
+        if (is_prime_mr<62, 6, 6>(mf)) {
             std::cout << "failure 28 on " << psp << "\n";
             return 1;
         }
-        if (is_prime_mr<62, 2, 3>(mf)) {
+        if (is_prime_mr<62, 5, 6>(mf)) {
             std::cout << "failure 29 on " << psp << "\n";
             return 1;
         }
-        if (is_prime_mr<62, 1, 3>(mf)) {
+        if (is_prime_mr<62, 4, 6>(mf)) {
             std::cout << "failure 30 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 3, 6>(mf)) {
+            std::cout << "failure 31 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 2, 6>(mf)) {
+            std::cout << "failure 32 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 1, 6>(mf)) {
+            std::cout << "failure 33 on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<62, 5, 5>(mf)) {
+            std::cout << "failure 34 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 4, 5>(mf)) {
+            std::cout << "failure 35 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 3, 5>(mf)) {
+            std::cout << "failure 36 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 2, 5>(mf)) {
+            std::cout << "failure 37 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 1, 5>(mf)) {
+            std::cout << "failure 38 on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<62, 4, 4>(mf)) {
+            std::cout << "failure 39 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 3, 4>(mf)) {
+            std::cout << "failure 40 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 2, 4>(mf)) {
+            std::cout << "failure 41 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 1, 4>(mf)) {
+            std::cout << "failure 42 on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<62, 3, 3>(mf)) {
+            std::cout << "failure 43 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 2, 3>(mf)) {
+            std::cout << "failure 44 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<62, 1, 3>(mf)) {
+            std::cout << "failure 45 on " << psp << "\n";
             return 1;
         }
 
 // this bunch all succeeded.
         if (is_prime_mr<62, 2, 2>(mf)) {
-            std::cout << "failure 31 on " << psp << "\n";
+            std::cout << "failure 46 on " << psp << "\n";
             return 1;
         }
         if (is_prime_mr<62, 1, 2>(mf)) {
-            std::cout << "failure 32 on " << psp << "\n";
+            std::cout << "failure 47 on " << psp << "\n";
             return 1;
         }
     }

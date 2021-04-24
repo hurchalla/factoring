@@ -36,7 +36,7 @@ public:
     std::array<std::uint16_t, 3> get(std::uint64_t num)
     {
         HPBC_PRECONDITION2(num < (static_cast<std::uint64_t>(1) << 62));
-        // I generated/verified these hash tables and bases.  See README.TXT
+        // I generated/verified the hash table and bases.  See README.TXT
         using std::uint32_t;
         std::array<std::uint16_t, 3> bases;
         bases[0] = 2;

@@ -61,7 +61,7 @@ int main()
 // this bunch all succeeded.
     // -----Test 2 base uint16_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U16; i += 2) {
-        hurchalla::MontgomeryFull<std::uint16_t>
+        hurchalla::MontgomeryForm<std::uint16_t>
                                               mf(static_cast<std::uint16_t>(i));
         if (is_prime_mr<16, 2, 2>(mf) != primevec[i]) {
             std::cout << "failure 1 on " << i << "\n";
@@ -109,7 +109,7 @@ int main()
 // this bunch all succeeded.
     // -----Test 1 base uint16_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U16; i += 2) {
-        hurchalla::MontgomeryFull<std::uint16_t>
+        hurchalla::MontgomeryForm<std::uint16_t>
                                               mf(static_cast<std::uint16_t>(i));
         if (is_prime_mr<16, 1, 1>(mf) != primevec[i]) {
             std::cout << "failure 7 on " << i << "\n";

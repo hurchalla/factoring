@@ -41,7 +41,8 @@ namespace hurchalla { namespace detail {
 //
 // Since we use only a special case of Mayer's algorithm, we can present an easy
 // explanation/proof for it:
-// Let T be an unsigned integer type, and let the value R = 2^(bit_width_of_T).
+// Let T be an unsigned integer type, and let the value R = 2^(bit_width_of_T),
+// where '^' is shorthand for exponentiation (not xor).
 // For example, if T is uint64_t then R = 2^64.
 // Given a type T value x and a type T odd value n, we know n is coprime to R
 // because R is a power of 2 and n is odd.  Therefore the inverse of n (mod R)

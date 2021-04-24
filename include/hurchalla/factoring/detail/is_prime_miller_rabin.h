@@ -21,6 +21,9 @@
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_3.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_4.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_5.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_6.h"
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_2.h"
@@ -202,7 +205,7 @@ mr_trial(const MontType& mf,
 
 
 // Miller-Rabin first step:
-// write num-1 as 2^r * d by factoring powers of 2 from num-1
+// write num-1 as pow(2,r)*d by factoring powers of 2 from num-1
 template <typename T>
 void extract_powers_of_two_from_num_minus_one(T num, T& d, int& r)
 {
@@ -412,7 +415,7 @@ struct MillerRabinMontgomery {
 };
 
 // Partial specialization for 128 bit numbers.
-// This version requires input < 2^128, and uses 128 bases (no hash tables).
+// This version requires input < (1<<128), and uses 128 bases (no hash tables).
 template <typename MontType, std::size_t TRIAL_SIZE>
 struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
   static bool is_prime(const MontType& mf)
@@ -446,7 +449,7 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
     //   If for some reason you need this function specialization but your
     // MontyType T is larger than 128 bit, then construct a different MontyType
     // with 128 bit T, and use it to call this function.  Of course your modulus
-    // value must be less than 2^128 in order to do this, regardless of your
+    // value must be less than 1<<128 in order to do this, regardless of your
     // original T size.  I expect it would be much faster to construct the
     // MontyType object and then call this function, than it would be to use
     // this function with a non-128 bit T MontyType.
@@ -818,7 +821,7 @@ is_prime_miller_rabin_integral(T x)
     constexpr U Rdiv4 = static_cast<U>(1) << 30;
     return (x < Rdiv4) ?
             is_prime_miller_rabin(MontgomeryQuarter<U>(static_cast<U>(x))) :
-            is_prime_miller_rabin(MontgomeryFull<U>(static_cast<U>(x)));
+            is_prime_miller_rabin(MontgomeryForm<U>(static_cast<U>(x)));
 #endif
 }
 
@@ -835,7 +838,7 @@ is_prime_miller_rabin_integral(T x)
         constexpr U Rdiv4 = static_cast<U>(1) << 62;
         return (x < Rdiv4) ?
                 is_prime_miller_rabin(MontgomeryQuarter<U>(static_cast<U>(x))) :
-                is_prime_miller_rabin(MontgomeryFull<U>(static_cast<U>(x)));
+                is_prime_miller_rabin(MontgomeryForm<U>(static_cast<U>(x)));
     }
     else
         return is_prime_miller_rabin_integral(static_cast<std::uint32_t>(x));
@@ -853,7 +856,7 @@ is_prime_miller_rabin_integral(T x)
                         static_cast<U>(1) << (ut_numeric_limits<U>::digits - 2);
         return (x < Rdiv4) ?
                 is_prime_miller_rabin(MontgomeryQuarter<U>(static_cast<U>(x))) :
-                is_prime_miller_rabin(MontgomeryFull<U>(static_cast<U>(x)));
+                is_prime_miller_rabin(MontgomeryForm<U>(static_cast<U>(x)));
     }
     else
         return is_prime_miller_rabin_integral(static_cast<std::uint64_t>(x));

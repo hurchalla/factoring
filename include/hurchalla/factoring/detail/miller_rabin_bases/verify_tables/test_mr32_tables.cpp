@@ -61,7 +61,7 @@ int main()
 // this bunch all succeeded.
     // -----Test 3 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
-        hurchalla::MontgomeryFull<std::uint32_t>
+        hurchalla::MontgomeryForm<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 3, 3>(mf) != primevec[i]) {
             std::cout << "failure 1 on " << i << "\n";
@@ -121,7 +121,7 @@ int main()
 // this bunch all succeeded.
     // -----Test 2 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
-        hurchalla::MontgomeryFull<std::uint32_t>
+        hurchalla::MontgomeryForm<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 2, 2>(mf) != primevec[i]) {
             std::cout << "failure 4 on " << i << "\n";
@@ -169,7 +169,7 @@ int main()
 // this bunch all succeeded.
     // -----Test 1 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
-        hurchalla::MontgomeryFull<std::uint32_t>
+        hurchalla::MontgomeryForm<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 1, 1>(mf) != primevec[i]) {
             std::cout << "failure 6 on " << i << "\n";

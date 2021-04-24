@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
     std::cout << "all psps have been read\n";
 
     for (auto psp : psps) {
-        hurchalla::MontgomeryFull<decltype(psp)> mf(psp);
+        hurchalla::MontgomeryForm<decltype(psp)> mf(psp);
 
 // this bunch all succeeded.
         if (is_prime_mr<64, 3, 3>(mf)) {

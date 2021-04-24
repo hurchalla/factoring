@@ -157,7 +157,7 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
             return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
-            using MF = MontgomeryFull<S>;
+            using MF = MontgomeryForm<S>;
             return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }
@@ -184,7 +184,7 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
             return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
-            using MF = MontgomeryFull<T>;
+            using MF = MontgomeryForm<T>;
             return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }

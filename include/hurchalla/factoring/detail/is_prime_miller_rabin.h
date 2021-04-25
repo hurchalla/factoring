@@ -29,6 +29,9 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_3.h"
 
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases30_1.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases30_2.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_2.h"
 

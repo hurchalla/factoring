@@ -53,10 +53,10 @@ int main()
     std::cout << "started\n";
 
     constexpr uint64_t LIMIT_U32 = static_cast<uint64_t>(1) << 32;
+    constexpr uint64_t LIMIT_U30 = static_cast<uint64_t>(1) << 30;
     auto primevec = init_primes(LIMIT_U32);
 
     std::cout << "primes are initialized\n";
-
 
 // this bunch all succeeded.
     // -----Test 3 base uint32_t miller-rabin-----
@@ -85,15 +85,15 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 3, 3>(mf)) {
-            std::cout << "failure 7 on " << i << "\n";
+            std::cout << "failure 4 on " << i << "\n";
             return 1;
         }
         if (is_prime_mr<32, 2, 3>(mf)) {
-            std::cout << "failure 8 on " << i << "\n";
+            std::cout << "failure 5 on " << i << "\n";
             return 1;
         }
         if (is_prime_mr<32, 1, 3>(mf)) {
-            std::cout << "failure 9 on " << i << "\n";
+            std::cout << "failure 6 on " << i << "\n";
             return 1;
         }
     }
@@ -103,15 +103,15 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (!is_prime_mr<32, 3, 3>(mf)) {
-            std::cout << "failure 13 on " << i << "\n";
+            std::cout << "failure 7 on " << i << "\n";
             return 1;
         }
         if (!is_prime_mr<32, 2, 3>(mf)) {
-            std::cout << "failure 14 on " << i << "\n";
+            std::cout << "failure 8 on " << i << "\n";
             return 1;
         }
         if (!is_prime_mr<32, 1, 3>(mf)) {
-            std::cout << "failure 15 on " << i << "\n";
+            std::cout << "failure 9 on " << i << "\n";
             return 1;
         }
     }
@@ -124,12 +124,22 @@ int main()
         hurchalla::MontgomeryForm<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 2, 2>(mf) != primevec[i]) {
-            std::cout << "failure 4 on " << i << "\n";
+            std::cout << "failure 10 on " << i << "\n";
             return 1;
         }
         if (is_prime_mr<32, 1, 2>(mf) != primevec[i]) {
-            std::cout << "failure 5 on " << i << "\n";
+            std::cout << "failure 11 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (is_prime_mr<30, 2, 2>(mf) != primevec[i]) {
+                std::cout << "failure 12 on " << i << "\n";
+                return 1;
+            }
+            if (is_prime_mr<30, 1, 2>(mf) != primevec[i]) {
+                std::cout << "failure 13 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "2 base MR for odds passed verification\n";
@@ -141,12 +151,22 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 2, 2>(mf)) {
-            std::cout << "failure 10 on " << i << "\n";
+            std::cout << "failure 14 on " << i << "\n";
             return 1;
         }
         if (is_prime_mr<32, 1, 2>(mf)) {
-            std::cout << "failure 11 on " << i << "\n";
+            std::cout << "failure 15 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (is_prime_mr<30, 2, 2>(mf)) {
+                std::cout << "failure 16 on " << i << "\n";
+                return 1;
+            }
+            if (is_prime_mr<30, 1, 2>(mf)) {
+                std::cout << "failure 17 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "2 base MR for evens passed verification\n";
@@ -155,12 +175,22 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (!is_prime_mr<32, 2, 2>(mf)) {
-            std::cout << "failure 16 on " << i << "\n";
+            std::cout << "failure 18 on " << i << "\n";
             return 1;
         }
         if (!is_prime_mr<32, 1, 2>(mf)) {
-            std::cout << "failure 17 on " << i << "\n";
+            std::cout << "failure 19 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (!is_prime_mr<30, 2, 2>(mf)) {
+                std::cout << "failure 20 on " << i << "\n";
+                return 1;
+            }
+            if (!is_prime_mr<30, 1, 2>(mf)) {
+                std::cout << "failure 21 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "2 base MR for the number 2 passed verification\n";
@@ -172,8 +202,14 @@ int main()
         hurchalla::MontgomeryForm<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 1, 1>(mf) != primevec[i]) {
-            std::cout << "failure 6 on " << i << "\n";
+            std::cout << "failure 22 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (is_prime_mr<30, 1, 1>(mf) != primevec[i]) {
+                std::cout << "failure 23 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "1 base MR for odds passed verification\n";
@@ -185,8 +221,14 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (is_prime_mr<32, 1, 1>(mf)) {
-            std::cout << "failure 12 on " << i << "\n";
+            std::cout << "failure 24 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (is_prime_mr<30, 1, 1>(mf)) {
+                std::cout << "failure 25 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "1 base MR for evens passed verification\n";
@@ -195,8 +237,14 @@ int main()
         hurchalla::MontgomeryStandardMathWrapper<std::uint32_t>
                                               mf(static_cast<std::uint32_t>(i));
         if (!is_prime_mr<32, 1, 1>(mf)) {
-            std::cout << "failure 18 on " << i << "\n";
+            std::cout << "failure 26 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U30) {
+            if (!is_prime_mr<30, 1, 1>(mf)) {
+                std::cout << "failure 27 on " << i << "\n";
+                return 1;
+            }
         }
     }
     std::cout << "1 base MR for the number 2 passed verification\n";

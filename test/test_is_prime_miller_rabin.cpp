@@ -75,7 +75,7 @@ namespace {
 
         namespace hc = hurchalla;
         hc::MontgomeryStandardMathWrapper<T> mWM(modulus);
-        hc::MontgomeryFull<T>    mFR(modulus);
+        hc::MontgomeryForm<T>    mFR(modulus);
         hc::MontgomeryQuarter<T> mQR(modulus);
 
         namespace hd = hurchalla::detail;
@@ -90,7 +90,7 @@ namespace {
 
         namespace hc = hurchalla;
         hc::MontgomeryStandardMathWrapper<T> mWM(modulus);
-        hc::MontgomeryFull<T>    mFR(modulus);
+        hc::MontgomeryForm<T>    mFR(modulus);
         hc::MontgomeryQuarter<T> mQR(modulus);
 
         namespace hd = hurchalla::detail;
@@ -133,7 +133,7 @@ namespace {
         for (__uint128_t i = zero - 1; i >= primes[9]; i-=2) {
             using T = __uint128_t;
             hc::MontgomeryStandardMathWrapper<T> mWM(i);
-            hc::MontgomeryFull<T>    mFR(i);
+            hc::MontgomeryForm<T>    mFR(i);
             hc::MontgomeryQuarter<T> mQR(i);
             bool is_primeSM = hd::is_prime_miller_rabin(mWM);
             bool is_primeFR = hd::is_prime_miller_rabin(mFR);

@@ -1,5 +1,6 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_INTEGER_SQRT_H_INCLUDED
 #define HURCHALLA_FACTORING_INTEGER_SQRT_H_INCLUDED
@@ -15,6 +16,7 @@
 namespace hurchalla {
 
 
+namespace detail_integer_sqrt {
 // this stops the compiler from complaining about "shift count >= width of type"
 // in cases where the shift wouldn't have actually been executed
 template <int shift, typename T>
@@ -30,6 +32,7 @@ HURCHALLA_FORCE_INLINE  typename std::enable_if<(shift <
 safe_right_shift(T x1)
 {
     return static_cast<T>(x1 >> shift);
+}
 }
 
 
@@ -47,6 +50,7 @@ T integer_sqrt(T x)
     if (x <= 1)
         return x;
 
+    using namespace detail_integer_sqrt;
     // set the first guess g0 equal to the least power of 2 that is >= sqrt(x)
     int s = 1;
     T x1 = static_cast<T>(x - 1);

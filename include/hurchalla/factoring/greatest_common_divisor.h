@@ -1,3 +1,6 @@
+// --- This file is distributed under the MIT Open Source License, as detailed
+// by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_GREATEST_COMMON_DIVISOR_H_INCLUDED
 #define HURCHALLA_FACTORING_GREATEST_COMMON_DIVISOR_H_INCLUDED

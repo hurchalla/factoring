@@ -1,12 +1,13 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/TrialDivisionWarren.h"
-#include "hurchalla/factoring/detail/TrialDivisionMayer.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/pollard_rho_factorize.h"
@@ -26,8 +27,8 @@ namespace hurchalla { namespace detail {
 #endif
 
 
-#define TRIAL_DIVISION_TEMPLATE TrialDivisionWarren
-//#define TRIAL_DIVISION_TEMPLATE TrialDivisionMayer
+#define TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
+//#define TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
 
 
 // Initial tests so far suggest it might be fastest to entirely skip wheel

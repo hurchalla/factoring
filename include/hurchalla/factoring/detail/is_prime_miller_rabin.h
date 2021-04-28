@@ -35,7 +35,7 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_2.h"
 
-#include "hurchalla/montgomery_arithmetic/low_level_api/optimization_tag_structs.h"
+#include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -693,6 +693,7 @@ is_prime_miller_rabin(const MontType& mf)
     // repeated speed gain from processing more bases per trial.
     constexpr std::size_t TOTAL_BASES = 128;
     constexpr std::size_t TRIAL_SIZE = 4;
+    HPBC_PRECONDITION2(mf.getModulus() > 1);
     return MillerRabinMontgomery
                          <MontType, 128, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
 }
@@ -705,6 +706,7 @@ is_prime_miller_rabin(const MontType& mf)
     using T = typename MontType::T_type;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(mf.getModulus() > 1);
     if (mf.getModulus() < UINT64_C(350269456337)) {
         // We can use a 3 base test when the modulus is small for a uint64_t.
         // It's faster than the 5 base test below, and needs no extra static
@@ -745,6 +747,7 @@ is_prime_miller_rabin(const MontType& mf)
     using T = typename MontType::T_type;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(mf.getModulus() > 1);
     // 2 base (hashed) miller-rabin with a trial size 1 should be a good 32 bit
     // default, since it's faster than 3 base (non-hashed) miller-rabin yet
     // keeps essentially the same code size and static memory usage.
@@ -765,12 +768,12 @@ is_prime_miller_rabin(const MontType& mf)
 
 // It's questionable whether using miller-rabin is a good idea for primality
 // testing uint16_t values.  For any intensive repeated primality testing,
-// initializing a bit vector using sieve of eratosthenes will provide a small
-// (8KB) lookup table that should be faster at determining primality.  For a one
-// time primality test you could just trial divide by all primes < 256, and
-// even if it's not quite as fast as this function, the computational load will
-// be tiny.  On the plus side, this function may be the most convenient option
-// if you are already using the miller-rabin tests in this file.
+// the sieve of eratosthenes (see SieveOfEratosthenes.h) will provide a small
+// lookup table that should be faster at determining primality.  For a one time
+// primality test you could just trial divide by all primes < 256, and even
+// if it's not quite as fast as this function, the computational load will be
+// tiny.  On the plus side, this function may be the most convenient option if
+// you are already using the miller-rabin tests in this file.
 template <typename MontType>
 typename std::enable_if<
        (ut_numeric_limits<typename MontType::T_type>::digits == 16), bool>::type
@@ -779,6 +782,7 @@ is_prime_miller_rabin(const MontType& mf)
     using T = typename MontType::T_type;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(mf.getModulus() > 1);
     // 1 base (hashed) miller-rabin with a trial size 1 should be a good 16 bit
     // default, since it's faster than 2 base (non-hashed) miller-rabin yet
     // keeps essentially the same code size and static memory usage.
@@ -812,6 +816,7 @@ typename std::enable_if<(ut_numeric_limits<T>::digits <= 32), bool>::type
 is_prime_miller_rabin_integral(T x)
 {
     HPBC_PRECONDITION2(x % 2 == 1);
+    HPBC_PRECONDITION2(x > 1);
     static_assert(ut_numeric_limits<T>::is_integer, "");
 #ifndef HURCHALLA_TARGET_BIT_WIDTH
 #   error "HURCHALLA_TARGET_BIT_WIDTH must be defined"
@@ -836,6 +841,7 @@ is_prime_miller_rabin_integral(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     HPBC_PRECONDITION2(x % 2 == 1);
+    HPBC_PRECONDITION2(x > 1);
     if (x > ut_numeric_limits<std::uint32_t>::max()) {
         using U = std::uint64_t;
         constexpr U Rdiv4 = static_cast<U>(1) << 62;
@@ -853,6 +859,7 @@ is_prime_miller_rabin_integral(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     HPBC_PRECONDITION2(x % 2 == 1);
+    HPBC_PRECONDITION2(x > 1);
     if (x > ut_numeric_limits<std::uint64_t>::max()) {
         using U = typename extensible_make_unsigned<T>::type;
         constexpr U Rdiv4 =

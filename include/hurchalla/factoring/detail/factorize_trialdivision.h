@@ -13,10 +13,65 @@
 namespace hurchalla { namespace detail {
 
 
+// factorize_trialdivision() partially (and sometimes completely)
+// factorizes the number x using the first SIZE or size_limit (whichever is
+// smaller) prime numbers as potential divisors for divisibility testing.
+//
+// Preconditions for factorize_trialdivision():
+//   Requires x >= 2.
+//
+// Postconditions:
+// (note these are the same as for factorize_wheel210())
+// 1) The return value is an output iterator to the position one past the last
+//   factor that the function wrote to the destination range (iterated by the
+//   function's parameter 'iter').  The destination range consists of all the
+//   prime factors that the function was able to find for x.  This range will
+//   be empty if the function could not find any factors for x and could not
+//   determine whether x was prime.  The range will consist of the single
+//   element x if the function determined that x was prime.
+// 2) q will be set to the quotient of x divided by all the elements written to
+//   the destination range (iterated by the function's parameter 'iter').  If
+//   nothing was written to the range (if it's empty), then q will be set to x.
+//   There are specific details that naturally follow from these facts and from
+//   Postcondition 1: if q gets set to 1, then this indicates the function was
+//   able to completely factor x and the destination range consists of all the
+//   factors.  If q > 1, then this indicates the function was not able to
+//   completely factorize x, and q represents the value still remaining to be
+//   factored.  q will never be set to zero (or a value < 0).
+
+// The function will trial a total of either SIZE or size_limit potential prime
+// factors, whichever is smaller.  SIZE is a compile-time parameter for fine
+// tuning of performance, that helps us to achieve the best possible overall
+// performance of a factorization method in which this function is called.
+// Likewise, size_limit is a run-time parameter intended for fine tuning, given
+// a particular number to factor.  The idea behind size_limit is that when
+// factoring smaller numbers it *might* improve performance to use size_limit
+// to stop trial division before trialing all SIZE primes.  Ideally any/all
+// compile-time and run-time choices for SIZE and size_limit would be guided by
+// performance measurement tests.
+//
+// If the function does not completely factorize x, it will copy into next_prime
+// the next prime larger than the last prime factor that it trialed.  For some
+// factorization methods you may want/need to know the next prime that wasn't
+// yet trialed in order to continue factoring, while for others methods (e.g
+// pollard-rho) it's irrelevant.  The value of next_prime is unspecified if the
+// function completely factors x.
+//
+// The default SIZE 54 tries all primes < 256 as potential divisors (unless
+// size_limit < SIZE).  Thus this function with SIZE 54 could be used to
+// guarantee complete factoring of any value x < 257*257, which includes all
+// values of type uint16_t.
+
+// The template-template param TTD should be either PrimeTrialDivisionWarren or
+// PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren is usually faster, but it
+// uses around 5-10x more memory (PrimeTrialDivisionMayer typically uses around
+// 2*SIZE bytes of memory).
+
+
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54, class OutputIt>
 OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
-    std::uint8_t& next_prime, std::uint8_t x, int)
+    std::uint8_t& next_prime, std::uint8_t x, int = 54)
 {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
@@ -65,63 +120,10 @@ OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
 }
 
 
-
-
-// factorize_trialdivision() partially (and sometimes completely)
-// factorizes the number x using the first SIZE or size_limit (whichever is
-// smaller) prime numbers as potential divisors for divisibility testing.
-//
-// Preconditions for factorize_trialdivision():
-//   Requires x >= 2.
-//
-// Postconditions:
-// (note these are the same as for factorize_wheel210())
-// 1) The return value is an output iterator to the position one past the last
-//   factor that the function wrote to the destination range (iterated by the
-//   function's parameter 'iter').  The destination range consists of all the
-//   prime factors that the function was able to find for x.  This range will
-//   be empty if the function could not find any factors for x and could not
-//   determine whether x was prime.  The range will consist of the single
-//   element x if the function determined that x was prime.
-// 2) q will be set to the quotient of x divided by all the elements written to
-//   the destination range (iterated by the function's parameter 'iter').  If
-//   nothing was written to the range (if it's empty), then q will be set to x.
-//   There are specific details that naturally follow from these facts and from
-//   Postcondition 1: if q gets set to 1, then this indicates the function was
-//   able to completely factor x and the destination range consists of all the
-//   factors.  If q > 1, then this indicates the function was not able to
-//   completely factorize x, and q represents the value still remaining to be
-//   factored.  q will never be set to zero (or a value < 0).
-
-// The function will trial a total of either SIZE or size_limit potential prime
-// factors, whichever is smaller.  SIZE is a compile-time parameter for fine
-// tuning of performance, that helps us to achieve the best possible overall
-// performance of a factorization method in which this function is called.
-// Likewise, size_limit is a run-time parameter intended for fine tuning, given
-// a particular number to factor.  The idea behind size_limit is that when
-// factoring smaller numbers it *might* improve performance to use size_limit
-// to stop trial division before trialing all SIZE primes.  Ideally any/all
-// compile-time and run-time choices for SIZE and size_limit would be guided by
-// performance measurement tests.  
-//
-// If the function does not complete factorize x, it will copy into next_prime
-// the next prime larger than the last prime factor that it trialed.  For some
-// factorization methods you may want/need to know the next prime that wasn't
-// yet trialed in order to continue factoring, while for others methods (e.g
-// pollard-rho) it's irrelevant.  The value of next_prime is unspecified if the
-// function completely factors x.
-//
-// The default SIZE 54 tries all primes < 256 as potential divisors (unless
-// size_limit < SIZE).  Thus this function with SIZE 54 could be used to
-// guarantee complete factoring of any value x < 257*257, which includes all
-// values of type uint16_t.
-
-// the template-template param TTD should be either TrialDivisionWarren or
-// TrialDivisionMayer.
 template <template<class,int> class TTD,
           int SIZE=54, class OutputIt, typename T>
 OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
-                                                                 int size_limit)
+                                                            int size_limit = 54)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
@@ -129,8 +131,9 @@ OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
     HPBC_PRECONDITION2(size_limit > 0);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
-    // TrialDivisionWarren and TrialDivisionMayer include only odd primes -
-    // hence they don't use the prime 2, and so we set their TD_SIZE to SIZE-1
+    // PrimeTrialDivisionWarren and PrimeTrialDivisionMayer include only odd
+    // primes - hence they don't use the prime 2, and so we set their TD_SIZE to
+    // SIZE-1
     constexpr int TD_SIZE = SIZE-1;  
     int td_size_limit = size_limit - 1;  // same as above
 

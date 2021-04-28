@@ -1,9 +1,10 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
-#include "factorize_bruteforce.h"
-#include "hurchalla/factoring/detail/TrialDivisionWarren.h"
-#include "hurchalla/factoring/detail/TrialDivisionMayer.h"
+#include "../factorize_bruteforce.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 
@@ -69,13 +70,13 @@ namespace {
             T q;
             SCOPED_TRACE(testing::Message() << "x == " << x);
             std::vector<T> factors;
-            hd::factorize_wheel210<hd::TrialDivisionWarren>
+            hd::factorize_wheel210<hd::PrimeTrialDivisionWarren>
                                             (std::back_inserter(factors), q, x);
             std::sort(factors.begin(), factors.end());
             EXPECT_TRUE(factors == answer);
 
             std::vector<T> factors2;
-            hd::factorize_wheel210<hd::TrialDivisionMayer>
+            hd::factorize_wheel210<hd::PrimeTrialDivisionMayer>
                                            (std::back_inserter(factors2), q, x);
             std::sort(factors2.begin(), factors2.end());
             EXPECT_TRUE(factors2 == answer);
@@ -92,7 +93,7 @@ namespace {
 
         // first test using std::vector
         std::vector<T> vec;
-        hd::factorize_wheel210<hd::TrialDivisionWarren>(
+        hd::factorize_wheel210<hd::PrimeTrialDivisionWarren>(
                                                  std::back_inserter(vec), q, x);
         EXPECT_TRUE(q == 1);
         // at this time, I haven't made a guarantee for factorize_wheel210()
@@ -101,7 +102,7 @@ namespace {
         EXPECT_TRUE(vec == answer);
 
         std::vector<T> vec2;
-        hd::factorize_wheel210<hd::TrialDivisionMayer>(
+        hd::factorize_wheel210<hd::PrimeTrialDivisionMayer>(
                                                 std::back_inserter(vec2), q, x);
         EXPECT_TRUE(q == 1);
         // at this time, I haven't made a guarantee for factorize_wheel210()
@@ -130,7 +131,7 @@ namespace {
         };
 
         FactorArrayAdapter faa(arr);
-        hd::factorize_wheel210<hd::TrialDivisionWarren>(
+        hd::factorize_wheel210<hd::PrimeTrialDivisionWarren>(
                                                  std::back_inserter(faa), q, x);
         auto num_factors = faa.size();
         EXPECT_TRUE(q == 1);
@@ -140,7 +141,7 @@ namespace {
                                                                answer.begin()));
 
         FactorArrayAdapter faa2(arr);
-        hd::factorize_wheel210<hd::TrialDivisionMayer>(
+        hd::factorize_wheel210<hd::PrimeTrialDivisionMayer>(
                                                 std::back_inserter(faa2), q, x);
         auto num_factors2 = faa2.size();
         EXPECT_TRUE(q == 1);

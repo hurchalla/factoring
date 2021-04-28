@@ -146,25 +146,29 @@ init_sieve_odd_primes(std::uint64_t size,
 
 class SieveOfEratosthenes {
     const std::vector<bool> oddprimes;
-    const std::uint64_t size;
+    const std::uint64_t length;
 
 public:
     SieveOfEratosthenes(std::uint64_t size,
                         std::uint64_t cache_blocking_size = 262144)
             : oddprimes(init_sieve_odd_primes(size, cache_blocking_size)),
-              size(size)
+              length(size)
     {
-        HPBC_ASSERT2(size/2 == oddprimes.size());
+        HPBC_ASSERT2(length/2 == oddprimes.size());
     }
 
-    bool isPrime(std::uint64_t value)
+    std::uint64_t size() const { return length; }
+
+    bool isPrime(std::uint64_t value) const
     {
-        HPBC_PRECONDITION2(value < size);
+        HPBC_PRECONDITION2(value < length);
         if (value % 2 == 0)
             return (value == 2);
         else
             return oddprimes[value/2];
     }
+
+    bool operator[](std::uint64_t index) const { return isPrime(index); }
 };
 
 

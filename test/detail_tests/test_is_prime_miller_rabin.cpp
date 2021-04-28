@@ -1,5 +1,6 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"

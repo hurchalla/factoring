@@ -1,5 +1,6 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
 #define HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
@@ -57,8 +58,8 @@ namespace hurchalla { namespace detail {
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-// the template-template param TTD should be either TrialDivisionWarren or
-// TrialDivisionMayer.
+// the template-template param TTD should be either PrimeTrialDivisionWarren or
+// PrimeTrialDivisionMayer.
 template <template<class,int> class TTD, class OutputIt, typename T>
 OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
                                      T max_factor = ut_numeric_limits<T>::max())
@@ -77,6 +78,8 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
 
     // factor out all primes < 256
     constexpr int SIZE=54;   // there are 54 primes < 256
+    // FYI: there are 90 primes < 466, 122 primes < 676, 153 primes < 886,
+    // 183 primes < 1096, 213 primes < 1306, 240 primes < 1516.
     T next_prime;  // ignored for now
     iter = factorize_trialdivision<TTD, SIZE>(iter, q, next_prime, x, SIZE);
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision guarantees this

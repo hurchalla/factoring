@@ -1,5 +1,6 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_IS_PRIME_WHEEL210_H_INCLUDED
 #define HURCHALLA_FACTORING_IS_PRIME_WHEEL210_H_INCLUDED

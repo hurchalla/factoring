@@ -1,5 +1,6 @@
 // --- This file is distributed under the MIT Open Source License, as detailed
 // by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
 #ifndef HURCHALLA_FACTORING_POLLARD_RHO_FACTORIZE_H_INCLUDED
 #define HURCHALLA_FACTORING_POLLARD_RHO_FACTORIZE_H_INCLUDED
@@ -129,8 +130,8 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
 
 // Dispatch function to the fastest pr_factorize template function instantiation
 // available for x (parameterized on the fastest MontgomeryForm for x).
-// The template-template param TTD should be either TrialDivisionWarren or
-// TrialDivisionMayer.
+// The template-template param TTD should be either PrimeTrialDivisionWarren or
+// PrimeTrialDivisionMayer.
 template <template<class,int> class TTD, template<class> class Functor,
           class OutputIt, typename T>
 OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,

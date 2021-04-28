@@ -25,10 +25,16 @@ add_executable(test_hurchalla_factoring)
 target_sources(test_hurchalla_factoring PRIVATE
                factorize_bruteforce.h
                integer_sqrt.h
+               sample_primes_and_nonprimes.h
                test_factorize.cpp
                test_is_prime.cpp
-               test_is_prime_miller_rabin.cpp
-               test_factorize_wheel210.cpp
+               test_IsPrimeIntensive.cpp
+               detail_tests/test_factorize_wheel210.cpp
+               detail_tests/test_is_prime_miller_rabin.cpp
+               detail_tests/test_PrimeTrialDivisionWarrenAndMayer.cpp
+               detail_tests/test_SieveOfEratosthenes.cpp
+               detail_tests/test_trial_divide_mayer.cpp
+               detail_tests/test_trial_divide_mayer_standard_division.cpp
                )
 
 EnableMaxWarnings(test_hurchalla_factoring)

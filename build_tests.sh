@@ -8,7 +8,7 @@
 # This is my working rough-draft script for invoking the testing builds and
 # then running the tests.
 # The syntax is 
-# ./build_tests [-c<compiler_name>] [-r] [-a] [-m<Release|Debug>]
+# ./build_tests [-c<compiler_name>] [-r] [-a] [-t] [-m<Release|Debug>]
 #
 # -c allows you to select the compiler, rather than using the default.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
@@ -16,6 +16,8 @@
 #    optimizations, which makes for the fastest binaries but of course has the
 #    downsides of inline asm - primarily that inline asm is extremely difficult
 #    to properly test.
+# -t specifies to compile tests for all Hurchalla libraries, as well as for this
+#    repository.  Without -t, only tests for this repository will be compiled.
 # -m allows you to choose between Release and Debug build configuration, rather
 #    than using the default.
 #
@@ -160,7 +162,7 @@
 
 
 
-while getopts ":m:c:h-:ra" opt; do
+while getopts ":m:c:h-:rat" opt; do
   case $opt in
     h)
       ;&
@@ -179,6 +181,10 @@ while getopts ":m:c:h-:ra" opt; do
       ;;
     a)
       use_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
+      ;;
+    t)
+      test_all_hurchalla_libs="-DTEST_HURCHALLA_LIBS=ON"
+      run_all_hurchalla_tests=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -475,7 +481,8 @@ if [ "${mode,,}" = "release" ]; then
     pushd script_dir > /dev/null 2>&1
     build_dir=build/release_$compiler_name$compiler_version
     mkdir -p $build_dir
-    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
+    cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
+            $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="$cpp_standard  \
             $use_inline_asm  \
@@ -489,7 +496,8 @@ elif [ "${mode,,}" = "debug" ]; then
     pushd script_dir > /dev/null 2>&1
     build_dir=build/debug_$compiler_name$compiler_version
     mkdir -p $build_dir
-    cmake -S. -B./$build_dir -DTEST_HURCHALLA_LIBS=ON \
+    cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
+            $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXE_LINKER_FLAGS="$clang_ubsan_link_flags" \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $clang_ubsan  $gcc_ubsan  \
@@ -512,14 +520,16 @@ fi
 
 
 if [ "$run_tests" = true ]; then
-  ./$build_dir/test_ndebug_programming_by_contract --gtest_break_on_failure
-  exit_on_failure
-  ./$build_dir/test_programming_by_contract --gtest_break_on_failure
-  exit_on_failure
-  ./$build_dir/test_hurchalla_util --gtest_break_on_failure
-  exit_on_failure
-  ./$build_dir/test_hurchalla_modular_arithmetic --gtest_break_on_failure
-  exit_on_failure
+  if [ "$run_all_hurchalla_tests" = true ]; then
+    ./$build_dir/test_ndebug_programming_by_contract --gtest_break_on_failure
+    exit_on_failure
+    ./$build_dir/test_programming_by_contract --gtest_break_on_failure
+    exit_on_failure
+    ./$build_dir/test_hurchalla_util --gtest_break_on_failure
+    exit_on_failure
+    ./$build_dir/test_hurchalla_modular_arithmetic --gtest_break_on_failure
+    exit_on_failure
+  fi
   ./$build_dir/test_hurchalla_factoring --gtest_break_on_failure
   exit_on_failure
 fi

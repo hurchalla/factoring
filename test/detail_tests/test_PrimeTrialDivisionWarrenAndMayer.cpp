@@ -30,8 +30,9 @@ void isDivisible_test(typename PTD::value_type x, int index)
     bool is_divisible = PTD::isDivisible(div_result, x, index);
     T divisor = PTD::oddPrime(index);
     EXPECT_TRUE(is_divisible == (x % divisor == 0));
-    if (is_divisible)
+    if (is_divisible) {
         EXPECT_TRUE(div_result == x/divisor);
+    }
 
     // We don't actually care about squaring the divisor -
     // it's just a convenient way to test oddPrimeSquared
@@ -97,7 +98,7 @@ void PTD_tests()
         for (int i = SIZE/2 - indexrange/2; i < SIZE/2 + indexrange/2; ++i)
             isDivisible_test<PTD>(x, i);
     }
-    for (T x = midpoint - range/2; x < midpoint + range/2; ++x) {
+    for (T x = static_cast<T>(midpoint - range/2); x < midpoint + range/2; ++x){
         for (int i = 0; i < indexrange; ++i)
             isDivisible_test<PTD>(x, i);
         for (int i = SIZE-1; i > SIZE - indexrange; --i)

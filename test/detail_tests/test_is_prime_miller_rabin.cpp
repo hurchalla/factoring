@@ -2,9 +2,9 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 // Author: Jeffrey Hurchalla
 
+#include "is_prime_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
-#include "hurchalla/factoring/detail/is_prime_wheel210.h"
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 
 #include "gtest/gtest.h"

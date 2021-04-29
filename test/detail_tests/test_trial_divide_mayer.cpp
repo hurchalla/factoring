@@ -24,8 +24,9 @@ void trial_divide_test(T x, T divisor)
     T div_result;
     bool isdivisible = trial_divide_mayer(div_result, x, divisor);
     EXPECT_TRUE(isdivisible == (x % divisor == 0));
-    if (isdivisible)
+    if (isdivisible) {
         EXPECT_TRUE(div_result == x/divisor);
+    }
 }
 
 template <typename T>
@@ -35,33 +36,34 @@ void trial_divide_typed_tests()
     T midpoint = (static_cast<T>(0) - 1)/2;
     if (midpoint % 2 == 0)
         ++midpoint;
+    T midpoint_minus10 = static_cast<T>(midpoint - 10);
 
     T max = static_cast<T>(static_cast<T>(0) - 1);
     if (max % 2 == 0)
         --max;
 
     for (T x = 0; x < 20; ++x) {
-        for (T n = 1; n < 20; n += 2)
+        for (T n = 1; n < 20; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
-        for (T n = max; n > max - 20; n -= 2)
+        for (T n = max; n > max - 20; n = static_cast<T>(n-2))
             trial_divide_test(x, n);
-        for (T n = midpoint - 10; n < midpoint + 10; n += 2)
+        for (T n = midpoint_minus10; n < midpoint + 10; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
     }
     for (T x = max; x > max - 20; --x) {
-        for (T n = 1; n < 20; n += 2)
+        for (T n = 1; n < 20; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
-        for (T n = max; n > max - 20; n -= 2)
+        for (T n = max; n > max - 20; n = static_cast<T>(n-2))
             trial_divide_test(x, n);
-        for (T n = midpoint - 10; n < midpoint + 10; n += 2)
+        for (T n = midpoint_minus10; n < midpoint + 10; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
     }
-    for (T x = midpoint - 10; x < midpoint + 10; ++x) {
-        for (T n = 1; n < 20; n += 2)
+    for (T x = midpoint_minus10; x < midpoint + 10; ++x) {
+        for (T n = 1; n < 20; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
-        for (T n = max; n > max - 20; n -= 2)
+        for (T n = max; n > max - 20; n = static_cast<T>(n-2))
             trial_divide_test(x, n);
-        for (T n = midpoint - 10; n < midpoint + 10; n += 2)
+        for (T n = midpoint_minus10; n < midpoint + 10; n = static_cast<T>(n+2))
             trial_divide_test(x, n);
     }
 }

@@ -48,15 +48,17 @@ void test_sample_primes_and_nonprimes()
     constexpr int NUM_PRIMES =
                              sizeof(prime_numbers64)/sizeof(prime_numbers64[0]);
     for (int i=0; i<NUM_PRIMES; ++i) {
-        if (prime_numbers64[i] <= hc::ut_numeric_limits<T>::max())
+        if (prime_numbers64[i] <= hc::ut_numeric_limits<T>::max()) {
             EXPECT_TRUE(isprime(static_cast<T>(prime_numbers64[i])));
+        }
     }
 
     constexpr int NUM_NONPRIMES =
                        sizeof(nonprime_numbers64)/sizeof(nonprime_numbers64[0]);
     for (int i=0; i<NUM_NONPRIMES; ++i) {
-        if (nonprime_numbers64[i] <= hc::ut_numeric_limits<T>::max())
+        if (nonprime_numbers64[i] <= hc::ut_numeric_limits<T>::max()) {
             EXPECT_FALSE(isprime(static_cast<T>(nonprime_numbers64[i])));
+        }
     }
 }
 

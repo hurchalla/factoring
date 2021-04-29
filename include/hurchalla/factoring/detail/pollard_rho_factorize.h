@@ -20,16 +20,14 @@ namespace hurchalla { namespace detail {
 
 
 // defined lower in this file
-template <template<class,int> class TTD, template<class> class Functor,
-          class OutputIt, typename T>
+template <template<class> class Functor, class OutputIt, typename T>
 OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime = 0,
                                T base_c = 1, T* pIterations_performed = nullptr);
 
 
 namespace prf_detail {
 
-template <template<class,int> class TTD, template<class> class Functor,
-          class MF, class OutputIt, typename T>
+template <template<class> class Functor, class MF, class OutputIt, typename T>
 OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
                                                        T* pIterations_performed)
 {
@@ -66,7 +64,7 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
         {
             // Try to factor the factor (it may or may not be prime)
             T sub_iterations;
-            iter = pollard_rho_factorize<TTD, Functor>(iter, tmp_factor,
+            iter = pollard_rho_factorize<Functor>(iter, tmp_factor,
                   threshold_always_prime, static_cast<T>(c+1), &sub_iterations);
             if (pIterations_performed)
                 *pIterations_performed = static_cast<T>(*pIterations_performed
@@ -75,7 +73,7 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
             // Next try to factor the quotient.
             // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
             T quotient = static_cast<T>(x/tmp_factor);  
-            iter = pollard_rho_factorize<TTD, Functor>(iter, quotient,
+            iter = pollard_rho_factorize<Functor>(iter, quotient,
                   threshold_always_prime, static_cast<T>(c+1), &sub_iterations);
             if (pIterations_performed)
                 *pIterations_performed = static_cast<T>(*pIterations_performed
@@ -113,7 +111,7 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
 
     // Since we didn't find a factor, fall back to slow trial division
     T q;
-    iter = factorize_wheel210<TTD>(iter, q, x);
+    iter = factorize_wheel210(iter, q, x);
     // factorize_wheel210 should always completely factor x (and set q = 1)
     HPBC_ASSERT2(q == 1);
     return iter;
@@ -130,10 +128,7 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
 
 // Dispatch function to the fastest pr_factorize template function instantiation
 // available for x (parameterized on the fastest MontgomeryForm for x).
-// The template-template param TTD should be either PrimeTrialDivisionWarren or
-// PrimeTrialDivisionMayer.
-template <template<class,int> class TTD, template<class> class Functor,
-          class OutputIt, typename T>
+template <template<class> class Functor, class OutputIt, typename T>
 OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
                                              T base_c, T* pIterations_performed)
 {
@@ -147,19 +142,18 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
     if (x <= ut_numeric_limits<S>::max()) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<S>;
-        return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+        return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
 #else
-        S Sdiv2 = static_cast<S>(static_cast<S>(1) <<
-                                              (HURCHALLA_TARGET_BIT_WIDTH - 1));
-        S Sdiv4 = static_cast<S>(Sdiv2 / 2);
+        S Sdiv4 = static_cast<S>(static_cast<S>(1) <<
+                                              (HURCHALLA_TARGET_BIT_WIDTH - 2));
         if (x < Sdiv4) {
             using MF = MontgomeryQuarter<S>;
-            return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
             using MF = MontgomeryForm<S>;
-            return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }
 #endif
@@ -174,19 +168,18 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
     if (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<T>;
-        return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+        return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
 #else
-        T Rdiv2 = static_cast<T>(static_cast<T>(1) <<
-                                            (ut_numeric_limits<T>::digits - 1));
-        T Rdiv4 = static_cast<T>(Rdiv2 / 2);
+        T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
+                                            (ut_numeric_limits<T>::digits - 2));
         if (x < Rdiv4) {
             using MF = MontgomeryQuarter<T>;
-            return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         } else {
             using MF = MontgomeryForm<T>;
-            return prf_detail::pr_factorize<TTD, Functor, MF>(iter, x,
+            return prf_detail::pr_factorize<Functor, MF>(iter, x,
                          threshold_always_prime, base_c, pIterations_performed);
         }
 #endif

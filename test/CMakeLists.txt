@@ -29,6 +29,7 @@ target_sources(test_hurchalla_factoring PRIVATE
                test_factorize.cpp
                test_is_prime.cpp
                test_IsPrimeIntensive.cpp
+               detail_tests/is_prime_wheel210.h
                detail_tests/test_factorize_wheel210.cpp
                detail_tests/test_is_prime_miller_rabin.cpp
                detail_tests/test_PrimeTrialDivisionWarrenAndMayer.cpp

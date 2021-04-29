@@ -6,6 +6,10 @@
 #define HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
 
 
+#define HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
+//#define HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
+
+
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/trial_divide_mayer.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
@@ -29,8 +33,13 @@ namespace hurchalla { namespace detail {
 // https://en.wikipedia.org/wiki/Wheel_factorization
 // but with testing for potential factors only up to (and including) max_factor.
 
+// These preconditions and postconditions are the same as for the function
+// factorize_trialdivision(), except for the extra note in these postconditions.
+//
+// Preconditions for factorize_wheel210():
+//   Requires x >= 2.
+//
 // Postconditions:
-// (note these are the same as for factorize_trialdivision())
 // 1) The return value is an output iterator to the position one past the last
 //   factor that the function wrote to the destination range (iterated by the
 //   function's parameter 'iter').  The destination range consists of all the
@@ -46,9 +55,9 @@ namespace hurchalla { namespace detail {
 //   able to completely factor x and the destination range consists of all the
 //   factors.  If q > 1, then this indicates the function was not able to
 //   completely factorize x, and q represents the value still remaining to be
-//   factored.  q will never be set to zero (or a value < 0).  If max_factor
-//   is defaulted or set to a value >= sqrt(x), then the function will always
-//   completely factor x and set q = 1.
+//   factored.  q will never be set to zero (or a value < 0).
+// Extra note: if max_factor is defaulted or set to a value >= sqrt(x), then the
+//   function will always completely factor x and set q = 1.
 //
 // factorize_wheel210 guarantees it will trial all potential prime factors
 // less than or equal to max_factor.  It will usually also trial a few factors
@@ -58,9 +67,7 @@ namespace hurchalla { namespace detail {
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-// the template-template param TTD should be either PrimeTrialDivisionWarren or
-// PrimeTrialDivisionMayer.
-template <template<class,int> class TTD, class OutputIt, typename T>
+template <class OutputIt, typename T>
 OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
                                      T max_factor = ut_numeric_limits<T>::max())
 {
@@ -81,7 +88,8 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
     // FYI: there are 90 primes < 466, 122 primes < 676, 153 primes < 886,
     // 183 primes < 1096, 213 primes < 1306, 240 primes < 1516.
     T next_prime;  // ignored for now
-    iter = factorize_trialdivision<TTD, SIZE>(iter, q, next_prime, x, SIZE);
+    iter= factorize_trialdivision<HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE,
+                                            SIZE>(iter, q, next_prime, x, SIZE);
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision guarantees this
     if (q == 1)   // if factorize_trialdivision completely factored x
         return iter;
@@ -127,7 +135,7 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
             // S = ma_numeric_limits<P>::max().  Overflow would mean that
             // start + wheel[i] > S, or equivalently  S - wheel[i] < start.  We
             // asserted above that  start + wheel[0] == maybe_factor < sqrtR.
-            // So overflow woule mean  S - wheel[i] < start < sqrtR - wheel[0],
+            // So overflow would mean  S - wheel[i] < start < sqrtR - wheel[0],
             // which would mean  S - sqrtR < wheel[i] - wheel[0] < cycle_len ==
             // 210.  But S - sqrtR < 210 is impossible because P is always at
             // at least as large as uint16_t (due to promotion rules it's based

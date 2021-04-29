@@ -40,7 +40,7 @@ TEST(HurchallaFactoringIsPrime, exhaustive_uint32_t) {
 }
 #endif
 
-/*
+#if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
 // the value for the macro HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR, used in
 // impl_is_prime.h.  This test is not needed normally.
@@ -53,7 +53,7 @@ TEST(HurchallaFactoringIsPrime, speed_test32) {
         bool b = hc::is_prime(x);
         // We need to prevent the compiler from completely removing
         // the is_prime calls due to b never being used.
-        // So we'll add be to dummy just so it's used.
+        // So we'll add b to dummy just so it's used.
         dummy += b;
     }
     EXPECT_TRUE(dummy > 0);
@@ -63,16 +63,17 @@ TEST(HurchallaFactoringIsPrime, speed_test64) {
     using T = std::uint64_t;
     T max = std::numeric_limits<T>::max();
     T dummy = 0;
-    for (T x = max; x >= max - 5000000; x = x-2) {
+    for (T x = max; x >= max - 10000000; x = x-2) {
         bool b = hc::is_prime(x);
         // We need to prevent the compiler from completely removing
         // the is_prime calls due to b never being used.
-        // So we'll add be to dummy just so it's used.
+        // So we'll add b to dummy just so it's used.
         dummy += b;
     }
     EXPECT_TRUE(dummy > 0);
 }
-*/
+#endif
+
 
 template <typename T>
 void test_sample_primes_and_nonprimes()
@@ -81,15 +82,17 @@ void test_sample_primes_and_nonprimes()
     constexpr int NUM_PRIMES =
                              sizeof(prime_numbers64)/sizeof(prime_numbers64[0]);
     for (int i=0; i<NUM_PRIMES; ++i) {
-        if (prime_numbers64[i] <= hc::ut_numeric_limits<T>::max())
+        if (prime_numbers64[i] <= hc::ut_numeric_limits<T>::max()) {
             EXPECT_TRUE(hc::is_prime(static_cast<T>(prime_numbers64[i])));
+        }
     }
 
     constexpr int NUM_NONPRIMES =
                        sizeof(nonprime_numbers64)/sizeof(nonprime_numbers64[0]);
     for (int i=0; i<NUM_NONPRIMES; ++i) {
-        if (nonprime_numbers64[i] <= hc::ut_numeric_limits<T>::max())
+        if (nonprime_numbers64[i] <= hc::ut_numeric_limits<T>::max()) {
             EXPECT_FALSE(hc::is_prime(static_cast<T>(nonprime_numbers64[i])));
+        }
     }
 }
 

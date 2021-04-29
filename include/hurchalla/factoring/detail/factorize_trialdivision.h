@@ -21,7 +21,6 @@ namespace hurchalla { namespace detail {
 //   Requires x >= 2.
 //
 // Postconditions:
-// (note these are the same as for factorize_wheel210())
 // 1) The return value is an output iterator to the position one past the last
 //   factor that the function wrote to the destination range (iterated by the
 //   function's parameter 'iter').  The destination range consists of all the
@@ -71,7 +70,7 @@ namespace hurchalla { namespace detail {
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54, class OutputIt>
 OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
-    std::uint8_t& next_prime, std::uint8_t x, int = 54)
+    std::uint8_t& next_prime, std::uint8_t x, int = SIZE)
 {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
@@ -123,7 +122,7 @@ OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
 template <template<class,int> class TTD,
           int SIZE=54, class OutputIt, typename T>
 OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
-                                                            int size_limit = 54)
+                                                          int size_limit = SIZE)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);

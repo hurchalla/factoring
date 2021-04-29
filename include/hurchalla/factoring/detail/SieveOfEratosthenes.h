@@ -9,6 +9,7 @@
 #include "hurchalla/util/programming_by_contract.h"
 #include <vector>
 #include <cstdint>
+#include <limits>
 
 namespace hurchalla { namespace detail {
 
@@ -76,9 +77,14 @@ inline std::vector<bool> init_odd_primes_simple(std::uint64_t size)
 // entry in the bit vector means that the odd number represented by the index is
 // prime, and every false entry means that the odd number represented by the
 // index is not prime.
-inline std::vector<bool>
-init_sieve_odd_primes(std::uint64_t size,
-                      std::uint64_t cache_blocking_size)
+
+// we use DUMMY because we want the function to be inline to avoid ODR errors,
+// but gcc warns (-Winline) that it can't inline the function if we explicitly
+// make it inline.  Using a template implicitly makes it inline, without any
+// warning.
+template <typename DUMMY=void>
+std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
+                                        std::uint64_t cache_blocking_size)
 {
     using std::uint64_t;
     using std::uint32_t;
@@ -87,11 +93,13 @@ init_sieve_odd_primes(std::uint64_t size,
     // The upper size limit is arbitrary, but a size == (1<<44) would require
     // one terabyte of memory/storage, which is so ridiculously large as to
     // suggest the caller very likely made a mistake.  In theory this function
-    // could handle a size of up to around 1<<63, but in practice the memory/
+    // could handle a size of up to around 1<<60, but in practice the memory/
     // storage requirements would make such a size intractable.
     HPBC_PRECONDITION(size <= (static_cast<uint64_t>(1) << 44));
 
-    uint64_t size_odds = size/2;
+    using size_type = std::vector<bool>::size_type;
+    HPBC_ASSERT2(size/2 <= std::numeric_limits<size_type>::max());
+    size_type size_odds = size/2;
     std::vector<bool> primes_bitvec(size_odds, true);
     primes_bitvec[1/2] = false;
 
@@ -122,6 +130,10 @@ init_sieve_odd_primes(std::uint64_t size,
     }
     HPBC_ASSERT2(prime_doubled_vec.size() == prime_multiple_vec.size());
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+#endif
     // mark all the composites that are >= sqrt(size).  After loop exit, any
     // entries in primes_bitvec that are still unmarked (i.e. that are still
     // left as true) represent prime numbers.
@@ -140,6 +152,9 @@ init_sieve_odd_primes(std::uint64_t size,
             prime_multiple_vec[j] = prime_multiple;
         }
     }
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic pop
+#endif
     return primes_bitvec;
 }
 

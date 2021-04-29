@@ -53,7 +53,7 @@ namespace hurchalla { namespace detail {
 
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54>
-bool is_prime_trialdivision(std::uint8_t x, bool& is_successful, int = 54)
+bool is_prime_trialdivision(std::uint8_t x, bool& is_successful, int = SIZE)
 {
     using std::uint8_t;
     is_successful = true;  // this function overload will always succeed
@@ -82,7 +82,7 @@ bool is_prime_trialdivision(std::uint8_t x, bool& is_successful, int = 54)
 
 // This function was adapted from factorize_trialdivision()
 template <template<class,int> class TTD, int SIZE=54, typename T>
-bool is_prime_trialdivision(T x, bool& is_successful, int size_limit = 54)
+bool is_prime_trialdivision(T x, bool& is_successful, int size_limit = SIZE)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);

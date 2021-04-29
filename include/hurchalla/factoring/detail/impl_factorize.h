@@ -27,42 +27,23 @@ namespace hurchalla { namespace detail {
 #endif
 
 
-#define TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
-//#define TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
+#define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
+//#define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
 
 
-// Initial tests so far suggest it might be fastest to entirely skip wheel
-// factorization prior to pollard rho.
-// A client should enable a wheel factorization stage (if desired) by
-// predefining the following macro, though we can define it here for quick and
-// dirty testing.
-//#define HURCHALLA_USE_WHEEL_FACTORIZATION
+// Initial tests so far suggest it might be fastest to always define
+// HURCHALLA_USE_PR_TRIAL_DIVISION.  If it is not defined, wheel factorization
+// will be used.  But it's possible wheel factorization might even be slower
+// than doing almost nothing prior to Pollard Rho?
+#define HURCHALLA_USE_PR_TRIAL_DIVISION
 
+// FYI there are 54 primes below 256
+#define HURCHALLA_PR_TRIAL_DIVISION_SIZE 309
 
-#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048
+// I'll probably want to get rid of this macro entirely, and also change
+// the function not to take an index limit argument
+#define HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT HURCHALLA_PR_TRIAL_DIVISION_SIZE
 
-// estimate min at 318
-// 1165 2541
-// estimate min at 320
-// 1147 2540
-
-#define HURCHALLA_NUM_PRIMES_UNDER_2048 309
-
-//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 310
-// 1138 2538
-//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 200
-// 1157 2537
-//#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 250
-// 1143 2537
-#define HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT 280
-// 1139 2537
-// 1142 2540
-
-// 1098 2536
-
-// 1374 2548
-
-// 1101 2537
 
 
 template <template<class> class Functor, class OutputIt, typename T>
@@ -75,22 +56,22 @@ T impl_factorize(OutputIt iter, T x)
     constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
     T q;
-#ifdef HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048
+#ifdef HURCHALLA_USE_PR_TRIAL_DIVISION
     T next_prime;
-    int index_limit = HURCHALLA_TEST_SMALL_TRIAL_DIVISION2048_INDEX_LIMIT;
+    int index_limit = HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT;
 
-    iter = factorize_trialdivision<TRIAL_DIVISION_TEMPLATE,
-                                   HURCHALLA_NUM_PRIMES_UNDER_2048>
+    iter = factorize_trialdivision<HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE,
+                                   HURCHALLA_PR_TRIAL_DIVISION_SIZE>
                                           (iter, q, next_prime, x, index_limit);
-    HPBC_ASSERT2(q >= 1);  // small_trial_division2048 guarantees this
-    if (q == 1)   // if small_trial_division2048 completely factored x
+    HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this
+    if (q == 1)   // if factorize_trialdivision() completely factored x
         return 0;
-    // small_trial_division2048() guarantees that any factor of x that is less
+    // factorize_trialdivision() guarantees that any factor of x that is less
     // than next_prime*next_prime must be prime.
     T threshold_always_prime = (next_prime < sqrtR) ?
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 #else
-#ifdef HURCHALLA_USE_WHEEL_FACTORIZATION
+    // Use Wheel Factorization--
     // Ensure max_trial_factor * max_trial_factor never overflows.
     // Note that no factors ever exist >= sqrtR, so limiting to sqrtR-1 is fine.
     constexpr T max_trial_factor =
@@ -102,22 +83,11 @@ T impl_factorize(OutputIt iter, T x)
         return 0;
     constexpr T threshold_always_prime =
                               static_cast<T>(max_trial_factor*max_trial_factor);
-#else
-    // factor out all primes < 256
-    iter = small_trial_division256(iter, q, x);
-    HPBC_ASSERT2(q >= 1);  // small_trial_division256 guarantees this
-    if (q == 1)   // if small_trial_division256 completely factored x
-        return 0;
-    // small_trial_division256() guarantees that any factor of x that is less
-    // than 257*257 must be prime.
-    constexpr T threshold_always_prime = (257<sqrtR) ? static_cast<T>(257*257) :
-                                                    ut_numeric_limits<T>::max();
-#endif
 #endif
 
     T iterations_performed;
-    iter = pollard_rho_factorize<TRIAL_DIVISION_TEMPLATE, Functor>(iter, q,
-              threshold_always_prime, static_cast<T>(1), &iterations_performed);
+    iter = pollard_rho_factorize<Functor>(iter, q, threshold_always_prime,
+                                      static_cast<T>(1), &iterations_performed);
     return iterations_performed;
 }
 

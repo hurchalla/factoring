@@ -85,8 +85,11 @@ namespace hurchalla { namespace detail {
 // absolutely certain you need to benchmark).
 // Hence it currently exists only within the comments here.
 
-#include "hurchalla/modular_arithmetic/modular_multiplication.h"
-#include "hurchalla/modular_arithmetic/modular_addition.h"
+// You'll need to move these #includes to the top of this file, and uncomment
+// them.  They won't work if placed here.
+//
+//#include "hurchalla/modular_arithmetic/modular_multiplication.h"
+//#include "hurchalla/modular_arithmetic/modular_addition.h"
 
 template <class T>
 T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)

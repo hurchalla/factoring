@@ -49,7 +49,7 @@ struct ImplIsPrimeIntensive {
         // on a total of 128 bases with probabilistic miller-rabin testing.
         // Such a large number of bases is inherently slow for primes, so the
         // fact that this function does some preliminary trial division that's
-        // pointless for a prime won't matter much in comparison.
+        // pointless for a prime probably won't matter much in comparison.
 
         // try all prime factors < 256
         bool success;
@@ -61,7 +61,6 @@ struct ImplIsPrimeIntensive {
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);
         HPBC_ASSERT2(x >= 2);
-
         return detail::is_prime_miller_rabin_integral(x);
     }
 };
@@ -72,7 +71,7 @@ template <typename T, typename DUMMY>
 struct SieveImplIsPrimeIntensive {
 private:
     static_assert(std::is_same<DUMMY, void>::value, "");
-    static_assert(ut_numeric_limits<T>::digits < 64, "");
+    static_assert(ut_numeric_limits<T>::digits <= 32, "");
     const SieveOfEratosthenes sieve;
 public:
     SieveImplIsPrimeIntensive() :

@@ -35,6 +35,7 @@ template <typename T, bool OPTIMIZE_PRIMES = false>
 class IsPrimeIntensive {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::digits <= 128, "");
     const detail::ImplIsPrimeIntensive<T, OPTIMIZE_PRIMES> isprime_impl;
 public:
     IsPrimeIntensive() : isprime_impl() {}

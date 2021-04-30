@@ -18,7 +18,6 @@ bool is_prime(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(x >= 0);
 
     return detail::impl_is_prime(x);
 }

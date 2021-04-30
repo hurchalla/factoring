@@ -10,27 +10,35 @@ Likewise get rid of it in is_prime_trialdivision() if possible.
 
 
 Document:
+   -- trial_divide_mayer.h --
    HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE
 
+   -- impl_is_prime.h --
    HURCHALLA_ISPRIME_TRIALDIV_SIZE
+
+   -- ImplIsPrimeIntensive.h --
    HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE
 
    -- factorize.h --
    HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial
+
    -- impl_factorize.h --
    HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
-   HURCHALLA_TRIAL_DIVISION_TEMPLATE
+   HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
    HURCHALLA_USE_PR_TRIAL_DIVISION
    HURCHALLA_PR_TRIAL_DIVISION_SIZE
    HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT
+
    -- pollard_rho_factorize.h --
    HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
+
    -- PollardRhoTrial.h --
    HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD
 
    -- factorize_wheel210.h --
    HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE
 
+   -- is_prime_miller_rabin.h --
    HURCHALLA_MILLER_RABIN_ALLOW_EVEN_NUMBERS
    HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
    HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3
@@ -70,3 +78,18 @@ modular arithmetic README
 publish my generalized form of the Dumas algorithm
 
 maybe blog about gcc uint128_t bug- see end of test_REDC.cpp.
+
+A possible perf improvement for impl_is_prime might be to scale the size of the
+trial division at run time depending on how large x is (using the optional third
+argument of is_prime_trialdivision).  The ideal scaling might be y = a * sqrt(x)
+for some constant a, but sqrt would take too long.  A linear scaling might be
+good enough, perhaps fit to the largest 80-90% of values of x.  It feels like
+it's more trouble than it's worth.
+The same thing is possible for ImplIsPrimeIntensive.h
+-- Probably a better idea is to remove the size_limit parameter from
+is_prime_trialdivision() since at least right now it's never used - this would
+let me simplify the function, which would have the side benefit of making it
+slightly faster too.
+
+Maybe simplify is_prime_miller_rabin.h by moving stuff that's not really used
+into an experimental folder

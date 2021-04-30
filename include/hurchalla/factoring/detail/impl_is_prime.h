@@ -15,14 +15,15 @@
 namespace hurchalla { namespace detail {
 
 
-// TODO: empirically find good default(s) for HURCHALLA_ISPRIME_TRIALDIV_SIZE
-
 #ifndef HURCHALLA_ISPRIME_TRIALDIV_SIZE
 // Some short perf testing on Haswell suggest 15 would be a good value for
 // PrimeTrialDivisionMayer, and 54 a good value for PrimeTrialDivisionWarren.
 // We use Mayer instead of Warren, since it's lower overhead on static memory
 // and it works with the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE, unlike
-// Warren.
+// Warren.  You can change the implementation to use PrimeTrialDivisionWarren
+// if you want, by simply subsistuting that name for PrimeTrialDivisionMayer in
+// the template function call below and including its header file.
+
 // FYI, size 54 would trial all prime factors < 256
 #  define HURCHALLA_ISPRIME_TRIALDIV_SIZE (15)
 #endif
@@ -31,9 +32,9 @@ namespace hurchalla { namespace detail {
 template <typename T>
 bool impl_is_prime(T x)
 {
-    HPBC_PRECONDITION2(x >= 0);
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(x >= 0);
 
     // First try small trial divisions to find easy factors.
     // If primality still unknown, use miller-rabin to prove prime or not prime.
@@ -45,6 +46,9 @@ bool impl_is_prime(T x)
 
     // At this point, we couldn't detect whether x is prime.  We'll fall back to
     // determining primality via miller-rabin.
+    // is_prime_trialdivision should have handled evens and 0 and 1.
+    HPBC_ASSERT2(x % 2 == 1);
+    HPBC_ASSERT2(x > 1);
     return is_prime_miller_rabin_integral(x);
 }
 

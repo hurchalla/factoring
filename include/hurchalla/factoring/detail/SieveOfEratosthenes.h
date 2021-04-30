@@ -64,19 +64,31 @@ inline std::vector<bool> init_odd_primes_simple(std::uint64_t size)
 }
 #endif
 
-// This version avoids the main performance problem of the above versions, which
-// is that they skip through memory and rarely reuse CPU cache lines prior to
-// cache evictions.  To avoid this problem, this version works on a range of
+// The version below avoids the main performance problem of the above versions,
+// which is that they skip through memory and rarely reuse CPU cache lines prior
+// to cache evictions.  To avoid this problem, this version works on a range of
 // memory smaller than the CPU cache, and writes all values that will ever be
 // needed for that block, and then moves on to the next block of memory and
 // writes all values needed for that block, etc.
 // I measured ~4x performance improvement on Intel Haswell CPU using this
 // version, compared to the above versions.
 
+
 // Returns a bit vector with indices that represent odd numbers.  Every true
 // entry in the bit vector means that the odd number represented by the index is
 // prime, and every false entry means that the odd number represented by the
 // index is not prime.
+
+// *Note that the bit vector this function creates and returns will be (size/16)
+// bytes large.  E.g. for a size of 1<<32, the vector will take up 256 MB.
+// If you go too much above 1<<32, the bit vector is going to start taking an
+// insane amount of memory (or run out of memory), and calculating the sieve
+// here will take a very long time (e.g. for size 1<< 36 you might expect over a
+// minute).
+// Also note that on some systems, the vector's size_type might be 32 bit, which
+// would mean by one of function's preconditions below you'd be limited to a
+// size < (1<<33).  In general I'd recommend staying below that limit for
+// portability and to keep memory usage/computation time reasonable.
 
 // we use DUMMY because we want the function to be inline to avoid ODR errors,
 // but gcc warns (-Winline) that it can't inline the function if we explicitly
@@ -86,20 +98,14 @@ template <typename DUMMY=void>
 std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
                                         std::uint64_t cache_blocking_size)
 {
+    using vec_size_type = std::vector<bool>::size_type;
+    HPBC_PRECONDITION(2 <= size);
+    HPBC_PRECONDITION(size/2 <= std::numeric_limits<vec_size_type>::max());
+    HPBC_PRECONDITION(cache_blocking_size > 0);
+
     using std::uint64_t;
     using std::uint32_t;
-    HPBC_PRECONDITION(cache_blocking_size > 0);
-    HPBC_PRECONDITION(2 <= size);
-    // The upper size limit is arbitrary, but a size == (1<<44) would require
-    // one terabyte of memory/storage, which is so ridiculously large as to
-    // suggest the caller very likely made a mistake.  In theory this function
-    // could handle a size of up to around 1<<60, but in practice the memory/
-    // storage requirements would make such a size intractable.
-    HPBC_PRECONDITION(size <= (static_cast<uint64_t>(1) << 44));
-
-    using size_type = std::vector<bool>::size_type;
-    HPBC_ASSERT2(size/2 <= std::numeric_limits<size_type>::max());
-    size_type size_odds = size/2;
+    vec_size_type size_odds = size/2;
     std::vector<bool> primes_bitvec(size_odds, true);
     primes_bitvec[1/2] = false;
 

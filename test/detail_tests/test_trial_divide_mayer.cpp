@@ -2,6 +2,15 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 // Author: Jeffrey Hurchalla
 
+#undef HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE
+
+// test_trial_divide_mayer_standard_division.cpp defines the following macro,
+// and that file has nothing else in it except a #include of this file
+#ifdef TESTING_TRIAL_DIVIDE_MAYER_STANDARD_DIVISION
+#  define HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE 1
+#endif
+
+
 #include "hurchalla/factoring/detail/trial_divide_mayer.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
@@ -9,9 +18,6 @@
 #include "gtest/gtest.h"
 
 namespace {
-
-
-#undef HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE
 
 
 using namespace hurchalla::detail;
@@ -68,7 +74,12 @@ void trial_divide_typed_tests()
     }
 }
 
-TEST(HurchallaFactoringTrialDivideMayer, mayer_tests) {
+#ifdef TESTING_TRIAL_DIVIDE_MAYER_STANDARD_DIVISION
+TEST(HurchallaFactoringTrialDivideMayer, mayer_tests_standard_division)
+#else
+TEST(HurchallaFactoringTrialDivideMayer, mayer_tests)
+#endif
+{
     trial_divide_typed_tests<std::uint8_t>();
     trial_divide_typed_tests<std::uint16_t>();
     trial_divide_typed_tests<std::uint32_t>();

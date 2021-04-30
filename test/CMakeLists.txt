@@ -32,6 +32,7 @@ target_sources(test_hurchalla_factoring PRIVATE
                detail_tests/is_prime_wheel210.h
                detail_tests/test_factorize_wheel210.cpp
                detail_tests/test_is_prime_miller_rabin.cpp
+               detail_tests/test_is_prime_trialdivision.cpp
                detail_tests/test_PrimeTrialDivisionWarrenAndMayer.cpp
                detail_tests/test_SieveOfEratosthenes.cpp
                detail_tests/test_trial_divide_mayer.cpp

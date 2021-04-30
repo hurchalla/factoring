@@ -5,6 +5,8 @@
 #include "sample_primes_and_nonprimes.h"
 #include "hurchalla/factoring/detail/is_prime_bruteforce.h"
 #include "hurchalla/factoring/is_prime.h"
+#include "hurchalla/util/compiler_macros.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 
 #include "gtest/gtest.h"
 #include <cstdint>
@@ -42,12 +44,16 @@ TEST(HurchallaFactoringIsPrime, exhaustive_uint32_t) {
 
 #if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
-// the value for the macro HURCHALLA_ISPRIME_MAX_TRIAL_FACTOR, used in
+// the default value for the macro HURCHALLA_ISPRIME_TRIALDIV_SIZE, used in
 // impl_is_prime.h.  This test is not needed normally.
 TEST(HurchallaFactoringIsPrime, speed_test32) {
     namespace hc = hurchalla;
     using T = std::uint32_t;
-    T max = std::numeric_limits<T>::max()/2;
+#if 1
+    T max = std::numeric_limits<T>::max();
+#else
+    T max = 20065537;
+#endif
     T dummy = 0;
     for (T x = max; x >= max - 20000000; x = x-2) {
         bool b = hc::is_prime(x);
@@ -61,7 +67,11 @@ TEST(HurchallaFactoringIsPrime, speed_test32) {
 TEST(HurchallaFactoringIsPrime, speed_test64) {
     namespace hc = hurchalla;
     using T = std::uint64_t;
+#if 1
     T max = std::numeric_limits<T>::max();
+#else
+    T max = 10065537;
+#endif
     T dummy = 0;
     for (T x = max; x >= max - 10000000; x = x-2) {
         bool b = hc::is_prime(x);

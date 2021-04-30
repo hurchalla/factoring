@@ -33,7 +33,7 @@ safe_right_shift(T x1)
 {
     return static_cast<T>(x1 >> shift);
 }
-}
+} // end namespace detail_integer_sqrt
 
 
 // The integer sqrt algorithm here is based on Newton's method.  For a detailed

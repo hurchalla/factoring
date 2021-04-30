@@ -758,10 +758,11 @@ is_prime_miller_rabin(const MontType& mf)
     // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
 #ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
     constexpr std::size_t TOTAL_BASES = 3;
+    constexpr std::size_t TRIAL_SIZE = 2;
 #else
     constexpr std::size_t TOTAL_BASES = 2;
-#endif
     constexpr std::size_t TRIAL_SIZE = 1;
+#endif
     return MillerRabinMontgomery
                           <MontType, 32, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
 }

@@ -13,12 +13,12 @@
 namespace hurchalla { namespace detail {
 
 
-// is_prime_trialdivision() determines primality for the number x using the
-// first SIZE or size_limit (whichever is smaller) prime numbers as potential
-// divisors for divisibility testing.
+// is_prime_trialdivision(): attempts to determine primality for the number x,
+// by trial dividing x by the first SIZE (or size_limit) prime numbers.
 //
 // Preconditions for is_prime_trialdivision():
-//   Requires x >= 2.
+//   Requires SIZE >= 2.
+//   Requires 1 <= size_limit <= SIZE.
 //
 // Postconditions:
 //   The function returns false if it finds any factor for x (and sets
@@ -29,10 +29,10 @@ namespace hurchalla { namespace detail {
 // then the function will always be able to determine primality (and will set
 // is_successful=true).
 //
-// Parameters:
+// Template and Function Parameters:
 //   The function will trial a total of either SIZE or size_limit potential
 // prime factors, whichever is smaller.  SIZE is a compile-time parameter for
-// fine tuning of performance, which helps us to achieve the best possible
+// fine tuning of performance, which helps you to achieve the best possible
 // overall performance when combining this function with additional primality
 // tests.  Likewise, size_limit is a run-time parameter intended for fine
 // tuning, given a particular number to primality test.  The idea behind
@@ -44,12 +44,13 @@ namespace hurchalla { namespace detail {
 // size_limit < SIZE).  Thus this function with SIZE 54 could be used to
 // guarantee success at primality testing any value x < 257*257, which includes
 // all values of type uint16_t.
-
-// The template-template parameter TTD should be either PrimeTrialDivisionWarren
+//   Template-template parameter TTD should be either PrimeTrialDivisionWarren
 // or PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren is usually faster, but
 // it uses around 5-10x more memory (PrimeTrialDivisionMayer typically uses
 // around 2*SIZE bytes of memory).
 
+
+// (The implementations in ths file are adapted from factorize_trialdivision())
 
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54>
@@ -57,8 +58,8 @@ bool is_prime_trialdivision(std::uint8_t x, bool& is_successful, int = SIZE)
 {
     using std::uint8_t;
     is_successful = true;  // this function overload will always succeed
-    if (x < 2) return false;
-
+    if (x < 2)
+        return false;
     // we only need to try primes < 16, since 16*16==256 is greater than any
     // possible uint8_t value.
     if (x % 2 == 0)
@@ -79,15 +80,13 @@ bool is_prime_trialdivision(std::uint8_t x, bool& is_successful, int = SIZE)
     return true;
 }
 
-
-// This function was adapted from factorize_trialdivision()
 template <template<class,int> class TTD, int SIZE=54, typename T>
 bool is_prime_trialdivision(T x, bool& is_successful, int size_limit = SIZE)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     static_assert(SIZE > 1);
-    HPBC_PRECONDITION2(size_limit > 0);
+    HPBC_PRECONDITION2(1 <= size_limit && size_limit <= SIZE);
 
     // PrimeTrialDivisionWarren and PrimeTrialDivisionMayer include only odd
     // primes - hence they don't use the prime 2, and so we set their TD_SIZE to
@@ -107,6 +106,10 @@ bool is_prime_trialdivision(T x, bool& is_successful, int size_limit = SIZE)
 
     using U = decltype(TD::nextPrimePastEndSquared());
     U next_prime_squared;
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-overflow"
+#endif
     if (td_size_limit >= TD_SIZE) {
         td_size_limit = TD_SIZE;
         next_prime_squared = TD::nextPrimePastEndSquared();
@@ -119,6 +122,9 @@ bool is_prime_trialdivision(T x, bool& is_successful, int size_limit = SIZE)
                       ut_numeric_limits<decltype(tmp)>::max());
         next_prime_squared = tmp;
     }
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#  pragma GCC diagnostic pop
+#endif
     HPBC_ASSERT2(td_size_limit <= TD_SIZE);
 
     for (int i=0; i<td_size_limit; ++i) {

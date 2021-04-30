@@ -10,6 +10,7 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
+#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -71,7 +72,7 @@ template <int SIZE, typename T>
 void iptd_sized_tests(const SieveOfEratosthenes& sieve)
 {
     static_assert(1 < SIZE);
-    static_assert(!std::numeric_limits<T>::is_signed);
+    static_assert(!ut_numeric_limits<T>::is_signed);
 
     std::vector<std::uint64_t> primevec;
     primevec.push_back(2);
@@ -93,7 +94,8 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
     T max = static_cast<T>(static_cast<T>(0) - 1);
 
     std::vector<int> limits = { 1, 2, 5, SIZE, SIZE-1, SIZE/2, SIZE/2 + 1 };
-    for (int size_limit : limits) {
+    for (auto it = limits.cbegin(); it != limits.cend(); ++it) {
+        int size_limit = *it;
         for (T x = 0; x < 255; ++x)
             iptd_test<SIZE>(x, size_limit, primevec);
         for (T x = max; x > max - 100; --x)

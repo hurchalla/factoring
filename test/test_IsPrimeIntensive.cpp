@@ -5,6 +5,8 @@
 #include "sample_primes_and_nonprimes.h"
 #include "hurchalla/factoring/detail/is_prime_bruteforce.h"
 #include "hurchalla/factoring/IsPrimeIntensive.h"
+#include "hurchalla/util/compiler_macros.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 
 #include "gtest/gtest.h"
 #include <cstdint>
@@ -52,7 +54,6 @@ void test_sample_primes_and_nonprimes()
             EXPECT_TRUE(isprime(static_cast<T>(prime_numbers64[i])));
         }
     }
-
     constexpr int NUM_NONPRIMES =
                        sizeof(nonprime_numbers64)/sizeof(nonprime_numbers64[0]);
     for (int i=0; i<NUM_NONPRIMES; ++i) {
@@ -99,10 +100,10 @@ TEST(HurchallaFactoringIsPrimeIntensive, basic_tests) {
     // It's disabled by default here because it takes ~5 seconds to run in
     // release and 1.5 minutes in debug, and this is not worth the run-time
     // considering that the current and forseeable implementation of
-    // IsPrimeIntensive with a template argument value of false is exactly the
-    // same as for template argument true.  We test it with true above (at
-    // least in release config), so essentially we'd be repeating the exact
-    // same test if we tested it here with false.
+    // IsPrimeIntensive<std::uint32_t, bool_value> with "bool_value" set to
+    // false is exactly the same as for "bool_value" set to true.  We test
+    // it with true above (when NDEBUG is defined), so essentially we'd be
+    // repeating the exact same test if we tested it again here with false.
     test_sample_primes_and_nonprimes<std::uint32_t, false>();
 #endif
     test_sample_primes_and_nonprimes<std::uint64_t, false>();

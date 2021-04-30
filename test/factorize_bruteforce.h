@@ -7,6 +7,7 @@
 
 
 #include "integer_sqrt.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <vector>
 #include <limits>
@@ -27,8 +28,8 @@ namespace hurchalla {
 template <typename T>
 std::vector<T> factorize_bruteforce(T x)
 {
-    static_assert(std::numeric_limits<T>::is_integer, "");
-    static_assert(!std::numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
     std::vector<T> factors;

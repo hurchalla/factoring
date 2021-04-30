@@ -21,49 +21,18 @@
 namespace hurchalla { namespace detail {
 
 
-// TODO: empirically find good default(s) for
-// HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE
-
 #ifndef HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE
-// Some short perf testing on Haswell suggest 100 would be a good value for
-// intensive use of PrimeTrialDivisionWarren with uint64_t.  Presumably this
-// would be more or less ok with __uint128_t but I haven't tried it.
-// FYI, size 54 would trial all prime factors < 256
-#  define HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE (100)
+// Some short perf tests on Haswell suggest 75 would be a decent value for
+// HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE.  Tested with IsPrimeIntensive
+// having OPTIMIZE_PRIMES==false and using uint64_t and __uint128_t.
+// (FYI, size 54 would trial all prime factors < 256)
+#  define HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE (75)
 #endif
 
 
-// primary template
+// Primary template declaration
 template <typename T, bool OPTIMIZE_PRIMES = false, typename DUMMY=void>
-struct ImplIsPrimeIntensive {
-    // primary template handles any 128 bit unsigned integer type
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    static_assert(ut_numeric_limits<T>::digits == 128, "");
-    static_assert(std::is_same<DUMMY, void>::value, "");
-    T operator()(T x) const
-    {
-        // For now, we won't do anything special for when we expect x is prime
-        // or not prime (we ignore OPTIMIZE_PRIMES).  Currently the primality
-        // testing of 128 bit numbers is not well optimized because it depends
-        // on a total of 128 bases with probabilistic miller-rabin testing.
-        // Such a large number of bases is inherently slow for primes, so the
-        // fact that this function does some preliminary trial division that's
-        // pointless for a prime probably won't matter much in comparison.
-
-        // try all prime factors < 256
-        bool success;
-        bool res = is_prime_trialdivision<PrimeTrialDivisionWarren,
-                         HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
-        if (success)
-            return res;
-        // is_prime_trialdivision() should have successfully handled any even x,
-        // and any x < 2.
-        HPBC_ASSERT2(x % 2 != 0);
-        HPBC_ASSERT2(x >= 2);
-        return detail::is_prime_miller_rabin_integral(x);
-    }
-};
+struct ImplIsPrimeIntensive;
 
 
 // helper parent class that utilizes Sieve of Eratosthenes.
@@ -71,6 +40,8 @@ template <typename T, typename DUMMY>
 struct SieveImplIsPrimeIntensive {
 private:
     static_assert(std::is_same<DUMMY, void>::value, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits <= 32, "");
     const SieveOfEratosthenes sieve;
 public:
@@ -168,7 +139,54 @@ struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
     T operator()(T x) const
     {
         bool success;
-        // try all prime factors < 256
+        // Using trial division on average boosts our performance (so long as x
+        // is not especially likely to be prime), because it avoids miller-rabin
+        // for composites that have a small enough factor.
+        bool res = is_prime_trialdivision<PrimeTrialDivisionWarren,
+                         HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
+        if (success)
+            return res;
+        // is_prime_trialdivision() should have successfully handled any even x,
+        // and any x < 2.
+        HPBC_ASSERT2(x % 2 != 0);
+        HPBC_ASSERT2(x >= 2);
+        return detail::is_prime_miller_rabin_integral(x);
+    }
+};
+
+
+
+// primary template implementation.  Requires T is a 128 bit type
+template <typename T, bool OPTIMIZE_PRIMES, typename DUMMY>
+struct ImplIsPrimeIntensive {
+private:
+    // primary template handles any 128 bit unsigned integer type
+    static_assert(std::is_same<DUMMY, void>::value, "");
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::digits == 128, "");
+#if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
+    ImplIsPrimeIntensive<uint64_t, false> impl64;
+#endif
+public:
+    T operator()(T x) const
+    {
+#if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
+        if (x <= ut_numeric_limits<uint64_t>::max())
+            return impl64(static_cast<std::uint64_t>(x));
+#endif
+        // For now, we won't do anything special for when we expect x is prime
+        // or not prime (we ignore OPTIMIZE_PRIMES).  Currently the primality
+        // testing of 128 bit numbers is not well optimized because it depends
+        // on a total of 128 bases with probabilistic miller-rabin testing.
+        // Such a large number of bases is inherently slow for primes, so the
+        // fact that this function does some preliminary trial division that's
+        // pointless for a prime probably won't matter much in comparison.
+
+        // Using trial division on average boosts our performance (so long as x
+        // is not especially likely to be prime), because it avoids miller-rabin
+        // for composites that have a small enough factor.
+        bool success;
         bool res = is_prime_trialdivision<PrimeTrialDivisionWarren,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)

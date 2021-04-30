@@ -12,6 +12,7 @@
 
 
 #include "hurchalla/factoring/detail/trial_divide_mayer.h"
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
 
@@ -20,7 +21,9 @@
 namespace {
 
 
+using namespace hurchalla;
 using namespace hurchalla::detail;
+
 
 template <typename T>
 void trial_divide_test(T x, T divisor)
@@ -38,7 +41,7 @@ void trial_divide_test(T x, T divisor)
 template <typename T>
 void trial_divide_typed_tests()
 {
-    static_assert(!std::numeric_limits<T>::is_signed);
+    static_assert(!ut_numeric_limits<T>::is_signed);
     T midpoint = (static_cast<T>(0) - 1)/2;
     if (midpoint % 2 == 0)
         ++midpoint;

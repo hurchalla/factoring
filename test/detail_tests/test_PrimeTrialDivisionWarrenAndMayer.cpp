@@ -17,6 +17,7 @@ namespace {
 using namespace hurchalla;
 using namespace hurchalla::detail;
 
+
 //PTD can be PrimeTrialDivisionMayer<T,SIZE> or PrimeTrialDivisionWarren<T,SIZE>
 template <typename PTD>
 void isDivisible_test(typename PTD::value_type x, int index)
@@ -64,13 +65,13 @@ void PTD_tests()
 
     // We don't expect next_prime to have a type larger than uint32_t,
     // and thus next_prime squared should fit in a uint64_t.
-    static_assert(std::numeric_limits<decltype(next_prime)>::is_integer, "");
-    static_assert(!std::numeric_limits<decltype(next_prime)>::is_signed, "");
-    static_assert(std::numeric_limits<decltype(next_prime)>::digits <= 32, "");
+    static_assert(ut_numeric_limits<decltype(next_prime)>::is_integer, "");
+    static_assert(!ut_numeric_limits<decltype(next_prime)>::is_signed, "");
+    static_assert(ut_numeric_limits<decltype(next_prime)>::digits <= 32, "");
     static_assert(next_prime_squared == static_cast<std::uint64_t>(next_prime) *
                                         static_cast<std::uint64_t>(next_prime));
 
-    static_assert(!std::numeric_limits<T>::is_signed);
+    static_assert(!ut_numeric_limits<T>::is_signed);
     T midpoint = (static_cast<T>(0) - 1)/2;
     if (midpoint % 2 == 0)
         ++midpoint;

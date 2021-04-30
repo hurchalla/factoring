@@ -6,10 +6,10 @@
 #define HURCHALLA_FACTORING_SIEVE_OF_ERATOSTHENES_H_INCLUDED
 
 
+#include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <vector>
 #include <cstdint>
-#include <limits>
 
 namespace hurchalla { namespace detail {
 
@@ -100,7 +100,7 @@ std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
 {
     using vec_size_type = std::vector<bool>::size_type;
     HPBC_PRECONDITION(2 <= size);
-    HPBC_PRECONDITION(size/2 <= std::numeric_limits<vec_size_type>::max());
+    HPBC_PRECONDITION(size/2 <= ut_numeric_limits<vec_size_type>::max());
     HPBC_PRECONDITION(cache_blocking_size > 0);
 
     using std::uint64_t;

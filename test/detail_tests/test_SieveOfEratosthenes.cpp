@@ -13,6 +13,7 @@ namespace {
 
 using namespace hurchalla::detail;
 
+
 void exhaustive_sieve_test(const SieveOfEratosthenes& sieve)
 {
     EXPECT_TRUE(sieve.size() > 0);

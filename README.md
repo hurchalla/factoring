@@ -8,21 +8,30 @@ Assuming I can remove any need factorize_wheel210 might have for it,
 get rid of the "next_prime" param in factorize_trialdivision().
 Likewise get rid of it in is_prime_trialdivision() if possible.
 
+Get rid of pIterationsPerformed in PollardRhoTrial functors
+
+Use a faster gcd
+Test whether the pollard-rho trials' use of a gcd functor is as fast as a direct call of gcd
+
+Can I completely remove factorize_wheel210.h, or place it inside test or experimental?
+
+Write tests for the headers that don't yet have tests
+
 
 Document:
    -- trial_divide_mayer.h --
    HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE
+   HURCHALLA_TARGET_ISA_HAS_NO_DIVIDE
 
    -- impl_is_prime.h --
    HURCHALLA_ISPRIME_TRIALDIV_SIZE
 
    -- ImplIsPrimeIntensive.h --
    HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE
-
-   -- factorize.h --
-   HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial
+   HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE  (can be PrimeTrialDivisionMayer or PrimeTrialDivisionWarren)
 
    -- impl_factorize.h --
+   HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial or PollardRhoBrentTrial (or one of the trials in experimental)
    HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
    HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
    HURCHALLA_USE_PR_TRIAL_DIVISION
@@ -33,7 +42,12 @@ Document:
    HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
 
    -- PollardRhoTrial.h --
-   HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD
+   HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
+
+   -- PollardRhoBrentTrial.h --
+   HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD
+   HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE
+   HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE
 
    -- factorize_wheel210.h --
    HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE

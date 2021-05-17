@@ -9,6 +9,7 @@
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/factoring/detail/is_prime_trialdivision.h"
 #include "hurchalla/factoring/detail/SieveOfEratosthenes.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
@@ -27,6 +28,10 @@ namespace hurchalla { namespace detail {
 // having OPTIMIZE_PRIMES==false and using uint64_t and __uint128_t.
 // (FYI, size 54 would trial all prime factors < 256)
 #  define HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE (75)
+#endif
+
+#ifndef HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE
+#  define HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE PrimeTrialDivisionWarren
 #endif
 
 
@@ -142,7 +147,8 @@ struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
         // Using trial division on average boosts our performance (so long as x
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
-        bool res = is_prime_trialdivision<PrimeTrialDivisionWarren,
+        bool res = is_prime_trialdivision<
+                         HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
             return res;
@@ -187,7 +193,8 @@ public:
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
         bool success;
-        bool res = is_prime_trialdivision<PrimeTrialDivisionWarren,
+        bool res = is_prime_trialdivision<
+                         HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
             return res;

@@ -12,6 +12,7 @@
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
+#include "hurchalla/util/unreachable.h"
 #include "hurchalla/util/sized_uint.h"
 #include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -51,9 +52,11 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
     }
     Functor<MF> pr_trial_func;
 
-    C cc = (base_c < x) ? mf.getCanonicalValue(
-                     mf.convertIn(static_cast<S>(base_c))) : mf.getUnityValue();
-    for (T c = base_c; c < x; ++c) {
+    if (base_c >= x)
+        base_c = 1;
+    C unity = mf.getUnityValue();
+    C cc = mf.getCanonicalValue(mf.convertIn(static_cast<S>(base_c)));
+    for (T c = base_c; c < x; ++c,cc = mf.getCanonicalValue(mf.add(cc,unity))) {
         S iterations;
         T tmp_factor = static_cast<T>(pr_trial_func(mf, cc, &iterations));
         if (pIterations_performed)
@@ -90,7 +93,6 @@ OutputIt pr_factorize(OutputIt iter, T x, T threshold_always_prime, T base_c,
             // unlikely to happen that it's nearly impossible).
             // Meanwhile, we don't need to do anything here.
         }
-        cc = mf.getCanonicalValue(mf.add(cc, mf.getUnityValue()));
     }
 
     // We went through every allowed value of c, but didn't find a factor.  This
@@ -160,7 +162,7 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
     }
     // If we reach this point, the following clause will be true.  We explicitly
     // use an 'if' anyway, so that we can be sure the compiler will not generate
-    // any code for it when T digits <= HURCHALLA_TARGET_BIT_WIDTH.
+    // any code for it when T's bit width <= HURCHALLA_TARGET_BIT_WIDTH.
 #if defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 4127)
@@ -184,6 +186,7 @@ OutputIt pollard_rho_factorize(OutputIt iter, T x, T threshold_always_prime,
         }
 #endif
     } else {
+        unreachable();
         HPBC_ASSERT2(false);  // it ought to be impossible to reach this code.
         return iter;
     }

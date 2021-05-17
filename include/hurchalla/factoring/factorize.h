@@ -6,7 +6,6 @@
 #define HURCHALLA_FACTORING_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/PollardRhoTrial.h"
 #include "hurchalla/factoring/detail/impl_factorize.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -16,11 +15,6 @@
 #include <vector>
 
 namespace hurchalla {
-
-
-#ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoTrial
-#endif
 
 
 template <typename T>
@@ -50,8 +44,7 @@ factorize(T x, int& num_factors)
         std::size_t num_factors;
     };
     FactorArrayAdapter faa(arr);
-    detail::impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
-                                                    std::back_inserter(faa), x);
+    detail::impl_factorize(std::back_inserter(faa), x);
     num_factors = static_cast<int>(faa.size());
     // After calling this function, a client should never index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set
@@ -84,8 +77,7 @@ std::vector<T> factorize_to_vector(T x)
     constexpr auto max_num_factors = ut_numeric_limits<T>::digits;
     std::vector<T> vec;
     vec.reserve(max_num_factors);
-    detail::impl_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
-                                                    std::back_inserter(vec), x);
+    detail::impl_factorize(std::back_inserter(vec), x);
 
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);

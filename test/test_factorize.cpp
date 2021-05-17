@@ -39,8 +39,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
 
 #if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
-// the value for the macro HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD, used in
-// PollardRhoTrial.  This test is not needed normally.
+// PollardRhoTrial and PollardRhoBrentTrial.  This test is not needed normally.
     TEST(HurchallaFactoringFactorize, speed_test32) {
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;

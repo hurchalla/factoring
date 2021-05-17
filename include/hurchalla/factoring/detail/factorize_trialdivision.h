@@ -157,7 +157,8 @@ OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
         // assert the next prime fits in type T
         static_assert(0 <= tmp && tmp <= ut_numeric_limits<T>::max());
         next_prime = static_cast<T>(tmp);
-        next_prime_squared = TD::nextPrimePastEndSquared();
+        constexpr auto tmp2 = TD::nextPrimePastEndSquared();
+        next_prime_squared = tmp2;
     }
     else {
         next_prime = TD::oddPrime(td_size_limit);

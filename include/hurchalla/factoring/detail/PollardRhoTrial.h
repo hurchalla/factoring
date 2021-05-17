@@ -6,11 +6,19 @@
 #define HURCHALLA_FACTORING_POLLARD_RHO_TRIAL_H_INCLUDED
 
 
+#include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
+#include "hurchalla/factoring/detail/GcdFunctor.h"
 #include "hurchalla/factoring/greatest_common_divisor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 
 namespace hurchalla { namespace detail {
+
+
+// TODO determine a good number for HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
+#ifndef HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
+#  define HURCHALLA_POLLARD_RHO_GCD_THRESHOLD 64
+#endif
 
 
 // Note: We generally expect Pollard Rho Brent factorization will be faster than
@@ -57,8 +65,7 @@ namespace hurchalla { namespace detail {
 // ---------------
 //  a = 2;
 //  b = f(a);
-//  while (a != b)
-//  {
+//  while (a != b) {
 //      p = GCD( | b - a | , num);
 //      if ( p > 1)
 //          return "Found factor: p";
@@ -67,12 +74,6 @@ namespace hurchalla { namespace detail {
 //  }
 //  return "Failed. :-("
 
-
-
-// TODO determine a good number for HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD
-#ifndef HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD
-#  define HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD 70
-#endif
 
 
 /*
@@ -111,17 +112,15 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
     HPBC_ASSERT2(a < num);
     HPBC_ASSERT2(b < num);
 
-    int gcd_threshold = HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD;
+    int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
 
     T product = 1;
     HPBC_ASSERT2(product < num);
 
     T current_iteration = 0;
-    while (true)
-    {
+    while (true) {
         T absValDiff;
-        for (int i = 0; i < gcd_threshold; ++i)
-        {
+        for (int i = 0; i < gcd_threshold; ++i) {
             HPBC_INVARIANT2(1 <= product && product < num);
             ++current_iteration;
 
@@ -138,8 +137,7 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
             absValDiff = (a>b) ? a-b : b-a;
             T result = modular_multiplication_prereduced_inputs(product,
                                                                absValDiff, num);
-            if (result == 0)
-            {
+            if (result == 0) {
                 // Since result == 0, we know that absValDiff == 0 -or-
                 // product and absValDiff together had all the factors of
                 // num (and likely more than just that), though neither could
@@ -172,14 +170,6 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
 */
 
 
-template <typename T>
-struct PrtGcdFunctor {
-    HURCHALLA_FORCE_INLINE HURCHALLA_FLATTEN T operator()(T a, T b)
-    {
-        return greatest_common_divisor(a, b);
-    }
-};
-
 
 // The following functor is an adaptation of the function above, using a
 // Montgomery Form type M, and Montgomery domain values and arithmetic.
@@ -196,29 +186,36 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
     using C = typename M::CanonicalValue;
 
     T num = mf.getModulus();
-    HPBC_ASSERT2(num > 2);
-    HPBC_ASSERT2(num % 2 == 1);  // montgomery form guarantees odd modulus.
+    HPBC_PRECONDITION2(num > 2);
+    HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
 
-    V a = mf.getUnityValue();
-    a = mf.add(a, a);   // sets a = mf.convertIn(2).
-    V b = a;
+    constexpr int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
+
     // negate c so that we can use fmsub inside the loop instead of fmadd (fmsub
     // is very slightly more efficient).
     C negative_c = mf.negate(c);
 
-    int gcd_threshold = HURCHALLA_POLLARD_RHO_TRIAL_GCD_THRESHOLD;
+    V a = mf.getUnityValue();
+    a = mf.add(a, a);   // sets a = mf.convertIn(2).
+#if 0
+// Using a pre-cycle doesn't seem to improve runtimes for this plain Pollard-Rho
+// Trial (although it does help Pollard-Rho Brent Trials).
+    constexpr int PRE_CYCLE_SIZE = 48;
+    for (int i = 0; i < PRE_CYCLE_SIZE; ++i)
+        a = mf.fmsub(a, a, negative_c);
+#endif
 
+    V b = a;
     V product = mf.getUnityValue();
     T current_iteration = 0;
-    while (true)
-    {
+    while (true) {
         V absValDiff;
-        for (int i = 0; i < gcd_threshold; ++i)
-        {
+        for (int i = 0; i < gcd_threshold; ++i) {
+            HPBC_INVARIANT2(mf.convertOut(product) > 0);
             ++current_iteration;
+            b = mf.fmsub(b, b, negative_c);
+            b = mf.fmsub(b, b, negative_c);
             a = mf.fmsub(a, a, negative_c);
-            b = mf.fmsub(b, b, negative_c);
-            b = mf.fmsub(b, b, negative_c);
 
             // modular unordered subtract isn't the same as absolute value of a
             // subtraction, but it works equally well for pollard rho.
@@ -227,17 +224,16 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
             // perform montgomery multiplication of product*absValDiff, and set
             // isZero to (mf.getCanonicalValue(result) == mf.getZeroValue()).
             V result = mf.multiplyIsZero(product, absValDiff, isZero);
-            if (isZero)
-            {
+            if (isZero) {
                 // Since result == 0, we know that absValDiff == 0 -or-
                 // product and absValDiff together had all the factors of
                 // num (and likely more than just that), though neither could
                 // have contained all factors since they're both always mod num.
                 // It's fairly obvious product could have a factor when
                 // absValDiff == 0 (they're uncorrelated) and the above shows
-                // product might (in fact does, given result == 0) have a
-                // factor when absValDiff != 0.  So we need to test product
-                // for a factor before checking for absValDiff == 0.
+                // that product must have a factor when absValDiff != 0.  So we
+                // need to test product for a factor before checking whether
+                // absValDiff == 0.
                 break;
             }
             product = result;
@@ -245,7 +241,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
 
         // The following is a more efficient way to compute
         // p = greatest_common_divisor(mf.convertOut(product), num)
-        T p = mf.template gcd_with_modulus<PrtGcdFunctor>(product);
+        T p = mf.template gcd_with_modulus<GcdFunctor>(product);
         // Since product is in the range [1,num) and num is required to be >1,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).

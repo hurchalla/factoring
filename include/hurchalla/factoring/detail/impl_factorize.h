@@ -8,7 +8,8 @@
 
 #include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
 #include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
-
+#include "hurchalla/factoring/detail/PollardRhoTrial.h"
+#include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/pollard_rho_factorize.h"
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
@@ -16,6 +17,15 @@
 #include "hurchalla/util/programming_by_contract.h"
 
 namespace hurchalla { namespace detail {
+
+
+#ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
+#if 1
+#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoBrentTrial
+#else
+#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoTrial
+#endif
+#endif
 
 
 // TODO determine good max_factor
@@ -38,7 +48,7 @@ namespace hurchalla { namespace detail {
 #define HURCHALLA_USE_PR_TRIAL_DIVISION
 
 // FYI there are 54 primes below 256
-#define HURCHALLA_PR_TRIAL_DIVISION_SIZE 309
+#define HURCHALLA_PR_TRIAL_DIVISION_SIZE 175   // or maybe good ~200 or 225
 
 // I'll probably want to get rid of this macro entirely, and also change
 // the function not to take an index limit argument
@@ -46,7 +56,7 @@ namespace hurchalla { namespace detail {
 
 
 
-template <template<class> class Functor, class OutputIt, typename T>
+template <class OutputIt, typename T>
 T impl_factorize(OutputIt iter, T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
@@ -86,8 +96,9 @@ T impl_factorize(OutputIt iter, T x)
 #endif
 
     T iterations_performed;
-    iter = pollard_rho_factorize<Functor>(iter, q, threshold_always_prime,
-                                      static_cast<T>(1), &iterations_performed);
+    iter = pollard_rho_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
+                    iter, q, threshold_always_prime, static_cast<T>(1),
+                    &iterations_performed);
     return iterations_performed;
 }
 

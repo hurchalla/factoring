@@ -67,26 +67,40 @@ namespace hurchalla { namespace detail {
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-template <class OutputIt, typename T>
+// the SIZE_INDEX parameter lets the caller fine-tune for performance the amount
+// of trial division that happens by pure primes, before switching to wheel
+// factorization.  At the moment SIZE_INDEX can be a value from 0 to 9; it is an
+// index into an array that holds the number of primes to trial divide by, and
+// the higher the index, the more primes are used.
+template <int SIZE_INDEX = 1, class OutputIt, typename T>
 OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
                                      T max_factor = ut_numeric_limits<T>::max())
 {
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::is_integer);
+    static_assert(!ut_numeric_limits<T>::is_signed);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
+    using std::size_t;
+    using std::uint8_t;
+    // avoid integral promotion hassles
+    using P = typename safely_promote_unsigned<T>::type;
     // the maximum possible number of factors for a type T variable occurs when
     // all factors are 2.  Thus bitsT is >= to the number of factors of x.
     static constexpr int bitsT = ut_numeric_limits<T>::digits;
-    static_assert(bitsT % 2 == 0, "");
+    static_assert(bitsT % 2 == 0);
     static constexpr T sqrtR = static_cast<T>(1) << (bitsT / 2);
+
     if (max_factor >= sqrtR)
         max_factor = sqrtR - 1;
 
-    // factor out all primes < 256
-    constexpr int SIZE=54;   // there are 54 primes < 256
-    // FYI: there are 90 primes < 466, 122 primes < 676, 153 primes < 886,
-    // 183 primes < 1096, 213 primes < 1306, 240 primes < 1516.
+    // For SIZE: there are 14 primes < 46, 54 primes < 256, 90 primes < 466,
+    // 122 primes < 676, 153 primes < 886, 183 primes < 1096, 213 primes < 1306,
+    // 240 primes < 1516, 269 primes < 1726, 295 primes < 1936.
+    constexpr int SIZE_ARRAY[] = { 14, 54, 90, 122, 153,
+                                   183, 213, 240, 269, 295 };
+    static_assert(SIZE_INDEX < sizeof(SIZE_ARRAY)/sizeof(SIZE_ARRAY[0]));
+    constexpr int SIZE = SIZE_ARRAY[SIZE_INDEX];
+
     T next_prime;  // ignored for now
     iter= factorize_trialdivision<HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE,
                                             SIZE>(iter, q, next_prime, x, SIZE);
@@ -94,10 +108,6 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
     if (q == 1)   // if factorize_trialdivision completely factored x
         return iter;
 
-    using std::size_t;
-    using std::uint8_t;
-    // avoid integral promotion hassles
-    using P = typename safely_promote_unsigned<T>::type;
     P q2 = q;
     HPBC_ASSERT2(q2 > 1);
 
@@ -110,14 +120,12 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
     static constexpr size_t wheel_len = sizeof(wheel)/sizeof(wheel[0]);
     static constexpr uint8_t cycle_len = 210;
 
-    static constexpr P cycle_start = 210;
-    // 257 is the first prime > 256, so we need to resume trial division there
-    static_assert(cycle_start + wheel[0] == 257, "");
+    static constexpr P CYCLE_START = 210 * SIZE_INDEX;
 
     // Use the wheel to skip division by any multiple of 2,3,5,7 in the loop
     // below - we already tested 2,3,5,7 via factorize_trialdivision().
     P maybe_factor;
-    for (P start=cycle_start; ; start=static_cast<P>(start + cycle_len)) {
+    for (P start=CYCLE_START; ; start=static_cast<P>(start + cycle_len)) {
         maybe_factor = start + wheel[0];
         if (maybe_factor > max_factor)
             break;
@@ -126,8 +134,9 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
         // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
         // which means (maybe_factor*maybe_factor) doesn't overflow.
         HPBC_ASSERT2(maybe_factor < sqrtR);
+        // if no primes <= sqrt(q2) are factors of q2, q2 must be prime.
         if (maybe_factor * maybe_factor > q2)
-            break;   // no factors ever exist > sqrt(q)
+            break;   // no factors ever exist > sqrt(q2)
         // This inner loop will usually trial a few maybe_factor(s) that are
         // greater than max_factor or sqrt(q2), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
@@ -140,7 +149,7 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
             // 210.  But S - sqrtR < 210 is impossible because P is always at
             // at least as large as uint16_t (due to promotion rules it's based
             // upon), and thus S >= 65535, and sqrtR is always <= sqrt(S+1).
-            static_assert(cycle_len == 210, ""); //support the preceding comment
+            static_assert(cycle_len == 210); //support the preceding comment
             HPBC_ASSERT2(start <= ut_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
             P div_result;

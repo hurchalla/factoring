@@ -6,100 +6,67 @@
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
-#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
-#include "hurchalla/factoring/detail/PollardRhoTrial.h"
-#include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
-#include "hurchalla/factoring/detail/factorize_trialdivision.h"
-#include "hurchalla/factoring/detail/pollard_rho_factorize.h"
-#include "hurchalla/factoring/detail/factorize_wheel210.h"
+#include "hurchalla/factoring/detail/factorize_dispatch.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
+#include <cstddef>
+#include <array>
+#include <vector>
 
 namespace hurchalla { namespace detail {
 
 
-#ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
-#if 1
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoBrentTrial
-#else
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME detail::PollardRhoTrial
-#endif
-#endif
-
-
-// TODO determine good max_factor
-#ifndef HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
-// 256 + 0*210  results in skipping factorize_wheel210(), and only using
-// small_division256().  We want to use 256 + some multiple of 210, since that
-// makes an optimal max trial factor for factorize_wheel210.
-#  define HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR (256 + 0*210)
-#endif
-
-
-#define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
-//#define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
-
-
-// Initial tests so far suggest it might be fastest to always define
-// HURCHALLA_USE_PR_TRIAL_DIVISION.  If it is not defined, wheel factorization
-// will be used.  But it's possible wheel factorization might even be slower
-// than doing almost nothing prior to Pollard Rho?
-#define HURCHALLA_USE_PR_TRIAL_DIVISION
-
-// FYI there are 54 primes below 256
-#define HURCHALLA_PR_TRIAL_DIVISION_SIZE 175   // or maybe good ~200 or 225
-
-// I'll probably want to get rid of this macro entirely, and also change
-// the function not to take an index limit argument
-#define HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT HURCHALLA_PR_TRIAL_DIVISION_SIZE
-
-
-
-template <class OutputIt, typename T>
-T impl_factorize(OutputIt iter, T x)
+template <typename T, class PrimalityFunctor>
+std::array<T, ut_numeric_limits<T>::digits>
+impl_factorize_to_array(
+                     T x, int& num_factors, const PrimalityFunctor& is_prime_mf)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
-    static_assert(ut_numeric_limits<T>::digits % 2 == 0, "");
-    HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
-    constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
-    T q;
-#ifdef HURCHALLA_USE_PR_TRIAL_DIVISION
-    T next_prime;
-    int index_limit = HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT;
+    // The max possible number of factors occurs when all factors equal 2
+    constexpr std::size_t array_size = ut_numeric_limits<T>::digits;
+    std::array<T, array_size> arr;
 
-    iter = factorize_trialdivision<HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE,
-                                   HURCHALLA_PR_TRIAL_DIVISION_SIZE>
-                                          (iter, q, next_prime, x, index_limit);
-    HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this
-    if (q == 1)   // if factorize_trialdivision() completely factored x
-        return 0;
-    // factorize_trialdivision() guarantees that any factor of x that is less
-    // than next_prime*next_prime must be prime.
-    T threshold_always_prime = (next_prime < sqrtR) ?
-          static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
-#else
-    // Use Wheel Factorization--
-    // Ensure max_trial_factor * max_trial_factor never overflows.
-    // Note that no factors ever exist >= sqrtR, so limiting to sqrtR-1 is fine.
-    constexpr T max_trial_factor =
-           (HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR < sqrtR)
-           ? HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR : static_cast<T>(sqrtR - 1);
-    iter = factorize_wheel210(iter, q, x, max_trial_factor);
-    HPBC_ASSERT2(q >= 1);  // factorize_wheel210 guarantees this
-    if (q == 1)   // if factorize_wheel210 completely factored x
-        return 0;
-    constexpr T threshold_always_prime =
-                              static_cast<T>(max_trial_factor*max_trial_factor);
-#endif
+    struct FactorArrayAdapter {
+        using value_type = T;
+        explicit FactorArrayAdapter(std::array<T, array_size>& a) :
+                                                       ar(a), factor_count(0) {}
+        void push_back(const value_type& val)
+        {
+            HPBC_ASSERT2(factor_count < array_size);
+            ar[factor_count] = val;
+            ++factor_count;
+        }
+        std::size_t size() { return factor_count; }
+    private:
+        std::array<T, array_size>& ar;
+        std::size_t factor_count;
+    };
+    FactorArrayAdapter faa(arr);
+    detail::factorize_dispatch(std::back_inserter(faa), x, is_prime_mf);
+    num_factors = static_cast<int>(faa.size());
 
-    T iterations_performed;
-    iter = pollard_rho_factorize<HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME>(
-                    iter, q, threshold_always_prime, static_cast<T>(1),
-                    &iterations_performed);
-    return iterations_performed;
+    HPBC_POSTCONDITION(num_factors > 0);
+    HPBC_POSTCONDITION(static_cast<std::size_t>(num_factors) <= array_size);
+    return arr;
+}
+
+
+template <typename T, class PrimalityFunctor>
+std::vector<T> impl_factorize_to_vector(T x, int max_num_factors,
+                                            const PrimalityFunctor& is_prime_mf)
+{
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+
+    std::vector<T> vec;
+    vec.reserve(max_num_factors);
+    detail::factorize_dispatch(std::back_inserter(vec), x, is_prime_mf);
+
+    HPBC_POSTCONDITION(vec.size() > 0);
+    HPBC_POSTCONDITION(vec.size() <= max_num_factors);
+    return vec;
 }
 
 

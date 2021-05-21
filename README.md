@@ -31,7 +31,6 @@ Document:
    HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE  (can be PrimeTrialDivisionMayer or PrimeTrialDivisionWarren)
 
    -- impl_factorize.h --
-   HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial or PollardRhoBrentTrial (or one of the trials in experimental)
    HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
    HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
    HURCHALLA_USE_PR_TRIAL_DIVISION
@@ -39,6 +38,7 @@ Document:
    HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT
 
    -- pollard_rho_factorize.h --
+   HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial or PollardRhoBrentTrial (or one of the trials in experimental)
    HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
 
    -- PollardRhoTrial.h --

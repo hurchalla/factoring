@@ -8,16 +8,14 @@
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/factoring/detail/GcdFunctor.h"
-#include "hurchalla/factoring/greatest_common_divisor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 
 namespace hurchalla { namespace detail {
 
 
-// TODO determine a good number for HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
 #ifndef HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
-#  define HURCHALLA_POLLARD_RHO_GCD_THRESHOLD 64
+#  define HURCHALLA_POLLARD_RHO_GCD_THRESHOLD 72
 #endif
 
 
@@ -89,11 +87,12 @@ namespace hurchalla { namespace detail {
 // You'll need to move these #includes to the top of this file, and uncomment
 // them.  They won't work if placed here.
 //
+//#include "hurchalla/factoring/greatest_common_divisor.h"
 //#include "hurchalla/modular_arithmetic/modular_multiplication.h"
 //#include "hurchalla/modular_arithmetic/modular_addition.h"
 
 template <class T>
-T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
+T pollard_rho_trial(T num, T c)
 {
     static_assert(ut_numeric_limits<U>::is_integer, "");
     static_assert(!(ut_numeric_limits<U>::is_signed), "");
@@ -117,12 +116,10 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
     T product = 1;
     HPBC_ASSERT2(product < num);
 
-    T current_iteration = 0;
     while (true) {
         T absValDiff;
         for (int i = 0; i < gcd_threshold; ++i) {
             HPBC_INVARIANT2(1 <= product && product < num);
-            ++current_iteration;
 
             // set a := (a*a + c) % num, while ensuring overflow doesn't happen.
             a = modular_multiplication_prereduced_inputs(a, a, num);
@@ -157,9 +154,6 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).
         HPBC_ASSERT2(1<=p && p<num);
-
-        if (pIterationsPerformed != nullptr)
-            *pIterationsPerformed = current_iteration;
         if (p > 1)
             return p;
         if (absValDiff == 0)
@@ -178,8 +172,7 @@ T pollard_rho_trial(T num, T c, T* pIterationsPerformed = nullptr)
 
 template <class M>
 struct PollardRhoTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
-                             typename M::T_type* pIterationsPerformed = nullptr)
+typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
 {
     using T = typename M::T_type;
     using V = typename M::MontgomeryValue;
@@ -207,12 +200,10 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
 
     V b = a;
     V product = mf.getUnityValue();
-    T current_iteration = 0;
     while (true) {
         V absValDiff;
         for (int i = 0; i < gcd_threshold; ++i) {
             HPBC_INVARIANT2(mf.convertOut(product) > 0);
-            ++current_iteration;
             b = mf.fmsub(b, b, negative_c);
             b = mf.fmsub(b, b, negative_c);
             a = mf.fmsub(a, a, negative_c);
@@ -246,9 +237,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).
         HPBC_ASSERT2(1<=p && p<num);
-
-        if (pIterationsPerformed != nullptr)
-            *pIterationsPerformed = current_iteration;
         if (p > 1)
             return p;
         if (mf.getCanonicalValue(absValDiff) == mf.getZeroValue())

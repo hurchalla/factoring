@@ -397,7 +397,9 @@ struct MillerRabinMontgomery {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // We restrict the allowed types of T to only those types for which this
-    // function would be an efficient choice:
+    // function would be an efficient choice.  Relaxing these restrictions
+    // should be ok so long as you always ensure that
+    // mf.getModulus() < (1 << LOG2_MODULUS_LIMIT).
     static_assert((ut_numeric_limits<T>::digits/2 < LOG2_MODULUS_LIMIT &&
                    LOG2_MODULUS_LIMIT <= ut_numeric_limits<T>::digits) ||
               (LOG2_MODULUS_LIMIT < ut_numeric_limits<T>::digits &&

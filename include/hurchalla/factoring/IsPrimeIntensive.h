@@ -40,7 +40,8 @@ class IsPrimeIntensive {
 public:
     IsPrimeIntensive() : isprime_impl() {}
 
-    T operator()(T x)  // returns true if x is prime, otherwise returns false.
+    // returns true if x is prime, otherwise returns false
+    bool operator()(T x) const
     {
         return isprime_impl(x);
     }

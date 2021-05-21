@@ -38,8 +38,7 @@ namespace hurchalla { namespace detail {
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentMontgomeryTrialParallel {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
-                             typename M::T_type* pIterationsPerformed = nullptr)
+typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
 {
     using T = typename M::T_type;
     using V = typename M::MontgomeryValue;
@@ -75,7 +74,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
 
     V product = mf.getUnityValue();
     V productz = mf.getUnityValue();
-    T current_iteration = 0;
     while (true) {
         V t1 = b;
         // for negt2, we want -(b*b+c)
@@ -246,9 +244,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
             HPBC_ASSERT2(1<=p && p<num);
-
-            if (pIterationsPerformed != nullptr)
-                *pIterationsPerformed = static_cast<T>(current_iteration + j+1);
             if (p > 1) 
                 return p;
             if (mf.getCanonicalValue(gxi) == mf.getZeroValue()) 
@@ -256,7 +251,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
             if (mf.getCanonicalValue(gxiz) == mf.getZeroValue()) 
                 return 0; // the sequence cycled before we could find a factor
         }
-        current_iteration = static_cast<T>(current_iteration + 3*one_third_cycle_size);
         one_third_cycle_size = static_cast<T>(2*one_third_cycle_size);
     }
 }

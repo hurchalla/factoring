@@ -52,7 +52,7 @@ private:
 public:
     SieveImplIsPrimeIntensive() :
          sieve(static_cast<std::uint64_t>(1)<<(ut_numeric_limits<T>::digits)) {}
-    T operator()(T x) const
+    bool operator()(T x) const
     {
         return sieve.isPrime(x);
     }
@@ -80,7 +80,7 @@ template <typename DUMMY>
 struct ImplIsPrimeIntensive<std::uint64_t, true, DUMMY> {
     static_assert(std::is_same<DUMMY, void>::value, "");
     using T = std::uint64_t;
-    T operator()(T x) const
+    bool operator()(T x) const
     {
         if (x % 2 == 0)
             return (x == 2);
@@ -141,7 +141,7 @@ template <typename DUMMY>
 struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
     static_assert(std::is_same<DUMMY, void>::value, "");
     using T = std::uint64_t;
-    T operator()(T x) const
+    bool operator()(T x) const
     {
         bool success;
         // Using trial division on average boosts our performance (so long as x
@@ -175,7 +175,7 @@ private:
     ImplIsPrimeIntensive<uint64_t, false> impl64;
 #endif
 public:
-    T operator()(T x) const
+    bool operator()(T x) const
     {
 #if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
         if (x <= ut_numeric_limits<uint64_t>::max())

@@ -4,6 +4,8 @@
 
 #include "factorize_bruteforce.h"
 #include "hurchalla/factoring/factorize.h"
+#include "hurchalla/factoring/factorize_intensive32.h"
+#include "hurchalla/factoring/IsPrimeIntensive.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 
@@ -40,6 +42,29 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
 #if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
 // PollardRhoTrial and PollardRhoBrentTrial.  This test is not needed normally.
+#if 0
+    const IsPrimeIntensive<std::uint32_t,true>& get_ipi32()
+    {
+        static IsPrimeIntensive<std::uint32_t,true> ipi;
+        return ipi;
+    }
+    TEST(HurchallaFactoringFactorize, speed_test_primer) {
+        get_ipi32();
+    }
+    TEST(HurchallaFactoringFactorize, speed_test32_intensive) {
+        const auto& ipi = get_ipi32();
+        using T = std::uint32_t;
+        T max = ut_numeric_limits<T>::max()/2;
+        for (T x = max; x >= max - 4000000; x = x-2) {
+            int num_factors;
+            auto arr = factorize_intensive32(x, num_factors, ipi);
+            // We need to prevent the compiler from completely removing
+            // the factorize calls due to arr never being used.
+            // So we'll check arr[0] (which is never 0) just so it's used.
+            EXPECT_TRUE(arr[0] != 0);
+        }
+    }
+#endif
     TEST(HurchallaFactoringFactorize, speed_test32) {
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;

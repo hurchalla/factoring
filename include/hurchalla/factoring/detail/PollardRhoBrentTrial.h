@@ -8,7 +8,6 @@
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/factoring/detail/GcdFunctor.h"
-#include "hurchalla/factoring/greatest_common_divisor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 
@@ -22,13 +21,13 @@ namespace hurchalla { namespace detail {
 
 
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD
-#  define HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD 768
+#  define HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD 400
 #endif
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE
-#  define HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE 48
+#  define HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE 40
 #endif
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE
-#  define HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE 24
+#  define HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE 20
 #endif
 
 
@@ -45,11 +44,12 @@ namespace hurchalla { namespace detail {
 // You'll need to move these #includes to the top of this file, and uncomment
 // them.  They won't work if placed here.
 //
+//#include "hurchalla/factoring/greatest_common_divisor.h"
 //#include "hurchalla/modular_arithmetic/modular_multiplication.h"
 //#include "hurchalla/modular_arithmetic/modular_addition.h"
 
 template <class T>
-T pollard_rho_brent_trial(T num, T c, T* pIterationsPerformed = nullptr)
+T pollard_rho_brent_trial(T num, T c)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
@@ -74,7 +74,6 @@ T pollard_rho_brent_trial(T num, T c, T* pIterationsPerformed = nullptr)
 
     T product = 1;
     HPBC_ASSERT2(product < num);
-    T current_iteration=0;
 
     while (true) {
         T a_fixed = b;
@@ -115,18 +114,11 @@ T pollard_rho_brent_trial(T num, T c, T* pIterationsPerformed = nullptr)
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
             HPBC_ASSERT2(1<=p && p<num);
-            if (p > 1) {
-                if (pIterationsPerformed != nullptr)
-                    *pIterationsPerformed = current_iteration + j + 1;
+            if (p > 1)
                 return p;
-            }
-            if (absValDiff == 0) {
-                if (pIterationsPerformed != nullptr)
-                    *pIterationsPerformed = current_iteration + j + 1;
+            if (absValDiff == 0)
                 return 0; // the sequence cycled before we could find a factor
-            }
         }
-        current_iteration += cycle_size;
         cycle_size *= 2;
     }
 }
@@ -139,8 +131,7 @@ T pollard_rho_brent_trial(T num, T c, T* pIterationsPerformed = nullptr)
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
-                             typename M::T_type* pIterationsPerformed = nullptr)
+typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
 {
     using T = typename M::T_type;
     using V = typename M::MontgomeryValue;
@@ -167,7 +158,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
         b = mf.fmsub(b, b, negative_c);
 
     V product = mf.getUnityValue();
-    T current_iteration = 0;
     while (true) {
         V a_fixed = b;
         for (T i = 0; i < cycle_size; ++i) {
@@ -179,10 +169,10 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 #endif
         // Because num is not prime, there are at least two factors, each of
-        // which is <= sqrt(ut_numeric_limits<T>::max()).  Since the smallest
-        // hidden cycle that we will eventually uncover has a length equal to
-        // the smallest factor, cycle_size will never grow larger than double
-        // that factor.  And since
+        // which is <= sqrt(ut_numeric_limits<T>::max()).  Since the worst case
+        // length for the smallest hidden cycle that we will eventually uncover
+        // is a length no larger than the smallest factor, the variable
+        // cycle_size will never grow larger than double that factor.  So since
         // cycle_size <= 2*smallestfactor <= 2*sqrt(ut_numeric_limits<T>::max())
         // we know cycle_size <= 2*sqrt(ut_numeric_limits<T>::max())
         //
@@ -235,15 +225,11 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c,
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
             HPBC_ASSERT2(1<=p && p<num);
-
-            if (pIterationsPerformed != nullptr)
-                *pIterationsPerformed = static_cast<T>(current_iteration + j+1);
             if (p > 1) 
                 return p;
             if (mf.getCanonicalValue(absValDiff) == mf.getZeroValue())
                 return 0; // the sequence cycled before we could find a factor
         }
-        current_iteration = static_cast<T>(current_iteration + cycle_size);
         cycle_size = static_cast<T>(2 * cycle_size);
     }
 }

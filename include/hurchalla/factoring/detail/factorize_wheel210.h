@@ -6,11 +6,6 @@
 #define HURCHALLA_FACTORING_FACTORIZE_WHEEL210_H_INCLUDED
 
 
-#define HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
-//#define HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
-
-
-#include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/trial_divide_mayer.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -29,55 +24,32 @@
 namespace hurchalla { namespace detail {
 
 
-// This algorithm is Wheel factorization
+// This algorithm is Wheel Factorization
 // https://en.wikipedia.org/wiki/Wheel_factorization
-// but with testing for potential factors only up to (and including) max_factor.
 
-// These preconditions and postconditions are the same as for the function
-// factorize_trialdivision(), except for the extra note in these postconditions.
-//
 // Preconditions for factorize_wheel210():
 //   Requires x >= 2.
-//
 // Postconditions:
-// 1) The return value is an output iterator to the position one past the last
+//   The return value is an output iterator to the position one past the last
 //   factor that the function wrote to the destination range (iterated by the
-//   function's parameter 'iter').  The destination range consists of all the
-//   prime factors that the function was able to find for x.  This range will
-//   be empty if the function could not find any factors for x and could not
-//   determine whether x was prime.  The range will consist of the single
-//   element x if the function determined that x was prime.
-// 2) q will be set to the quotient of x divided by all the elements written to
-//   the destination range (iterated by the function's parameter 'iter').  If
-//   nothing was written to the range (if it's empty), then q will be set to x.
-//   There are specific details that naturally follow from these facts and from
-//   Postcondition 1: if q gets set to 1, then this indicates the function was
-//   able to completely factor x and the destination range consists of all the
-//   factors.  If q > 1, then this indicates the function was not able to
-//   completely factorize x, and q represents the value still remaining to be
-//   factored.  q will never be set to zero (or a value < 0).
-// Extra note: if max_factor is defaulted or set to a value >= sqrt(x), then the
-//   function will always completely factor x and set q = 1.
+//   function's parameter 'iter').  The destination range will consist of all
+//   the prime factors of x; the function will always completely factor x,
+//   though it may take an extremely long time if x is large.  The destination
+//   range will consist of the single element x if the function determined that
+//   x was prime.
 //
-// factorize_wheel210 guarantees it will trial all potential prime factors
-// less than or equal to max_factor.  It will usually also trial a few factors
-// that are larger than max_factor.
+// factorize_wheel210 will trial all potential prime factors less than or equal
+// to sqrt(x).  It may also trial a few factors that are larger than sqrt(x).
 
-// for discussion purposes inside the function, let the theoretical constant
+// For discussion purposes inside the function, let the theoretical constant
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-// the SIZE_INDEX parameter lets the caller fine-tune for performance the amount
-// of trial division that happens by pure primes, before switching to wheel
-// factorization.  At the moment SIZE_INDEX can be a value from 0 to 9; it is an
-// index into an array that holds the number of primes to trial divide by, and
-// the higher the index, the more primes are used.
-template <int SIZE_INDEX = 1, class OutputIt, typename T>
-OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
-                                     T max_factor = ut_numeric_limits<T>::max())
+template <class OutputIt, typename T>
+OutputIt factorize_wheel210(OutputIt iter, T x)
 {
-    static_assert(ut_numeric_limits<T>::is_integer);
-    static_assert(!ut_numeric_limits<T>::is_signed);
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
     using std::size_t;
@@ -90,55 +62,88 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
     static_assert(bitsT % 2 == 0);
     static constexpr T sqrtR = static_cast<T>(1) << (bitsT / 2);
 
-    if (max_factor >= sqrtR)
-        max_factor = sqrtR - 1;
-
-    // For SIZE: there are 14 primes < 46, 54 primes < 256, 90 primes < 466,
-    // 122 primes < 676, 153 primes < 886, 183 primes < 1096, 213 primes < 1306,
-    // 240 primes < 1516, 269 primes < 1726, 295 primes < 1936.
-    constexpr int SIZE_ARRAY[] = { 14, 54, 90, 122, 153,
-                                   183, 213, 240, 269, 295 };
-    static_assert(SIZE_INDEX < sizeof(SIZE_ARRAY)/sizeof(SIZE_ARRAY[0]));
-    constexpr int SIZE = SIZE_ARRAY[SIZE_INDEX];
-
-    T next_prime;  // ignored for now
-    iter= factorize_trialdivision<HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE,
-                                            SIZE>(iter, q, next_prime, x, SIZE);
-    HPBC_ASSERT2(q >= 1);  // factorize_trialdivision guarantees this
-    if (q == 1)   // if factorize_trialdivision completely factored x
+    P q = static_cast<P>(x);
+    HPBC_ASSERT2(q > 1);
+    // We test divisors to 13, to cover all possible factors for type uint8_t,
+    // meaning that uint8_t never needs to use the wheel (it might result in
+    // overflow if it did).  Note this is a bit overkill for larger types (which
+    // with a modified wheel below would only need to test up to 7 here), but it
+    // makes essentially no difference on performance.
+    while (q%2 == 0) {
+        q = q/2;
+        *iter++ = static_cast<T>(2);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    while (q%3 == 0) {
+        q = q/3;
+        *iter++ = static_cast<T>(3);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    while (q%5 == 0) {
+        q = q/5;
+        *iter++ = static_cast<T>(5);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    while (q%7 == 0) {
+        q = q/7;
+        *iter++ = static_cast<T>(7);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    while (q%11 == 0) {
+        q = q/11;
+        *iter++ = static_cast<T>(11);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    while (q%13 == 0) {
+        q = q/13;
+        *iter++ = static_cast<T>(13);
+        if (q == 1)  // we completely factored x
+            return iter;
+    }
+    HPBC_ASSERT2(q > 1);
+    if constexpr (std::is_same<T, uint8_t>::value) {
+        // if x is type uint8_t, we would have tested all potential factors
+        // less than sqrtR above, and therefore q must be prime.
+        *iter++ = static_cast<T>(q);
         return iter;
+    }
 
-    P q2 = q;
-    HPBC_ASSERT2(q2 > 1);
-
-    // The wheel spans the 210 number range [47, 257), skipping all multiples
+    // The wheel spans the 210 number range [17, 227), skipping all multiples
     // of 2,3,5,7 within that range
-    static constexpr uint8_t wheel[] = { 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
-        97, 101, 103, 107, 109, 113, 121, 127, 131, 137, 139, 143, 149, 151,
-        157, 163, 167, 169, 173, 179, 181, 187, 191, 193, 197, 199, 209, 211,
-        221, 223, 227, 229, 233, 239, 241, 247, 251, 253 };
+    static constexpr uint8_t wheel[] = { 17, 19, 23, 29, 31, 37, 41, 43, 47, 53,
+        59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 121, 127,
+        131, 137, 139, 143, 149, 151, 157, 163, 167, 169, 173, 179, 181, 187,
+        191, 193, 197, 199, 209, 211, 221, 223 };
     static constexpr size_t wheel_len = sizeof(wheel)/sizeof(wheel[0]);
     static constexpr uint8_t cycle_len = 210;
 
-    static constexpr P CYCLE_START = 210 * SIZE_INDEX;
-
+    HPBC_ASSERT2(q > 1);
     // Use the wheel to skip division by any multiple of 2,3,5,7 in the loop
-    // below - we already tested 2,3,5,7 via factorize_trialdivision().
+    // below - we already tested 2,3,5,7 and found they were not factors.
+    // Note the wheel pattern cycles every 2*3*5*7 == 210 numbers.
     P maybe_factor;
-    for (P start=CYCLE_START; ; start=static_cast<P>(start + cycle_len)) {
+    for (P start=0; ; start=static_cast<P>(start + cycle_len)) {
         maybe_factor = start + wheel[0];
-        if (maybe_factor > max_factor)
-            break;
-        // Since the above clause leaves the loop, we know at this point
-        // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
-        // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
-        // which means (maybe_factor*maybe_factor) doesn't overflow.
+        if (maybe_factor >= sqrtR || maybe_factor*maybe_factor > q) {
+            // note: since (maybe_factor*maybe_factor) is evaluated only when
+            // maybe_factor < sqrtR, it will never overflow.
+            // Since R > q, we know sqrtR > sqrt(q).  Therefore
+            // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q).
+            // And  maybe_factor * maybe_factor > q  obviously implies
+            // the same.  So inside this clause,  maybe_factor > sqrt(q).
+            // This means we have tried all potential prime factors
+            // less than or equal to sqrt(q), so q must be prime.
+            *iter++ = static_cast<T>(q);
+            return iter;
+        }
         HPBC_ASSERT2(maybe_factor < sqrtR);
-        // if no primes <= sqrt(q2) are factors of q2, q2 must be prime.
-        if (maybe_factor * maybe_factor > q2)
-            break;   // no factors ever exist > sqrt(q2)
         // This inner loop will usually trial a few maybe_factor(s) that are
-        // greater than max_factor or sqrt(q2), which is unneeded but harmless.
+        // greater than sqrtR or sqrt(q), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
             // Assert that  start + wheel[i]  will never overflow.  Let
             // S = ma_numeric_limits<P>::max().  Overflow would mean that
@@ -153,31 +158,16 @@ OutputIt factorize_wheel210(OutputIt iter, T& q, T x,
             HPBC_ASSERT2(start <= ut_numeric_limits<P>::max() - wheel[i]);
             maybe_factor = start + wheel[i];
             P div_result;
-            HPBC_ASSERT2(q2 > 1);
-            // test whether  maybe_factor divides q2  without any remainder.
-            while (trial_divide_mayer(div_result, q2, maybe_factor)) {
+            HPBC_ASSERT2(q > 1);
+            // test whether  maybe_factor divides q  without any remainder.
+            while (trial_divide_mayer(div_result, q, maybe_factor)) {
                 *iter++ = static_cast<T>(maybe_factor);
-                q2 = div_result;
-                if (q2 == 1) {  // we completely factored x
-                    q = static_cast<T>(q2);
+                q = div_result;
+                if (q == 1)  // we completely factored x
                     return iter;
-                }
             }
         }
     }
-    if (maybe_factor >= sqrtR || maybe_factor * maybe_factor > q2) {
-        // Since R > q2, we know sqrtR > sqrt(q2).  Therefore
-        // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q2).
-        // And  maybe_factor * maybe_factor > q2  obviously implies
-        // the same.  So inside this clause,  maybe_factor > sqrt(q2).
-        // This means we have tried all potential prime factors
-        // less than or equal to sqrt(q2), so q2 must be prime.
-        *iter++ = static_cast<T>(q2);
-        q2 = 1;
-    }
-    q = static_cast<T>(q2);
-    HPBC_POSTCONDITION2(q > 0);
-    return iter;
 }
 
 

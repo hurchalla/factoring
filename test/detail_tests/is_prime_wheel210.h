@@ -18,20 +18,16 @@ namespace hurchalla { namespace detail {
 
 
 // This algorithm is an adaptation of Wheel factorization, where we return false
-// upon the first factor found (and set isSuccessful=true), or we return true if
-// we determine that the input is prime (and set isSuccessful=true).  If we are
-// unable to determine primality for the input then we set isSuccessful=false
-// and return an undefined boolean value (either true or false).  Note that if
-// max_factor is >= sqrt(x) (or if max_factor is defaulted) then we will always
-// be able to determine primality (we will set isSuccessful=true).
+// upon the first factor found, or we return true if we determine that the input
+// is prime.  This function will always be able to successfully determine
+// primality.
 // For more info see:
 // https://en.wikipedia.org/wiki/Wheel_factorization
 // Wheel factorization is a slight optimization (~2x) over is_prime_bruteforce()
 // but it's only a constant time improvement and remains a brute force approach.
 
 template <typename T>
-bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
-                                     T max_factor = ut_numeric_limits<T>::max())
+bool is_prime_wheel210(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
@@ -44,11 +40,6 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
     static_assert(bitsT % 2 == 0, "");
     static constexpr T sqrtR = static_cast<T>(1) << (bitsT / 2);
 
-    if (max_factor >= sqrtR)
-        max_factor = sqrtR - 1;
-
-    if (pIsSuccessful != nullptr)
-        *pIsSuccessful = true;
     P q = static_cast<P>(x);
     if (q < 2) return false;
     // We test divisors to 13, to cover all possible factors for type uint8_t,
@@ -62,8 +53,11 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
     if (q%7 == 0) return (q==7);
     if (q%11 == 0) return (q==11);
     if (q%13 == 0) return (q==13);
+    // We know by the fact that we got to this point that x has no
+    // factors <= 13.  Thus if x is type uint8_t, it has no prime factors that
+    // are < sqrtR, and therefore x must be prime.
     if constexpr (std::is_same<T, uint8_t>::value)
-        return true;   // if x is type uint8_t, it won't have any factors > 13
+        return true;
 
     // The wheel spans the 210 number range [17, 227), skipping all multiples
     // of 2,3,5,7 within that range
@@ -80,18 +74,20 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
     P maybe_factor;
     for (P start=0; ; start=static_cast<P>(start + cycle_len)) {
         maybe_factor = start + wheel[0];
-        if (maybe_factor > max_factor)
-            break;
-        // Since the above clause leaves the loop, we know at this point
-        // that  maybe_factor<=max_factor.  And since  max_factor<sqrtR,  we
-        // know maybe_factor<sqrtR, and thus  maybe_factor*maybe_factor<R,
-        // which means (maybe_factor*maybe_factor) doesn't overflow.
-        HPBC_ASSERT2(maybe_factor < sqrtR);
-        // if no primes <= sqrt(q) are factors of q, q must be prime.
-        if (maybe_factor * maybe_factor > q)
+        if (maybe_factor >= sqrtR || maybe_factor*maybe_factor > q) {
+            // note: since (maybe_factor*maybe_factor) is evaluated only when
+            // maybe_factor < sqrtR, it will never overflow.
+            // Since R > q, we know sqrtR > sqrt(q).  Therefore
+            // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q).
+            // And  maybe_factor * maybe_factor > q  obviously implies
+            // the same.  So inside this clause,  maybe_factor > sqrt(q).
+            // This means we have tried all potential prime factors
+            // less than or equal to sqrt(q), so q must be prime.
             return true;
+        }
+        HPBC_ASSERT2(maybe_factor < sqrtR);
         // This inner loop will usually trial a few maybe_factor(s) that are
-        // greater than max_factor or sqrt(q), which is unneeded but harmless.
+        // greater than sqrtR or sqrt(q), which is unneeded but harmless.
         for (size_t i=0; i < wheel_len; ++i) {
             // Assert that  start + wheel[i]  will never overflow.  Let
             // S = ut_numeric_limits<P>::max().  Overflow would mean that
@@ -110,21 +106,6 @@ bool is_prime_wheel210(T x, bool* pIsSuccessful = nullptr,
             if (trial_divide_mayer(div_result, q, maybe_factor))
                 return false;
         }
-    }
-    if (maybe_factor >= sqrtR || maybe_factor * maybe_factor > q) {
-        // Since R > q, we know sqrtR > sqrt(q).  Therefore
-        // maybe_factor >= sqrtR  implies  maybe_factor > sqrt(q).
-        // And  maybe_factor * maybe_factor > q  obviously implies
-        // the same.  So inside this clause,  maybe_factor > sqrt(q).
-        // This means we have tried all potential prime factors
-        // less than or equal to sqrt(q), so q must be prime.
-        return true;
-    }
-    else {
-        // We weren't able to determine if q is prime.
-        if (pIsSuccessful != nullptr)
-            *pIsSuccessful = false;
-        return false;  // it doesn't matter what bool value we return.
     }
 }
 

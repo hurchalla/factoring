@@ -7,7 +7,7 @@
 
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
-#include "hurchalla/factoring/detail/GcdFunctor.h"
+#include "hurchalla/factoring/greatest_common_divisor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 
@@ -172,7 +172,7 @@ T pollard_rho_trial(T num, T c)
 
 template <class M>
 struct PollardRhoTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
+typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
 {
     using T = typename M::T_type;
     using V = typename M::MontgomeryValue;
@@ -232,7 +232,8 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
 
         // The following is a more efficient way to compute
         // p = greatest_common_divisor(mf.convertOut(product), num)
-        T p = mf.template gcd_with_modulus<GcdFunctor>(product);
+        T p = mf.gcd_with_modulus(product, [](auto x, auto y)
+                                    { return greatest_common_divisor(x, y); } );
         // Since product is in the range [1,num) and num is required to be >1,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).

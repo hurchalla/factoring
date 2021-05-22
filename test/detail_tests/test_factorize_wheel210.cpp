@@ -66,10 +66,9 @@ TEST(HurchallaFactoringWheelFactorization210, exhaustive_uint16_t) {
         std::vector<T> answer = factorize_bruteforce(x);
         std::sort(answer.begin(), answer.end());
 
-        T q;
         SCOPED_TRACE(testing::Message() << "x == " << x);
         std::vector<T> factors;
-        factorize_wheel210(std::back_inserter(factors), q, x);
+        factorize_wheel210(std::back_inserter(factors), x);
         std::sort(factors.begin(), factors.end());
         EXPECT_TRUE(factors == answer);
     }
@@ -79,12 +78,9 @@ TEST(HurchallaFactoringWheelFactorization210, exhaustive_uint16_t) {
 template <typename T>
 void test_factor_wheel210(T x, const std::vector<T>& answer)
 {
-    T q;
-
     // first test using std::vector
     std::vector<T> vec;
-    factorize_wheel210(std::back_inserter(vec), q, x);
-    EXPECT_TRUE(q == 1);
+    factorize_wheel210(std::back_inserter(vec), x);
     // at this time, I haven't made a guarantee for factorize_wheel210()
     // that the destination range will be sorted, so we'll sort it here.
     std::sort(vec.begin(), vec.end());
@@ -111,9 +107,8 @@ void test_factor_wheel210(T x, const std::vector<T>& answer)
     };
 
     FactorArrayAdapter faa(arr);
-    factorize_wheel210(std::back_inserter(faa), q, x);
+    factorize_wheel210(std::back_inserter(faa), x);
     auto num_factors = faa.size();
-    EXPECT_TRUE(q == 1);
     EXPECT_TRUE(num_factors == answer.size());
     std::sort(arr.begin(), arr.begin()+num_factors);
     EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,

@@ -103,12 +103,10 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
     // trials on a prime number.
     HPBC_ASSERT2(false);
 
-    // Since we didn't find a factor, fall back to slow trial division
-    T q;
-    iter = factorize_wheel210(iter, q, x);
-    // factorize_wheel210 should always completely factor x (and set q = 1)
-    HPBC_ASSERT2(q == 1);
-    return iter;
+    // Since we didn't find a factor, fall back to slow trial division.
+    // factorize_wheel210 in principle will always completely factor x, though
+    // for values of x > (1<<64), it may be too slow to be usable in practice.
+    return factorize_wheel210(iter, x);
 }
 
 } // end namespace prf_detail

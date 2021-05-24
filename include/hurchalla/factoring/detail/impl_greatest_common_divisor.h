@@ -18,11 +18,8 @@ namespace hurchalla { namespace detail {
 // GCD algorithm.  However for native types T, some new CPUs have very fast
 // dividers that potentially could make the Euclidean GCD implementation faster
 // than the Binary GCD implementation.  You can predefine the macro 
-// HURCHALLA_PREFER_EUCLIDEAN_GCD in such a case.  (Or for testing purposes you
-// could uncomment the #define just below.)
-#ifndef HURCHALLA_PREFER_EUCLIDEAN_GCD
-//#  define HURCHALLA_PREFER_EUCLIDEAN_GCD
-#endif
+// HURCHALLA_PREFER_EUCLIDEAN_GCD in such a case.  You will also need to make
+// sure that you have predefined HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.
 
 
 #if defined(HURCHALLA_PREFER_EUCLIDEAN_GCD) && \
@@ -78,24 +75,24 @@ HURCHALLA_FORCE_INLINE T impl_greatest_common_divisor(T u, T v)
     if (v != 0) {
         int i = count_trailing_zeros(u);
         int j = count_trailing_zeros(v);
-        u = u >> i;
-        v = v >> j;
+        u = static_cast<T>(u >> i);
+        v = static_cast<T>(v >> j);
         int k = (i < j) ? i : j;
 
         while (true) {
             HPBC_ASSERT2(u % 2 == 1);
             HPBC_ASSERT2(v % 2 == 1);
             T tmp = u;
-            T sub1 = v - tmp;
-            T sub2 = tmp - v;
+            T sub1 = static_cast<T>(v - tmp);
+            T sub2 = static_cast<T>(tmp - v);
             u = (tmp > v) ? v : tmp;
             v = (tmp > v) ? sub2 : sub1;
             HPBC_ASSERT2(u % 2 == 1);
             if (v == 0) {
-                u = u << k;
+                u = static_cast<T>(u << k);
                 break;
             }
-            v = v >> count_trailing_zeros(v);
+            v = static_cast<T>(v >> count_trailing_zeros(v));
         }
     }
     HPBC_POSTCONDITION2(u > 0);

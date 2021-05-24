@@ -4,8 +4,6 @@
 
 #include "factorize_bruteforce.h"
 #include "hurchalla/factoring/factorize.h"
-#include "hurchalla/factoring/factorize_intensive32.h"
-#include "hurchalla/factoring/IsPrimeIntensive.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 
@@ -42,33 +40,22 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
 #if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
 // PollardRhoTrial and PollardRhoBrentTrial.  This test is not needed normally.
-#if 0
-    const IsPrimeIntensive<std::uint32_t,true>& get_ipi32()
-    {
-        static IsPrimeIntensive<std::uint32_t,true> ipi;
-        return ipi;
-    }
-    TEST(HurchallaFactoringFactorize, speed_test_primer) {
-        get_ipi32();
-    }
-    TEST(HurchallaFactoringFactorize, speed_test32_intensive) {
-        const auto& ipi = get_ipi32();
+    TEST(HurchallaFactoringFactorize, speed_test32) {
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;
         for (T x = max; x >= max - 4000000; x = x-2) {
             int num_factors;
-            auto arr = factorize_intensive32(x, num_factors, ipi);
+            auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
             // So we'll check arr[0] (which is never 0) just so it's used.
             EXPECT_TRUE(arr[0] != 0);
         }
     }
-#endif
-    TEST(HurchallaFactoringFactorize, speed_test32) {
-        using T = std::uint32_t;
-        T max = ut_numeric_limits<T>::max()/2;
-        for (T x = max; x >= max - 4000000; x = x-2) {
+    TEST(HurchallaFactoringFactorize, speed_test64_small) {
+        using T = std::uint64_t;
+        T start = 1 + (static_cast<T>(1) << 33);
+        for (T x = start; x < start + 4000000; x = x+2) {
             int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
@@ -139,8 +126,14 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_42) {
     U twoPow42 = static_cast<U>(1) << 42;
     // use largest primes < 2^42:
     // 2^42 minus { 11, 17, 33, 53, 65, 143, 161, 165, 215, 227 }
-    std::vector<U> answer = { twoPow42-33, twoPow42-17, twoPow42-11 };
-    test_factorize<U>(answer);
+    {
+        std::vector<U> answer = { twoPow42-33, twoPow42-17, twoPow42-11 };
+        test_factorize<U>(answer);
+    }
+    {
+        std::vector<U> answer = { twoPow42-143, twoPow42-65, twoPow42-53 };
+        test_factorize<U>(answer);
+    }
 }
 
 #  if 0
@@ -152,8 +145,14 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_52) {
     U twoPow52 = static_cast<U>(1) << 52;
     // use largest primes < 2^52:
     // 2^52 minus { 47, 143, 173, 183, 197, 209, 269, 285, 335, 395 }
-    std::vector<U> answer = { twoPow52-143, twoPow52-47 };
-    test_factorize<U>(answer);
+    {
+        std::vector<U> answer = { twoPow52-143, twoPow52-47 };
+        test_factorize<U>(answer);
+    }
+    {
+        std::vector<U> answer = { twoPow52-183, twoPow52-173 };
+        test_factorize<U>(answer);
+    }
 }
 
 TEST(HurchallaFactoringFactorize, hard_semi_primes128_64) {
@@ -163,18 +162,38 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_64) {
     // 2^64 minus { 59, 83, 95, 179, 189, 257, 279, 323, 353, 363  }
 //    std::vector<U> answer = { twoPow64-83, twoPow64-59 };
 //    std::vector<U> answer = { twoPow64-179, twoPow64-95 };
-    std::vector<U> answer = { twoPow64-257, twoPow64-189 };
-    test_factorize<U>(answer);
+    {
+        std::vector<U> answer = { twoPow64-257, twoPow64-189 };
+        test_factorize<U>(answer);
+    }
+    {
+        std::vector<U> answer = { twoPow64-323, twoPow64-279 };
+        test_factorize<U>(answer);
+    }
 }
 #  endif
 #endif
 
 
 TEST(HurchallaFactoringFactorize, basic_tests) {
-    using U = std::uint64_t;
-    std::vector<U> answer = { 2, 3, 5, 13, 17 };
-    SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-    test_factorize<U>(answer);
+    {
+        using U = std::uint64_t;
+        std::vector<U> answer = { 2, 3, 5, 13, 17 };
+        SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
+        test_factorize<U>(answer);
+    }
+    {
+        using U = std::uint32_t;
+        std::vector<U> answer = { 2, 5, 7, 29, 29, 43 };
+        SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
+        test_factorize<U>(answer);
+    }
+    {
+        using U = std::uint32_t;
+        std::vector<U> answer = { 8191, 8191 };
+        SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
+        test_factorize<U>(answer);
+    }
 }
 
 

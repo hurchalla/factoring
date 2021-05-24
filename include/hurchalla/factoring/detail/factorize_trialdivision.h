@@ -14,8 +14,8 @@ namespace hurchalla { namespace detail {
 
 
 // factorize_trialdivision() partially (and sometimes completely)
-// factorizes the number x using the first SIZE or size_limit (whichever is
-// smaller) prime numbers as potential divisors for divisibility testing.
+// factorizes the number x using the first SIZE prime numbers as potential
+// divisors for divisibility testing.
 //
 // Preconditions for factorize_trialdivision():
 //   Requires x >= 2.
@@ -38,28 +38,20 @@ namespace hurchalla { namespace detail {
 //   completely factorize x, and q represents the value still remaining to be
 //   factored.  q will never be set to zero (or a value < 0).
 
-// The function will trial a total of either SIZE or size_limit potential prime
-// factors, whichever is smaller.  SIZE is a compile-time parameter for fine
-// tuning of performance, that helps us to achieve the best possible overall
-// performance of a factorization method in which this function is called.
-// Likewise, size_limit is a run-time parameter intended for fine tuning, given
-// a particular number to factor.  The idea behind size_limit is that when
-// factoring smaller numbers it *might* improve performance to use size_limit
-// to stop trial division before trialing all SIZE primes.  Ideally any/all
-// compile-time and run-time choices for SIZE and size_limit would be guided by
-// performance measurement tests.
+// The function will trial a total of SIZE potential prime factors.  SIZE is a
+// compile-time parameter for fine tuning of performance, that helps us to
+// achieve the best possible overall performance of a factorization method in
+// which this function is called.  Ideally any/all compile-time choices for SIZE
+// would be guided by performance measurement tests.
 //
-// If the function does not completely factorize x, it will copy into next_prime
-// the next prime larger than the last prime factor that it trialed.  For some
-// factorization methods you may want/need to know the next prime that wasn't
-// yet trialed in order to continue factoring, while for others methods (e.g
-// pollard-rho) it's irrelevant.  The value of next_prime is unspecified if the
-// function completely factors x.
+// The function will set next_prime to the next prime larger than the last prime
+// factor that it will potentially trial.  The value of next_prime is the same
+// regardless of whether or not the function successfully finishes and returns
+// before trialing all its potential factors.
 //
-// The default SIZE 54 tries all primes < 256 as potential divisors (unless
-// size_limit < SIZE).  Thus this function with SIZE 54 could be used to
-// guarantee complete factoring of any value x < 257*257, which includes all
-// values of type uint16_t.
+// The default SIZE 54 tries all primes < 256 as potential divisors.  Thus this
+// function with SIZE 54 could be used to guarantee complete factoring of any
+// value x < 257*257, which includes all values of type uint16_t.
 
 // The template-template param TTD should be either PrimeTrialDivisionWarren or
 // PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren is usually faster, but it
@@ -70,12 +62,12 @@ namespace hurchalla { namespace detail {
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54, class OutputIt>
 OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
-    std::uint8_t& next_prime, std::uint8_t x, int = SIZE)
+                                 std::uint8_t& next_prime, std::uint8_t x)
 {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
 
-    next_prime = 0;  // we'll always completely factor x, so any value would do
+    next_prime = 17;
 
     q = x;
     // we only need to try primes < 16, since 16*16==256 is greater than any
@@ -119,25 +111,26 @@ OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
 }
 
 
-template <template<class,int> class TTD,
-          int SIZE=54, class OutputIt, typename T>
-OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
-                                                          int size_limit = SIZE)
+template <template<class,int>class TTD, int SIZE=54, class OutputIt, typename T>
+OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     static_assert(SIZE > 1);
-    HPBC_PRECONDITION2(size_limit > 0);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
 
     // PrimeTrialDivisionWarren and PrimeTrialDivisionMayer include only odd
     // primes - hence they don't use the prime 2, and so we set their TD_SIZE to
     // SIZE-1
-    constexpr int TD_SIZE = SIZE-1;  
-    int td_size_limit = size_limit - 1;  // same as above
-
-    using TD = TTD<T, TD_SIZE>;  
+    constexpr int TD_SIZE = SIZE-1;
+    using TD = TTD<T, TD_SIZE>;
     static_assert(TD::oddPrime(0) == 3);
+
+    constexpr auto tmp = TD::nextPrimePastEnd();
+    // assert the next prime fits in type T
+    static_assert(0 <= tmp && tmp <= ut_numeric_limits<T>::max());
+    next_prime = static_cast<T>(tmp);
+    constexpr auto next_prime_squared = TD::nextPrimePastEndSquared();
 
     // try the only even prime, 2, as a special case potential factor
     q = x;
@@ -148,30 +141,7 @@ OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x,
     }
     HPBC_ASSERT2(q > 1);
 
-    using U = decltype(TD::nextPrimePastEndSquared());
-    U next_prime_squared;
-    if (td_size_limit >= TD_SIZE) {
-        td_size_limit = TD_SIZE;
-        constexpr auto tmp = TD::nextPrimePastEnd();
-        static_assert(ut_numeric_limits<decltype(tmp)>::is_integer);
-        // assert the next prime fits in type T
-        static_assert(0 <= tmp && tmp <= ut_numeric_limits<T>::max());
-        next_prime = static_cast<T>(tmp);
-        constexpr auto tmp2 = TD::nextPrimePastEndSquared();
-        next_prime_squared = tmp2;
-    }
-    else {
-        next_prime = TD::oddPrime(td_size_limit);
-        auto tmp = TD::oddPrimeSquared(td_size_limit);
-        static_assert(ut_numeric_limits<decltype(tmp)>::is_integer);
-        static_assert(!ut_numeric_limits<decltype(tmp)>::is_signed);
-        static_assert(ut_numeric_limits<U>::max() >=
-                      ut_numeric_limits<decltype(tmp)>::max());
-        next_prime_squared = tmp;
-    }
-    HPBC_ASSERT2(td_size_limit <= TD_SIZE);
-
-    for (int i=0; i<td_size_limit; ++i) {
+    for (int i=0; i<TD_SIZE; ++i) {
         HPBC_ASSERT2(q > 1);
         if (TD::oddPrimeSquared(i) > q) {
             // Since no primes <= sqrt(q) are factors of q, q must be a prime

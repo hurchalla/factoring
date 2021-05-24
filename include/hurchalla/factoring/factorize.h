@@ -26,6 +26,7 @@ factorize(T x, int& num_factors)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
     using namespace hurchalla::detail;
     // The max possible number of factors occurs when all factors equal 2,
@@ -60,6 +61,7 @@ std::vector<T> factorize_to_vector(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
     using namespace hurchalla::detail;
     // The max possible vector size needed for factors is when all of them are 2

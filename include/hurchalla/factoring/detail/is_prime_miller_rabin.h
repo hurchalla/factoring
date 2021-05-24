@@ -9,11 +9,7 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinProbabilisticBases128.h"
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_2.h"
-#ifdef HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3
-# include "hurchalla/factoring/detail/miller_rabin_bases/alternative_tables/MillerRabinBases64_3_alt.h"
-#else
-# include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_3.h"
-#endif
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_3.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_4.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_5.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_6.h"
@@ -760,7 +756,7 @@ is_prime_miller_rabin(const MontType& mf)
     // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
 #ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
     constexpr std::size_t TOTAL_BASES = 3;
-    constexpr std::size_t TRIAL_SIZE = 2;
+    constexpr std::size_t TRIAL_SIZE = 1;
 #else
     constexpr std::size_t TOTAL_BASES = 2;
     constexpr std::size_t TRIAL_SIZE = 1;

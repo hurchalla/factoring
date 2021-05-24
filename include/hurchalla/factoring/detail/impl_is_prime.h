@@ -25,6 +25,11 @@ namespace hurchalla { namespace detail {
 // Warren.  You can change the implementation to use PrimeTrialDivisionWarren
 // if you want, by simply subsistuting that name for PrimeTrialDivisionMayer in
 // the template function call below and including its header file.
+// Note that this impl_is_prime() function (and the associated is_prime) is
+// intended to be relatively lightweight, while in contrast IsPrimeIntensive is
+// intended to be a more heavyweight option for repeated intensive primality
+// testing.  That is why I chose for this lightweight function to use the
+// lightweight PrimeTrialDivisionMayer rather than PrimeTrialDivisionWarren.
 
 // FYI, size 54 would trial all prime factors < 256
 #  define HURCHALLA_ISPRIME_TRIALDIV_SIZE (15)

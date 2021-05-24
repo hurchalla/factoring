@@ -23,11 +23,11 @@ namespace hurchalla { namespace detail {
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD
 #  define HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD 400
 #endif
-#ifndef HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE
-#  define HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE 40
+#ifndef HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH
+#  define HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH 40
 #endif
-#ifndef HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE
-#  define HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE 20
+#ifndef HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH
+#  define HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH 20
 #endif
 
 
@@ -62,14 +62,13 @@ T pollard_rho_brent_trial(T num, T c)
     // prior to calling this more intensive factoring function.
     HPBC_PRECONDITION2(num % 2 == 1);
 
-    constexpr T INITIAL_CYCLE_SIZE = 8;  // potentially any power of 2
     // If we used INITIAL_VALUE>2, we'd need to mod it by num (or we'd need to
     // require num > INITIAL_VALUE)
     constexpr T INITIAL_VALUE = 2;
     HPBC_ASSERT2(INITIAL_VALUE < num);
 
     T b = INITIAL_VALUE;
-    T cycle_size = INITIAL_CYCLE_SIZE;
+    T distance = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
     T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
 
     T product = 1;
@@ -77,16 +76,16 @@ T pollard_rho_brent_trial(T num, T c)
 
     while (true) {
         T a_fixed = b;
-        for (T i = 0; i < cycle_size; ++i) {
+        for (T i = 0; i < distance; ++i) {
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
             b = modular_multiplication_prereduced_inputs(b, b, num);
             b = modular_addition_prereduced_inputs(b, c, num);
         }
-        for (T i = 0; i < cycle_size; i += gcd_threshold) {
-            T gcd_loop_size = (gcd_threshold < cycle_size - i) ? gcd_threshold
-                                                               : cycle_size - i;
+        for (T i = 0; i < distance; i += gcd_threshold) {
+            T gcd_loop_length = (gcd_threshold < distance - i) ? gcd_threshold
+                                                               : distance - i;
             T j, absValDiff;
-            for (j = 0; j < gcd_loop_size; ++j) {
+            for (j = 0; j < gcd_loop_length; ++j) {
                 HPBC_INVARIANT2(1 <= product && product < num);
                 // set b := (b*b + c) % num, while ensuring no overflow
                 b = modular_multiplication_prereduced_inputs(b, b, num);
@@ -119,7 +118,7 @@ T pollard_rho_brent_trial(T num, T c)
             if (absValDiff == 0)
                 return 0; // the sequence cycled before we could find a factor
         }
-        cycle_size *= 2;
+        distance *= 2;
     }
 }
 */
@@ -144,23 +143,23 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
     HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
 
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
-    constexpr T pre_cycle_size = HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE;
+    constexpr T pre_length = HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH;
 
-    T cycle_size = HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE;
+    T distance = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
 
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
     // negate c so that we can use fmsub inside the loop instead of fmadd (fmsub
-    // is very slightly more efficient).
+    // is just slightly more efficient).
     C negative_c = mf.negate(c);
 
-    for (T i = 0; i < pre_cycle_size; ++i)
+    for (T i = 0; i < pre_length; ++i)
         b = mf.fmsub(b, b, negative_c);
 
     V product = mf.getUnityValue();
     while (true) {
         V a_fixed = b;
-        for (T i = 0; i < cycle_size; ++i) {
+        for (T i = 0; i < distance; ++i) {
             b = mf.fmsub(b, b, negative_c);
         }
 
@@ -172,9 +171,9 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
         // which is <= sqrt(ut_numeric_limits<T>::max()).  Since the worst case
         // length for the smallest hidden cycle that we will eventually uncover
         // is a length no larger than the smallest factor, the variable
-        // cycle_size will never grow larger than double that factor.  So since
-        // cycle_size <= 2*smallestfactor <= 2*sqrt(ut_numeric_limits<T>::max())
-        // we know cycle_size <= 2*sqrt(ut_numeric_limits<T>::max())
+        // distance will never grow larger than double that factor.  So since
+        // distance <= 2*smallestfactor <= 2*sqrt(ut_numeric_limits<T>::max())
+        // we know distance <= 2*sqrt(ut_numeric_limits<T>::max())
         //
         // Our only problem would be if gcd_threshold is (significantly) larger
         // than 1 << (ut_numeric_limits<T>::digits - 1), which perhaps could
@@ -185,16 +184,16 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
         static_assert(gcd_threshold <
                       (static_cast<T>(1) << (ut_numeric_limits<T>::digits -1)));
 
-        for (T i = 0; i < cycle_size; i = static_cast<T>(i + gcd_threshold)) {
+        for (T i = 0; i < distance; i = static_cast<T>(i + gcd_threshold)) {
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic pop
 #endif
-            T gcd_loop_size = (gcd_threshold < static_cast<T>(cycle_size - i))
-                               ? gcd_threshold : static_cast<T>(cycle_size - i);
+            T gcd_loop_length = (gcd_threshold < static_cast<T>(distance - i))
+                                ? gcd_threshold : static_cast<T>(distance - i);
             V absValDiff;
             T j;
-            for (j = 0; j < gcd_loop_size; ++j) {
+            for (j = 0; j < gcd_loop_length; ++j) {
                 HPBC_INVARIANT2(mf.convertOut(product) > 0);
                 // modular unordered subtract isn't the same as absolute value
                 // of a subtraction, but it works equally well for pollard rho.
@@ -226,12 +225,12 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
             HPBC_ASSERT2(1<=p && p<num);
-            if (p > 1) 
+            if (p > 1)
                 return p;
             if (mf.getCanonicalValue(absValDiff) == mf.getZeroValue())
                 return 0; // the sequence cycled before we could find a factor
         }
-        cycle_size = static_cast<T>(2 * cycle_size);
+        distance = static_cast<T>(2 * distance);
     }
 }
 };

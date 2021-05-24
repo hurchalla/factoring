@@ -11,6 +11,7 @@
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
+#include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/unreachable.h"
 #include "hurchalla/util/sized_uint.h"
@@ -27,6 +28,12 @@ namespace hurchalla { namespace detail {
 #else
 #  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
 #endif
+#endif
+
+// Though this macro was only intended for testing purposes, it's possible that
+// a cpu with very fast dividers might be faster when not using montgomery math.
+#ifndef HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
+//#  define HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH 1
 #endif
 
 
@@ -63,36 +70,50 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
         *iter++ = x;  // x is prime
         return iter;
     }
+    using P = typename safely_promote_unsigned<T>::type;
 
     HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME<MF> pr_trial_func;
-    if (base_c >= x)
+    // we don't want to use a sequence  x[i+1] = x[i]*x[i] + c  where c == 0 or
+    // c == -2.  See JM Pollard "A Monte Carlo method for factorization".  The
+    // following only guarantees we avoid those sequences on the first iteration
+    // of the loop, but unless x is very small, it's extremely unlikely next_c
+    // would ever grow large enough during loop iterations to reach x-2.  If we
+    // do end up with one of those sequences, it's fairly harmless - they just
+    // have low success rate, making them inefficient since we may need another
+    // loop iteration after it.
+    if (base_c >= x-2 || base_c == 0)
         base_c = 1;
     C unity = mf.getUnityValue();
+
     C cc = mf.getCanonicalValue(mf.convertIn(static_cast<S>(base_c)));
-    for (T c = base_c; c < x; ++c,cc = mf.getCanonicalValue(mf.add(cc,unity))) {
+    for (T i = 0; i < x; ++i) {
         T tmp_factor = static_cast<T>(pr_trial_func(mf, cc));
-        if (tmp_factor >= 2) {    // we found a good factor (maybe prime)
+        if (tmp_factor >= 2) {    // we found a good factor (maybe prime).
+            // Next_c could overflow, but that's okay.  We'd prefer for
+            // efficiency that it didn't, but any T value would be valid.
+            T next_c = static_cast<T>(base_c + static_cast<P>(i) + 1);
             // Try to factor the factor (it may or may not be prime)
             iter = factorize_pollard_rho(iter, tmp_factor, is_prime_pr,
-                                   threshold_always_prime, static_cast<T>(c+1));
+                                   threshold_always_prime, next_c);
             // Next try to factor the quotient.
             // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
             T quotient = static_cast<T>(x/tmp_factor);  
             iter = factorize_pollard_rho(iter, quotient, is_prime_pr,
-                                   threshold_always_prime, static_cast<T>(c+1));
+                                   threshold_always_prime, next_c);
             return iter;
         }
         else {
             // tmp_factor < 2 indicates pr_trial_func failed to find a factor.
             // This is a low probability, but expected possibility.  We want
             // to retry the trial_func in the next loop iteration using an
-            // incremented value of 'c', and keep doing so until we get a good
-            // factor, or until 'c' gets to be as large as x (which is so
+            // incremented value of 'i', and keep doing so until we get a good
+            // factor, or until 'i' gets to be as large as x (which is so
             // unlikely to happen that it's nearly impossible).
             // Meanwhile, we don't need to do anything here.
         }
+        cc = mf.getCanonicalValue(mf.add(cc,unity));
     }
-    // We went through every allowed value of c, but didn't find a factor.  This
+    // We went through every allowed value of i, but didn't find a factor.  This
     // is so unlikely that we could assert it never happens, since it's more
     // likely that a coding error would result in reaching this point than that
     // we could ever legitimately reach this point.
@@ -111,10 +132,6 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
 
 } // end namespace prf_detail
 
-
-
-// the following macro is intended only for testing purposes
-//#define HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH 1
 
 
 // Dispatch function to the fastest factorize_pr template function instantiation

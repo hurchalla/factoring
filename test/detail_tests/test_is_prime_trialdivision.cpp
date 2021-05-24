@@ -33,23 +33,20 @@ bool get_primality(T x)
 
 
 template <int SIZE, typename T>
-void iptd_test(T x, int size_limit, const std::vector<std::uint64_t>& primevec)
+void iptd_test(T x, const std::vector<std::uint64_t>& primevec)
 {
-    if (size_limit > SIZE)
-        size_limit = SIZE;
     using size_type = std::vector<std::uint64_t>::size_type;
     // a failure here would mean this test is buggy
     static_assert(ut_numeric_limits<int>::digits
                   <= ut_numeric_limits<size_type>::digits);
-    std::uint64_t nextprime = primevec[static_cast<size_type>(size_limit)];
+    std::uint64_t nextprime = primevec[static_cast<size_type>(SIZE)];
     // These tests need for nextprime*nextprime to still fit in a uint64_t.
     // The tests would be at fault if this is false, but mostly just for
     // choosing a SIZE that's way larger than needed.
     EXPECT_TRUE(nextprime < static_cast<std::uint64_t>(1)<<32);
 
-    bool success;
-    bool isprime = is_prime_trialdivision<PrimeTrialDivisionMayer, SIZE>(
-                                                        x, success, size_limit);
+    bool success, isprime;
+    isprime = is_prime_trialdivision<PrimeTrialDivisionMayer, SIZE>(x, success);
     if (x < nextprime*nextprime) {
         EXPECT_TRUE(success);
     }
@@ -57,8 +54,7 @@ void iptd_test(T x, int size_limit, const std::vector<std::uint64_t>& primevec)
         EXPECT_TRUE(isprime == get_primality(x));
     }
 
-    isprime = is_prime_trialdivision<PrimeTrialDivisionWarren, SIZE>(
-                                                        x, success, size_limit);
+    isprime = is_prime_trialdivision<PrimeTrialDivisionWarren,SIZE>(x, success);
     if (x < nextprime*nextprime) {
         EXPECT_TRUE(success);
     }
@@ -97,17 +93,17 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
     for (auto it = limits.cbegin(); it != limits.cend(); ++it) {
         int size_limit = *it;
         for (T x = 0; x < 255; ++x)
-            iptd_test<SIZE>(x, size_limit, primevec);
+            iptd_test<SIZE>(x, primevec);
         for (T x = max; x > max - 100; --x)
-            iptd_test<SIZE>(x, size_limit, primevec);
+            iptd_test<SIZE>(x, primevec);
         for (T x = midpoint_minus50; x < midpoint + 50; ++x)
-            iptd_test<SIZE>(x, size_limit, primevec);
+            iptd_test<SIZE>(x, primevec);
         std::uint64_t prime = primevec[static_cast<size_type>(size_limit)];
-        iptd_test<SIZE>(static_cast<T>(prime-2), size_limit, primevec);
-        iptd_test<SIZE>(static_cast<T>(prime-1), size_limit, primevec);
-        iptd_test<SIZE>(static_cast<T>(prime+0), size_limit, primevec);
-        iptd_test<SIZE>(static_cast<T>(prime+1), size_limit, primevec);
-        iptd_test<SIZE>(static_cast<T>(prime+2), size_limit, primevec);
+        iptd_test<SIZE>(static_cast<T>(prime-2), primevec);
+        iptd_test<SIZE>(static_cast<T>(prime-1), primevec);
+        iptd_test<SIZE>(static_cast<T>(prime+0), primevec);
+        iptd_test<SIZE>(static_cast<T>(prime+1), primevec);
+        iptd_test<SIZE>(static_cast<T>(prime+2), primevec);
     }
 }
 

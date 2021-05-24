@@ -1,109 +1,61 @@
 # factoring
 
+
+Optional macros to predefine to tune performance
+------------------------------------------------
+There are a number of macros you can optionally predefine to tune the performance on your system for the factoring and primality testing functions.
+
+
+For tuning of factorize() and factorize_intensive32():
+
+HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD - this is the number of iterations of the Pollard-Rho Brent algorithm that will be performed between calling the greatest common divisor to try to extract a factor.  400 is the default currently.  You can predefine this macro to a number that works best on your system through experimentation.
+
+HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH - upon starting Pollard-Rho Brent factoring, this is the number of iterations that the 'hare' (of tortoise and hare, see https://en.wikipedia.org/wiki/Cycle_detection#Floyd.27s_Tortoise_and_Hare) initially moves through the Pollard-Rho Brent pseudo-random sequence while the 'tortoise' stands still.  Once the hare reaches the end of this initial distance, the distance doubles and the tortoise is set to the position of the hare, and the process repeats again using the doubled distance, then repeats again, over and over.  The default for this starting length macro is currently 20.  You can predefine this macro to a different number to set a different initial length.  Every time the distance is doubled the greatest common divisor (GCD) gets called, so this initial distance affects how often the GCD is called early on in the process, thus impacting performance.  Note that the GCD is also called after every HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD iterations of the sequence.
+
+HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH - this is the number of iterations of the pseudo-random sequence to evaluate before beginning the normal Pollard-Rho Brent factoring algorithm.  40 is the default currently.  You can predefine this macro to a number that works best on your system.  Some background: the expected length of the starting nonperiodic segment of the Pollard-Rho sequence is the same as the expected length of the sequence's period, and in a sense any work we do during the nonperiodic segment is wasted - ideally we just want to get through the nonperiodic segment as quickly as possible.  Since each iteration during the pre_length (as given by this macro) does nothing but advance the sequence, it completes quickly compared to the Pollard-Rho Brent algorithm (which does other work).  Thus we generally save time by specifying a pre_length that we use to quickly pass over a portion of the nonperiodic segment, prior to starting Pollard-Rho Brent factoring.
+
+HURCHALLA_PR_TRIAL_DIVISION_SIZE - this is the number of small primes (starting at 2,3,5,7, etc) that will be trialed as potential factors via trial division before trying to find factors with Pollard Rho.  135 is the default currently.  You can predefine this macro to another number that might provide better performance on your system.
+
+HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE - this is the name of the template that performs the trial division; if you predefine it, you must set it to either PrimeTrialDivisionWarren or PrimeTrialDivisionMayer.  The default is PrimeTrialDivisionWarren.  If you have a CPU with very fast division instructions (some CPUs from 2019 or later), you might be able to improve performance by predefining this macro to PrimeTrialDivisionMayer while also predefining the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.  If you need to minimize resource usage, then predefine this macro to PrimeTrialDivisionMayer, since the Mayer template uses about a fifth of the memory of PrimeTrialDivisionWarren.  If you do predefine this macro, you will very likely also want to predefine HURCHALLA_PR_TRIAL_DIVISION_SIZE to a new value that works well with this macro choice.
+
+HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH - if predefined, this macro causes the factorization functions to use standard division for modular arithmetic, instead of montgomery arithmetic.  By default this macro is not defined.  If you have a CPU with very fast division instructions, you might be able to improve performance by predefining this macro while also predefining the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.
+
+
+For tuning of is_prime():
+
+HURCHALLA_ISPRIME_TRIALDIV_SIZE - this is the number of small primes (starting at 2,3,5,7, etc) that will be trialed as potential factors via trial division before testing primality with Miller-Rabin.  15 is the current default.  You can predefine this macro to a different number that is better tuned for your system.
+
+
+For tuning of IsPrimeIntensive:
+
+HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE - this is the number of small primes (starting at 2,3,5,7, etc) that will be trialed as potential factors via trial division before testing primality with Miller-Rabin.  75 is the current default.  You can predefine this macro to a different number that is better tuned for your system.  Note that for IsPrimeIntensive, when testing primality of uint32_t and smaller types, this macro has no effect because IsPrimeIntensive tests primality of those types solely using the Sieve of Eratosthenes.
+
+HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE - this is the name of the template that performs the trial division; if you predefine it, you must set it to either PrimeTrialDivisionWarren or PrimeTrialDivisionMayer.  The default is PrimeTrialDivisionWarren.  If you have a CPU with very fast division instructions (some CPUs from 2019 or later), you might be able to improve performance by predefining this macro to PrimeTrialDivisionMayer while also predefining the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.  If you need to minimize resource usage, then predefine this macro to PrimeTrialDivisionMayer, since the Mayer template uses about a fifth of the memory of PrimeTrialDivisionWarren.  If you do predefine this macro, you will very likely also want to predefine HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE to a new value that works well with this macro choice.
+
+
+Miscellaneous macros:
+
+HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE - predefine this macro if your CPU has very fast division instructions (usually this is present only in CPUs from around 2019 or later).
+
+HURCHALLA_TARGET_ISA_HAS_NO_DIVIDE - you should usually predefine this macro if your microprocessor lacks a division instruction.
+
+HURCHALLA_PREFER_EUCLIDEAN_GCD - predefining this macro allows you to use the Euclidean algorithm for greatest common divisor (GCD), rather tham the default Binary/Stein algorithm.  However, you will only get the Euclidean GCD if you also predefine HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.  Note that even with both macros predefined, the Binary GCD will still be used for any integer type T that is larger than the CPU's native bit width.
+
+HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME - the name of the algorithm/functor that carries out the Pollard Rho factoring trial.  Normally predefining this will not help performance, but if you wish you can predefine it to either PollardRhoTrial or PollardRhoBrentTrial.  The default is PollardRhoBrentTrial.  PollardRhoTrial will very likely be slower, but you can experiment.  If you choose PollardRhoTrial, you should also try to predefine HURCHALLA_POLLARD_RHO_GCD_THRESHOLD to an optimal number (see HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD for related details) for your system.
+
+
+
 TODO
 ----
-Define the results for the factorization functions when x < 2.
 
-Assuming I can remove any need factorize_wheel210 might have for it,
-get rid of the "next_prime" param in factorize_trialdivision().
-Likewise get rid of it in is_prime_trialdivision() if possible.
+do pathological numbers exist that fail most Pollard-Rho factoring trials (i.e. failing regardless of 'c' in the sequence x[i+1] = (x[i] * x[i]) + c)?
 
-Get rid of pIterationsPerformed in PollardRhoTrial functors
-
-Use a faster gcd
-Test whether the pollard-rho trials' use of a gcd functor is as fast as a direct call of gcd
-
-Can I completely remove factorize_wheel210.h, or place it inside test or experimental?
-
-Write tests for the headers that don't yet have tests
-
-
-Document:
-   -- trial_divide_mayer.h --
-   HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE
-   HURCHALLA_TARGET_ISA_HAS_NO_DIVIDE
-
-   -- impl_is_prime.h --
-   HURCHALLA_ISPRIME_TRIALDIV_SIZE
-
-   -- ImplIsPrimeIntensive.h --
-   HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE
-   HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE  (can be PrimeTrialDivisionMayer or PrimeTrialDivisionWarren)
-
-   -- impl_factorize.h --
-   HURCHALLA_POLLARD_RHO_MAX_TRIAL_FACTOR
-   HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
-   HURCHALLA_USE_PR_TRIAL_DIVISION
-   HURCHALLA_PR_TRIAL_DIVISION_SIZE
-   HURCHALLA_PR_TRIAL_DIVISION_INDEX_LIMIT
-
-   -- pollard_rho_factorize.h --
-   HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME   PollardRhoTrial or PollardRhoBrentTrial (or one of the trials in experimental)
-   HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
-
-   -- PollardRhoTrial.h --
-   HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
-
-   -- PollardRhoBrentTrial.h --
-   HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD
-   HURCHALLA_POLLARD_RHO_BRENT_PRE_CYCLE_SIZE
-   HURCHALLA_POLLARD_RHO_BRENT_INITIAL_CYCLE_SIZE
-
-   -- factorize_wheel210.h --
-   HURCHALLA_WHEELFACTOR_TRIAL_DIVISION_TEMPLATE
-
-   -- is_prime_miller_rabin.h --
-   HURCHALLA_MILLER_RABIN_ALLOW_EVEN_NUMBERS
-   HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-   HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3
-
-
-Find best value for HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE.
-
-Find best value for HURCHALLA_ISPRIME_TRIALDIV_SIZE:
-The best value for HURCHALLA_ISPRIME_TRIALDIV_SIZE
-depends on whether the number (x) to test is very large or small.
-If it's very large, for example close to UINT64_MAX, then we want
-to use a somewhat large value for the macro.  If x is small, we
-want to use a somewhat small value for the macro.
-This is because is_prime_miller_rabin has worse performance for large
-integer types when primality testing numbers that happen to be prime,
-since it needs to test more bases than it would for a smaller type.
-Testing uint128 numbers is extremely slow (relative to smaller types)
-for miller rabin at the moment due to the insane number of bases it
-uses for 128 bit primality testing.  However I'm not trying to make
-program-wide changes just to help optimization for uint128_t, but I'm
-willing to make simple isolated changes that help it.
-Brief performance tests I did on Haswell led me to use a default of
-HURCHALLA_ISPRIME_TRIALDIV_SIZE set to 16.
-
-Add a (potential) factorization step to miller rabin.
-Add check for 1 in inner loop of miller-rabin (I suspect this may be
-the same TODO as the last item).
-
+evaluate: a step to factor powers might help.
+evaluate: a (potential) factorization step in miller rabin might help, but probably not.
 
 MontgomeryForm - force_inline on every function?
-
+MontgomeryFormCommon - show proof that fmadd and fmsub are correct.
 NDEBUG defined for all release builds?
+Compare performance of asm to non-asm functions via the macros in modular arithmetic README
 
-Compare performance of asm to non-asm functions via the macros in
-modular arithmetic README
-
-publish my generalized form of the Dumas algorithm
-
-maybe blog about gcc uint128_t bug- see end of test_REDC.cpp.
-
-A possible perf improvement for impl_is_prime might be to scale the size of the
-trial division at run time depending on how large x is (using the optional third
-argument of is_prime_trialdivision).  The ideal scaling might be y = a * sqrt(x)
-for some constant a, but sqrt would take too long.  A linear scaling might be
-good enough, perhaps fit to the largest 80-90% of values of x.  It feels like
-it's more trouble than it's worth.
-The same thing is possible for ImplIsPrimeIntensive.h
--- Probably a better idea is to remove the size_limit parameter from
-is_prime_trialdivision() since at least right now it's never used - this would
-let me simplify the function, which would have the side benefit of making it
-slightly faster too.
-
-Maybe simplify is_prime_miller_rabin.h by moving stuff that's not really used
-into an experimental folder
+publish the generalized form of the Dumas integer inverse algorithm

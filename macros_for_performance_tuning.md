@@ -6,8 +6,8 @@ performance on your system for the factoring and primality testing functions.
 You would predefine one or more of these macros when compiling the sources.  For
 example, with clang you would compile with the -D compilation flag like this:
 clang++ -DHURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD=300 
-&nbsp;
-
+\
+\
 For tuning of factorize() and factorize_intensive32():
 
 HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD - this is the number of iterations of
@@ -70,16 +70,16 @@ arithmetic, instead of montgomery arithmetic.  By default this macro is not
 defined.  If you have a CPU with very fast division instructions, you might be
 able to improve performance by predefining this macro while also predefining the
 macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.
-&nbsp;
-
+\
+\
 For tuning of is_prime():
 
 HURCHALLA_ISPRIME_TRIALDIV_SIZE - this is the number of small primes (starting
 at 2,3,5,7, etc) that will be trialed as potential factors via trial division
 before testing primality with Miller-Rabin.  15 is the current default.  You can
 predefine this macro to a different number that is better tuned for your system.
-&nbsp;
-
+\
+\
 For tuning of IsPrimeIntensive:
 
 HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE - this is the number of small primes
@@ -102,8 +102,8 @@ template uses about a fifth of the memory of PrimeTrialDivisionWarren.  If you
 do predefine this macro, you will very likely also want to predefine
 HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE to a new value that works well with
 this macro choice.
-&nbsp;
-
+\
+\
 Miscellaneous macros:
 
 HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE - predefine this macro if your CPU has very

@@ -1,6 +1,6 @@
 # factoring
 
-You can tune the performance of these functions on your system by predefining macros: see [macros_for_performance_tuning.txt](macros_for_performance_tuning.txt).
+You can tune the performance of these functions on your system by predefining macros: see [macros_for_performance_tuning.md](macros_for_performance_tuning.md).
 
 TODO
 ----

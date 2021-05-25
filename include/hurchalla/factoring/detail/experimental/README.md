@@ -1,17 +1,17 @@
 
 Each header file in this folder is an experimental functor for Pollard-Rho trials.  
-To use one of the experimental functors, you must predefine the macro HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME and give it the name of the experimental functor you wish to use.  For example, if you want the PollardRhoTrial functor and you are compiling with clang, wou could invoke clang as follows:  
+To use an experimental functor, predefine the macro HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME and give it the name of the experimental functor.  For example, if you want PollardRhoTrial and you are compiling with clang, you could invoke clang as follows:  
 clang++ -DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoTrial  ...more options and files...  
 
-You can set HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME to any of the following names:  
+valid names to give HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME are:  
 PollardRhoTrial  
-PollardRhoBrentTrial  (it is not necessary to predefine the macro for this functor, since it is the default)  
+PollardRhoBrentTrial  (but since this is the default, it's not necessary to predefine the macro to this functor)  
 PollardRhoBrentMontgomeryTrial  
 PollardRhoBrentMontgomeryTrialParallel  
 
-This macro is used only by the file ../factorize_pollard_rho.h.
+The default Pollard-Rho Brent functor will very likely perform best on your system, but you can try others.
 
-It is possible, though not particularly likely, that an experimental functor may perform better on your system than the default Pollard-Rho Brent functor.
+The macro is used only by the file ../factorize_pollard_rho.h.
 
 Functor Descriptions
 --------------------

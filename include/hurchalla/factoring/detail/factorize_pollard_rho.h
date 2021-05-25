@@ -6,8 +6,14 @@
 #define HURCHALLA_FACTORING_FACTORIZE_POLLARD_RHO_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/PollardRhoTrial.h"
 #include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
+#ifdef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
+#  include "hurchalla/factoring/detail/experimental/PollardRhoTrial.h"
+#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrial.h"
+#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrialParallel.h"
+#else
+#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentTrial
+#endif
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
@@ -20,21 +26,6 @@
 #include <type_traits>
 
 namespace hurchalla { namespace detail {
-
-
-#ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
-#if 1
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentTrial
-#else
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
-#endif
-#endif
-
-// Though this macro was only intended for testing purposes, it's possible that
-// a cpu with very fast dividers might be faster when not using montgomery math.
-#ifndef HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH
-//#  define HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH 1
-#endif
 
 
 // defined lower in this file
@@ -73,6 +64,7 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
     using P = typename safely_promote_unsigned<T>::type;
 
     HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME<MF> pr_trial_func;
+
     // we don't want to use a sequence  x[i+1] = x[i]*x[i] + c  where c == 0 or
     // c == -2.  See JM Pollard "A Monte Carlo method for factorization".  The
     // following only guarantees we avoid those sequences on the first iteration

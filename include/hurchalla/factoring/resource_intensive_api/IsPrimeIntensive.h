@@ -30,7 +30,7 @@ namespace hurchalla {
 
 // The template parameter OPTIMIZE_PRIMES controls whether the functor will be
 // optimized for the situation where the numbers that you test will most often
-// be prime.  If this is not your scenario, use the default false.
+// be prime.  If this is not the case for you, use the default false.
 template <typename T, bool OPTIMIZE_PRIMES = false>
 class IsPrimeIntensive {
     static_assert(ut_numeric_limits<T>::is_integer, "");

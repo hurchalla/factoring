@@ -4,7 +4,7 @@
 
 #include "sample_primes_and_nonprimes.h"
 #include "hurchalla/factoring/detail/is_prime_bruteforce.h"
-#include "hurchalla/factoring/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
 #include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 

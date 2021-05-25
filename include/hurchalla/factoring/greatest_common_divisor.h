@@ -13,6 +13,7 @@
 namespace hurchalla {
 
 
+// Returns the greatest common divisor of a and b.
 // For info on GCD see https://en.wikipedia.org/wiki/Greatest_common_divisor
 template <typename T>
 T greatest_common_divisor(T a, T b)

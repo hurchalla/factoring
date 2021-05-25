@@ -6,6 +6,13 @@
 #define HURCHALLA_FACTORING_POLLARD_RHO_IS_PRIME_H_INCLUDED
 
 
+// This is simply a support Functor that lets Pollard-Rho factoring determine
+// primality, in this case by selecting and calling the most suitable
+// Miller-Rabin primality test.  (note that there is another Pollard-Rho
+// primality support functor within factorize_intensive_uint32.h that is a
+// generic lambda using Sieve of Eratosthenes as its primality test)
+
+
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"

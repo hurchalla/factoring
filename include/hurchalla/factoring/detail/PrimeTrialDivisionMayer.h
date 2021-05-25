@@ -17,8 +17,8 @@
 namespace hurchalla { namespace detail {
 
 
-// See trial_divide_mayer.h for details of the algorithm used here and for a
-// proof of its correctness.
+// See trial_divide_mayer.h for details of the algorithm used for isDivisible()
+// and for a proof of its correctness.
 
 template <typename T, int SIZE>
 class PrimeTrialDivisionMayer {

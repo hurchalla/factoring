@@ -20,7 +20,7 @@ namespace hurchalla { namespace detail {
 
 // See Hacker's Delight 2nd edition by Henry Warren, Section 10-17 "Test for
 // Zero Remainder after Division by a Constant", for a description of the
-// algorithm used here and for a proof of its correctness.
+// algorithm used for isDivisible() and for a proof of its correctness.
 
 template <typename T, int SIZE>
 class PrimeTrialDivisionWarren {

@@ -2,8 +2,8 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 // Author: Jeffrey Hurchalla
 
-#include "hurchalla/factoring/factorize_intensive32.h"
-#include "hurchalla/factoring/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 
@@ -29,16 +29,16 @@ using namespace hurchalla;
         static IsPrimeIntensive<std::uint32_t,true> ipi;
         return ipi;
     }
-    TEST(HurchallaFactoringFactorizeIntensive32, speed_test_primer) {
+    TEST(HurchallaFactoringFactorizeIntensiveUint32, speed_test_primer) {
         get_ipi32();
     }
-    TEST(HurchallaFactoringFactorizeIntensive32, speed_test32_intensive) {
+    TEST(HurchallaFactoringFactorizeIntensiveUint32, speed_test32_intensive) {
         const auto& ipi = get_ipi32();
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;
         for (T x = max; x >= max - 4000000; x = x-2) {
             int num_factors;
-            auto arr = factorize_intensive32(x, num_factors, ipi);
+            auto arr = factorize_intensive_uint32(x, num_factors, ipi);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
             // So we'll check arr[0] (which is never 0) just so it's used.
@@ -61,16 +61,16 @@ void test_factorize(const std::vector<T>& answer,
     // multiply all the factors in answer to get the number to factorize.
     T x = calculate_x(answer);
     int num_factors;
-    auto arr = factorize_intensive32(x, num_factors, ipi);
+    auto arr = factorize_intensive_uint32(x, num_factors, ipi);
     EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
-    // at this time, I haven't made a guarantee for factorize_intensive32()
+    // at this time, I haven't made a guarantee for factorize_intensive_uint32()
     // that the destination range will be sorted, so we'll sort it here.
     std::sort(arr.begin(), arr.begin()+num_factors);
     EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,
                                                            answer.begin()));
 }
 
-TEST(HurchallaFactoringFactorizeIntensive32, basic_tests_and_hard_semiprimes) {
+TEST(HurchallaFactoringFactorizeIntensiveUint32, basic_tests_and_hard_semiprimes) {
     using U = std::uint32_t;
     IsPrimeIntensive<std::uint32_t,true> ipi;
 

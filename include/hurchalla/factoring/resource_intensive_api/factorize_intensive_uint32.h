@@ -6,7 +6,7 @@
 #define HURCHALLA_FACTORING_FACTORIZE_INTENSIVE32_H_INCLUDED
 
 
-#include "hurchalla/factoring/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
 #include "hurchalla/factoring/detail/impl_factorize.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -26,12 +26,11 @@ namespace hurchalla {
 // performance of factoring an extremely large collection of 32 bit integers.
 // Prior to calling this function you will need to create the IsPrimeIntensive
 // object 'ipi'.  'Ipi' has very high overhead - it needs ~256MB of memory, and
-// it takes a few seconds to construct.  Disregarding the considerable
-// contruction time (and memory use) of ipi, this function will normally be
-// faster than factorize() for uint32_t values (as always performance is system
-// dependent).
+// it takes a few seconds to construct.  If you can disregard the considerable
+// contruction time (and memory use) of ipi, this function will almost always be
+// faster on a given system than factorize() for uint32_t values.
 inline std::array<std::uint32_t, 32>
-factorize_intensive32(std::uint32_t x, int& num_factors,
+factorize_intensive_uint32(std::uint32_t x, int& num_factors,
                       const IsPrimeIntensive<std::uint32_t,true>& ipi)
 {
     using T = std::uint32_t;

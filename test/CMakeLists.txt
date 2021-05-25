@@ -27,14 +27,13 @@ target_sources(test_hurchalla_factoring PRIVATE
                integer_sqrt.h
                sample_primes_and_nonprimes.h
                test_factorize.cpp
-               test_factorize_intensive32.cpp
+               test_factorize_intensive_uint32.cpp
                test_greatest_common_divisor.cpp
                test_greatest_common_divisor_euclid.cpp
                test_is_prime.cpp
                test_IsPrimeIntensive.cpp
                detail_tests/is_prime_wheel210.h
                detail_tests/test_factorize_pollard_rho.cpp
-               detail_tests/test_factorize_pollard_rho_brent.cpp
                detail_tests/test_factorize_trialdivision.cpp
                detail_tests/test_factorize_wheel210.cpp
                detail_tests/test_is_prime_miller_rabin.cpp

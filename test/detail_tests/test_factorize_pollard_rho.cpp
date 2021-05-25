@@ -3,17 +3,13 @@
 // Author: Jeffrey Hurchalla
 
 
-#undef POLLARDRHO_SUITE_NAME
-#undef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
-// test_factorize_pollard_rho_brent.cpp defines the following macro,
-// and that file has nothing else in it except a #include of this file
-#ifdef TESTING_FACTORIZE_POLLARD_RHO_BRENT
-#  define POLLARDRHO_SUITE_NAME HurchallaFactoringFactorizePollardRhoBrent
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentTrial
-#else
-#  define POLLARDRHO_SUITE_NAME HurchallaFactoringFactorizePollardRho
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
-#endif
+// factorize_pollard_rho.h by default uses PollardRhoBrentTrial.
+// If you instead want to test one of the experimental Pollard-Rho trials in
+// the detail/experimental folder, uncomment the #define below and set the
+// name to the experimental trial you want to use.  As an example, the
+// commented-out #define below is set to PollardRhoTrial.  Ordinarily there's
+// no reason to test any experimental trials.
+//#define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
 
 
 #include "../factorize_bruteforce.h"
@@ -38,7 +34,7 @@ using namespace hurchalla;
 using namespace hurchalla::detail;
 
 
-TEST(POLLARDRHO_SUITE_NAME, exhaustive_uint16_t) {
+TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
     using T = std::uint16_t;
     T max = ut_numeric_limits<T>::max();
     if (max % 2 == 0)
@@ -82,7 +78,7 @@ void test_factorize(const std::vector<T>& answer)
     EXPECT_TRUE(std::equal(vec.begin(), vec.end(), answer.begin()));
 }
 
-TEST(POLLARDRHO_SUITE_NAME, hard_semi_primes) {
+TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes) {
     using U = std::uint64_t;
     U twoPow32 = static_cast<U>(1) << 32;
     // use largest primes < 2^32:
@@ -94,7 +90,7 @@ TEST(POLLARDRHO_SUITE_NAME, hard_semi_primes) {
 
 
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
-TEST(POLLARDRHO_SUITE_NAME, hard_semi_primes128_32) {
+TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes128_32) {
     using U = __uint128_t;
     U twoPow32 = static_cast<U>(1) << 32;
     // use largest primes < 2^32:
@@ -106,7 +102,7 @@ TEST(POLLARDRHO_SUITE_NAME, hard_semi_primes128_32) {
 #endif
 
 
-TEST(POLLARDRHO_SUITE_NAME, basic_tests) {
+TEST(HurchallaFactoringFactorizePollardRho, basic_tests) {
     {
         using U = std::uint64_t;
         std::vector<U> answer = { 3, 5, 19, 23, 59, 127 };
@@ -129,7 +125,7 @@ TEST(POLLARDRHO_SUITE_NAME, basic_tests) {
 
 
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
-TEST(POLLARDRHO_SUITE_NAME, basic_tests_128bit) {
+TEST(HurchallaFactoringFactorizePollardRho, basic_tests_128bit) {
     using U = __uint128_t;
     std::vector<U> answer = { 2, 3, 5, 13, 17 };
     test_factorize<U>(answer);

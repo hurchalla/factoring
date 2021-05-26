@@ -17,9 +17,14 @@
 namespace hurchalla {
 
 
-// Returns an array that contains all factors of x, and writes the total number
-// of factors to num_factors.  The array entries with index < num_factors are the
-// factors.
+// Returns a std::array that contains all factors of x, and writes the total
+// number of factors to num_factors.  The array entries with index < num_factor
+// are the factors.
+// Note that ut_numeric_limits is a utility class that is used here to
+// automatically get the bit width of your type T.  For example, if your type T
+// is uint32_t, then this function returns std::array<uint32_t, 32>.  (The bit
+// width has significance because it is impossible to have more factors than
+// type T's bit width.)
 template <typename T>
 std::array<T, ut_numeric_limits<T>::digits>
 factorize(T x, int& num_factors)
@@ -55,7 +60,8 @@ factorize(T x, int& num_factors)
 // type T of uint32_t would take 128 bytes, uint64_t would take 512 bytes, and
 // __uint128_t would take 2kb.
 //
-// Returns a vector that contains all factors of x.
+// Returns a vector that contains all factors of x.  The size of the vector is
+// the number of factors.
 template <typename T>
 std::vector<T> factorize_to_vector(T x)
 {

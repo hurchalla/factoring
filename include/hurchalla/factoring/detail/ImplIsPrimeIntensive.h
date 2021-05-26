@@ -90,7 +90,7 @@ struct ImplIsPrimeIntensive<std::uint64_t, true, DUMMY> {
         constexpr std::size_t TOTAL_BASES = 2;
 #else
         // 64 bit primality testing with 3 bases uses a much smaller hash table
-        // than 2 testing with 2 bases, and thus uses less CPU cache - see
+        // than testing with 2 bases, and thus uses less CPU cache - see
         // is_prime_miller_rabin.h for info.
         // For some CPUs the large table might not fit in cache (though I'd
         // still suspect 2 bases would be faster even so).

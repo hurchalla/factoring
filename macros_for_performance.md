@@ -4,7 +4,7 @@ Optional macros to predefine to tune performance
 There are a number of macros you can optionally predefine to tune the
 performance on your system for the factoring and primality testing functions.
 You would predefine one or more of these macros when compiling the sources.  For
-example, with clang you would compile with the -D compilation flag like this:
+example, with clang you would compile with the -D compilation flag like this:  
 clang++ -DHURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD=300 
 \
 \

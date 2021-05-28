@@ -5,6 +5,10 @@ This is a factoring and primality testing library for C++17, optimized for 64 an
 This library requires a compiler that supports C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  
 For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
 
+## Author
+
+* **Jeffrey Hurchalla**
+
 ## How to use the library
 
 ### With CMake

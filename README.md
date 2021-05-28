@@ -9,9 +9,9 @@ For good performance you *must* ensure that the standard macro NDEBUG (see &lt;c
 
 ### With CMake
 
-If you have your own CMake project and you wish to add this factoring library, then clone this git repository onto your system.  In your project's CMakeLists.txt file, add these two lines with appropriate changes for your project and paths ( an easy replacement for *your_binary_dir* is ${CMAKE_CURRENT_BINARY_DIR} ):  
-add_subdirectory(*path_to_the_root_of_the_cloned_factoring_repository*  *your_binary_dir*/factoring)  
-target_link_libraries(*your_project_target_name*  hurchalla_factoring)  
+If you have your own CMake project and you wish to add this factoring library, then clone this git repository onto your system.  In your project's CMakeLists.txt file, add these two lines with appropriate changes to their italic portions to match your project and paths ( an easy replacement for *your_binary_dir* is ${CMAKE_CURRENT_BINARY_DIR} ):  
+add_subdirectory(*path_to_the_cloned_factoring_repository* &nbsp; *your_binary_dir*/factoring)  
+target_link_libraries(*your_project_target_name* &nbsp; hurchalla_factoring)  
 
 For best performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can do this by calling CMake with -DCMAKE_BUILD_TYPE=Release.  
 
@@ -21,7 +21,7 @@ It may help to see a simple [example project with CMake](example_with_cmake).
 
 If you're not using CMake for your project, you'll need to install/copy these factoring headers and dependencies to some location so that you can use them.  To do so, clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
 
->cd *path_to_the_root_of_the_cloned_factoring_repository*  
+>cd *path_to_the_cloned_factoring_repository*  
 >mkdir tmp  
 >cd tmp  
 >cmake -S.. -B.  

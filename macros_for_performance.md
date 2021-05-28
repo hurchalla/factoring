@@ -128,3 +128,5 @@ PollardRhoTrial will very likely be slower, but you can experiment.  If you
 choose PollardRhoTrial, you should also try to predefine
 HURCHALLA_POLLARD_RHO_GCD_THRESHOLD to an optimal number (see
 HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD for related details) for your system.
+If you'd like further information on possible trials, see the experimental trial
+folder's [README](include/hurchalla/factoring/detail/experimental/README.md).

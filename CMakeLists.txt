@@ -44,8 +44,6 @@ endif()
 
 
 
-# TODO: I'm not sure whether these lines provide any benefit:
-# --------------------
 if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()

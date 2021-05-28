@@ -8,6 +8,7 @@
 
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
 
 namespace hurchalla { namespace detail {
@@ -61,8 +62,10 @@ namespace hurchalla { namespace detail {
 
 // overload for uint8_t (not a partial specialization, which is impossible)
 template <template<class,int> class TTD, int SIZE=54, class OutputIt>
-OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
-                                 std::uint8_t& next_prime, std::uint8_t x)
+OutputIt factorize_trialdivision(OutputIt iter,
+                                 std::uint8_t& HURCHALLA_RESTRICT q,
+                                 std::uint8_t& HURCHALLA_RESTRICT next_prime,
+                                 std::uint8_t x)
 {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
@@ -112,7 +115,10 @@ OutputIt factorize_trialdivision(OutputIt iter, std::uint8_t& q,
 
 
 template <template<class,int>class TTD, int SIZE=54, class OutputIt, typename T>
-OutputIt factorize_trialdivision(OutputIt iter, T& q, T& next_prime, T x)
+OutputIt factorize_trialdivision(OutputIt iter,
+                                 T& HURCHALLA_RESTRICT q,
+                                 T& HURCHALLA_RESTRICT next_prime,
+                                 T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);

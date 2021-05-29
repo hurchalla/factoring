@@ -174,6 +174,7 @@ struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
     static_assert(std::is_same<DUMMY, void>::value, "");
     using T = std::uint64_t;
     const ImplIpi64Delegate<DUMMY> ipid64;
+    ImplIsPrimeIntensive() : ipid64() {}
     bool operator()(T x) const { return ipid64(x); }
 };
 
@@ -190,6 +191,8 @@ private:
     static_assert(ut_numeric_limits<T>::digits == 128, "");
 #if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
     const ImplIpi64Delegate<DUMMY> ipid64;
+public:
+    ImplIsPrimeIntensive() : ipid64() {}
 #endif
 public:
     bool operator()(T x) const

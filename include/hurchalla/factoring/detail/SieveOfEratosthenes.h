@@ -100,7 +100,7 @@ public:
                                size((count%8 == 0) ? count/8 : (count/8)+1),
                                membytes(std::make_unique<unsigned char[]>(size))
     {
-        unsigned char val = (value) ? 255 : 0;
+        unsigned char val = static_cast<unsigned char>((value) ? 255 : 0);
         std::fill(membytes.get(), membytes.get() + size, val);
     }
     bool get(std::uint32_t index) const
@@ -112,12 +112,13 @@ public:
     }
     void clear(std::uint32_t index)
     {
+        using U = std::uint8_t;
         HPBC_PRECONDITION(index < static_cast<std::uint64_t>(size)*8);
         std::uint32_t bytenum = index/8;
-        std::uint8_t offset = static_cast<std::uint8_t>(index % 8);
-        std::uint8_t on_mask = static_cast<std::uint8_t>(1) << offset;
-        std::uint8_t off_mask = ~on_mask;
-        membytes[bytenum] = membytes[bytenum] & off_mask;
+        U offset = static_cast<U>(index % 8);
+        U on_mask = static_cast<U>(static_cast<U>(1) << offset);
+        U off_mask = static_cast<U>(~on_mask);
+        membytes[bytenum] = static_cast<U>(membytes[bytenum] & off_mask);
     }
 #endif
 };

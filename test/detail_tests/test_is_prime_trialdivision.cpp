@@ -93,7 +93,7 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
                   <= ut_numeric_limits<size_type>::digits);
 
     T max = static_cast<T>(static_cast<T>(0) - 1);
-    T midpoint = max/2;
+    T midpoint = static_cast<T>(max/2);
     T midpoint_minus50 = static_cast<T>(midpoint - 50);
     for (T x = 0; x < 255; ++x)
         iptd_test<SIZE>(x, primevec);
@@ -105,7 +105,10 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
     std::vector<int> indices = { 0, 1, 2, SIZE, SIZE-1, SIZE/2, SIZE/2 + 1 };
     if (5 < primevec.size())
         indices.push_back(5);
-    for (auto index : indices) {
+    // normally we'd use a range-based for, but we use a long form here to quiet
+    // a gcc warning about a missed loop optimization
+    for (auto it = indices.cbegin(); it != indices.cend(); ++it) {
+        auto index = *it;
         // a failure here would mean this test is buggy
         EXPECT_TRUE(static_cast<unsigned int>(index) < primevec.size());
         std::uint64_t prime = primevec[static_cast<size_type>(index)];

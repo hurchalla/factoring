@@ -125,7 +125,9 @@ void test_sample_primes_and_nonprimes128()
 TEST(HurchallaFactoringIsPrimeIntensive, basic_tests) {
     test_sample_primes_and_nonprimes<std::uint8_t, true>();
     test_sample_primes_and_nonprimes<std::uint16_t, true>();
-#ifdef NDEBUG
+// this is a bit of a hack, but this test is extremely slow without optimization
+// and so we try to skip it when building without any optimizations
+#if (defined(_MSC_VER) && !defined(_DEBUG)) || defined(__OPTIMIZE__)
     test_sample_primes_and_nonprimes<std::uint32_t, true>();
 #endif
     test_sample_primes_and_nonprimes<std::uint64_t, true>();

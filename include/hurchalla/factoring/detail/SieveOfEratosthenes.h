@@ -8,8 +8,10 @@
 
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/util/compiler_macros.h"
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 namespace hurchalla { namespace detail {
 
@@ -64,50 +66,88 @@ inline std::vector<bool> init_odd_primes_simple(std::uint64_t size)
 }
 #endif
 
-// The version below avoids the main performance problem of the above versions,
-// which is that they skip through memory and rarely reuse CPU cache lines prior
-// to cache evictions.  To avoid this problem, this version works on a range of
-// memory smaller than the CPU cache, and writes all values that will ever be
-// needed for that block, and then moves on to the next block of memory and
-// writes all values needed for that block, etc.
-// I measured ~4x performance improvement on Intel Haswell CPU using this
+// The version further below avoids the main performance problem of the above
+// versions, which is that they skip through memory and rarely reuse CPU cache
+// lines prior to cache evictions.  To avoid this problem, the next version
+// works on a range of memory smaller than the CPU cache, and writes all values
+// that will ever be needed for that block, and then moves on to the next block
+// of memory and writes all values needed for that block, etc.
+// I measured ~4x performance improvement on Intel Haswell CPU using the next
 // version, compared to the above versions.
+
+
+
+class SieveBitVector {
+// In most respects, having a std::vector<bool> member do this work is
+// preferable to having custom bit vector logic, but unfortunately on 32 bit
+// architectures std::vector<bool> doesn't always permit a large enough vector
+// to be created for our uses (std::vector<bool>::max_size() might be 2^31 - 1,
+// which isn't large enough.  Note that 2^31 - 1 is a much smaller limit to the
+// vector<bool> length than a 32bit architecture would actually require, given
+// that vector<bool> uses approximately vectorlength/8 bytes of memory; for
+// example, a length of 2^31 would need only ~256MB).
+#if HURCHALLA_TARGET_BIT_WIDTH > 32
+    std::vector<bool> vb;
+public:
+    SieveBitVector(std::uint32_t count, bool value) : vb(count, value) {}
+    bool get(std::uint32_t index) const { return vb[index]; }
+    void clear(std::uint32_t index) { vb[index] = false; }
+#else
+    std::uint32_t size;
+    std::unique_ptr<unsigned char[]> membytes;
+public:
+    SieveBitVector(std::uint32_t count, bool value) :
+                               size((count%8 == 0) ? count/8 : (count/8)+1),
+                               membytes(std::make_unique<unsigned char[]>(size))
+    {
+        unsigned char val = (value) ? 255 : 0;
+        std::fill(membytes.get(), membytes.get() + size, val);
+    }
+    bool get(std::uint32_t index) const
+    {
+        HPBC_PRECONDITION(index < static_cast<std::uint64_t>(size)*8);
+        std::uint32_t bytenum = index/8;
+        std::uint8_t offset = static_cast<std::uint8_t>(index % 8);
+        return (membytes[bytenum] >> offset) & 1;
+    }
+    void clear(std::uint32_t index)
+    {
+        HPBC_PRECONDITION(index < static_cast<std::uint64_t>(size)*8);
+        std::uint32_t bytenum = index/8;
+        std::uint8_t offset = static_cast<std::uint8_t>(index % 8);
+        std::uint8_t on_mask = static_cast<std::uint8_t>(1) << offset;
+        std::uint8_t off_mask = ~on_mask;
+        membytes[bytenum] = membytes[bytenum] & off_mask;
+    }
+#endif
+};
 
 
 // Returns a bit vector with indices that represent odd numbers.  Every true
 // entry in the bit vector means that the odd number represented by the index is
 // prime, and every false entry means that the odd number represented by the
 // index is not prime.
-
-// *Note that the bit vector this function creates and returns will be (size/16)
-// bytes large.  E.g. for a size of 1<<32, the vector will take up 256 MB.
-// If you go too much above 1<<32, the bit vector is going to start taking an
-// insane amount of memory (or run out of memory), and calculating the sieve
-// here will take a very long time (e.g. for size 1<< 36 you might expect over a
-// minute).
-// Also note that on some systems, the vector's size_type might be 32 bit, which
-// would mean by one of function's preconditions below you'd be limited to a
-// size < (1<<33).  In general I'd recommend staying below that limit for
-// portability and to keep memory usage/computation time reasonable.
-
+//
+// *Note that the bit vector this function creates and returns will use
+// size_odds/8 bytes of memory.  E.g. if size_odds == 1<<31, the vector will
+// take up 256 MB.
+//
 // we use DUMMY because we want the function to be inline to avoid ODR errors,
 // but gcc warns (-Winline) that it can't inline the function if we explicitly
 // make it inline.  Using a template implicitly makes it inline, without any
 // warning.
 template <typename DUMMY=void>
-std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
-                                        std::uint64_t cache_blocking_size)
+SieveBitVector init_sieve_odd_primes(std::uint32_t size_odds,
+                                       std::uint64_t cache_blocking_size)
 {
-    using vec_size_type = std::vector<bool>::size_type;
-    HPBC_PRECONDITION(2 <= size);
-    HPBC_PRECONDITION(size/2 <= ut_numeric_limits<vec_size_type>::max());
-    HPBC_PRECONDITION(cache_blocking_size > 0);
-
     using std::uint64_t;
     using std::uint32_t;
-    vec_size_type size_odds = size/2;
-    std::vector<bool> primes_bitvec(size_odds, true);
-    primes_bitvec[1/2] = false;
+    uint64_t size = static_cast<uint64_t>(size_odds)*2;
+    HPBC_PRECONDITION(cache_blocking_size > 0);
+    HPBC_PRECONDITION(2 <= size);
+
+    SieveBitVector primes_bitvec(size_odds, true);
+    primes_bitvec.clear(1/2);  // the value 1 is not a prime
 
     std::vector<uint64_t> prime_multiple_vec;
     std::vector<uint32_t> prime_doubled_vec;
@@ -123,13 +163,14 @@ std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
     uint64_t i=3;
     // find all primes and composites < sqrt(size)
     for (; i*i<size; i+=2) {
-        if (primes_bitvec[i/2]) {
+        HPBC_ASSERT2(i/2 < size_odds);
+        if (primes_bitvec.get(static_cast<uint32_t>(i/2))) {
             uint64_t j=i*i;
             for (; j*j<size; j+=(2*i)) {
                 HPBC_ASSERT2(j/2 < size_odds);
-                primes_bitvec[j/2] = false;
+                primes_bitvec.clear(static_cast<uint32_t>(j/2));
             }
-            HPBC_ASSERT2(2*i < (static_cast<uint64_t>(1) << 32));
+            HPBC_ASSERT2(2*i <= ut_numeric_limits<uint32_t>::max());
             prime_doubled_vec.push_back(static_cast<uint32_t>(2*i));
             prime_multiple_vec.push_back(j);
         }
@@ -147,15 +188,16 @@ std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
         uint64_t next = i+cache_blocking_size;
         if (next > size)
             next = size;
-        for (uint64_t j=0; j<prime_doubled_vec.size(); ++j) {
-            uint64_t prime_multiple = prime_multiple_vec[j];
-            HPBC_ASSERT2(prime_multiple >= i);
+        using pd_size_type = decltype(prime_doubled_vec)::size_type;
+        for (pd_size_type j=0; j<prime_doubled_vec.size(); ++j) {
+            uint64_t multiple = prime_multiple_vec[j];
+            HPBC_ASSERT2(multiple >= i);
             uint64_t prime_doubled = prime_doubled_vec[j];
-            for (; prime_multiple<next; prime_multiple+=prime_doubled) {
-                HPBC_ASSERT2(prime_multiple/2 < size_odds);
-                primes_bitvec[prime_multiple/2] = false;
+            for (; multiple<next; multiple+=prime_doubled) {
+                HPBC_ASSERT2(multiple/2 < size_odds);
+                primes_bitvec.clear(static_cast<uint32_t>(multiple/2));
             }
-            prime_multiple_vec[j] = prime_multiple;
+            prime_multiple_vec[j] = multiple;
         }
     }
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
@@ -166,16 +208,19 @@ std::vector<bool> init_sieve_odd_primes(std::uint64_t size,
 
 
 class SieveOfEratosthenes {
-    const std::vector<bool> oddprimes;
+    const SieveBitVector oddprimes;
     const std::uint64_t length;
 
 public:
     SieveOfEratosthenes(std::uint64_t size,
                         std::uint64_t cache_blocking_size = 262144)
-            : oddprimes(init_sieve_odd_primes(size, cache_blocking_size)),
-              length(size)
+          : oddprimes(init_sieve_odd_primes(static_cast<std::uint32_t>(size/2),
+                                            cache_blocking_size)),
+            length(size)
     {
-        HPBC_ASSERT2(length/2 == oddprimes.size());
+        HPBC_PRECONDITION(size % 2 == 0);
+        HPBC_PRECONDITION(2 <= size);
+        HPBC_PRECONDITION(size/2 <= ut_numeric_limits<uint32_t>::max());
     }
 
     std::uint64_t size() const { return length; }
@@ -185,8 +230,10 @@ public:
         HPBC_PRECONDITION2(value < length);
         if (value % 2 == 0)
             return (value == 2);
-        else
-            return oddprimes[value/2];
+        else {
+            HPBC_ASSERT2(value/2 <= ut_numeric_limits<std::uint32_t>::max());
+            return oddprimes.get(static_cast<std::uint32_t>(value/2));
+        }
     }
 
     bool operator[](std::uint64_t index) const { return isPrime(index); }

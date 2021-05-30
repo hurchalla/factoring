@@ -70,6 +70,9 @@ void test_factorize(const std::vector<T>& answer,
                                                            answer.begin()));
 }
 
+// this is a bit of a hack, but this test is extremely slow without optimization
+// and so we try to skip it when not building with any optimizations
+#if (defined(_MSC_VER) && !defined(_DEBUG)) || defined(__OPTIMIZE__)
 TEST(HurchallaFactoringFactorizeIntensiveUint32, basic_tests_and_hard_semiprimes) {
     using U = std::uint32_t;
     IsPrimeIntensive<std::uint32_t,true> ipi;
@@ -87,6 +90,6 @@ TEST(HurchallaFactoringFactorizeIntensiveUint32, basic_tests_and_hard_semiprimes
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer2));
     test_factorize(answer2, ipi);
 }
-
+#endif
 
 } // end namespace

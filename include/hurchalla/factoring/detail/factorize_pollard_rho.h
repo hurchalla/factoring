@@ -126,6 +126,11 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
 
 
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4127)
+#  pragma warning(disable : 4702)
+#endif
 // Dispatch function to the fastest factorize_pr template function instantiation
 // available for x (parameterized on the fastest MontgomeryForm for x).
 template <class PrimalityFunctor, class OutputIt, typename T>
@@ -167,10 +172,6 @@ OutputIt factorize_pollard_rho(OutputIt iter, T x,
     // If we reach this point, the following clause will be true.  We explicitly
     // use an 'if' anyway, so that we can be sure the compiler will not generate
     // any code for it when T's bit width <= HURCHALLA_TARGET_BIT_WIDTH.
-#if defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4127)
-#endif
     if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<T>;
@@ -194,15 +195,15 @@ OutputIt factorize_pollard_rho(OutputIt iter, T x,
         HPBC_ASSERT2(false);  // it ought to be impossible to reach this code.
         return iter;
     }
-#if defined(_MSC_VER)
-#  pragma warning(pop)
-#endif
 #if defined(__INTEL_COMPILER)
     // for some reason icc doesn't see that all paths return prior to this point
     // so we'll uselessly return iter to quiet icc's warning/error
     return iter;
 #endif
 }
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 
 }}  // end namespace

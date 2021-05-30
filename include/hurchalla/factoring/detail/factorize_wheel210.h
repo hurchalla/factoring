@@ -20,6 +20,10 @@
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 #endif
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4702)
+#endif
 
 namespace hurchalla { namespace detail {
 
@@ -173,6 +177,9 @@ OutputIt factorize_wheel210(OutputIt iter, T x)
 
 }}  // end namespace
 
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic pop
 #endif

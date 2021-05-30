@@ -16,6 +16,7 @@
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
 #include <type_traits>
 
@@ -41,13 +42,14 @@ operator()(const MontType& mf) const
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
-
+#if HURCHALLA_TARGET_BIT_WIDTH >= 64
     if (mf.getModulus() < (static_cast<T>(1) << 32)) {
         constexpr std::size_t TOTAL_BASES = 2;
         constexpr std::size_t TRIAL_SIZE = 2;
         return MillerRabinMontgomery
                           <MontType, 32, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
     }
+#endif
     if (mf.getModulus() < UINT64_C(350269456337)) {
         constexpr std::size_t TRIAL_SIZE = 3;
         return is_prime_miller_rabin64_3_350269456337<TRIAL_SIZE>(mf);

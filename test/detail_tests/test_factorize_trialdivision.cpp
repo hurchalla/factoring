@@ -125,9 +125,11 @@ void ftd_typed_tests()
         ftd_sized_tests<TTD, 198, T>();
         ftd_sized_tests<TTD, 1000, T>();
     }
-    // Using SIZE as large as 3501 (and even 1000 above) faces some risk of
+    // Using SIZE as large as 2501 (and even 1000 above) faces some risk of
     // getting a compiler failure of
     // "constexpr evaluation hit maximum step limit; possible infinite loop?"
+    // MSVC 2017 doesn't even compile it, giving an error that seems to have
+    // nothing to do with the real problem of exceeding a size limit.
     // It's not a bug in any of the code under test or the test itself, it's
     // just a limit of the compiler with constexpr initialization.  There's
     // probably a compiler flag you can set to increase the limit, but if
@@ -136,9 +138,11 @@ void ftd_typed_tests()
     // than I expect we'd ever use in practice for trial division.  I'd only
     // try to fix such an error if it happens with SIZE < 200, since that's
     // a more practical range (though ~200 is still fairly large).
+#if !defined(_MSC_VER) || (_MSC_VER >= 1927)
     if constexpr (ut_numeric_limits<T>::digits >= 32) {
-        ftd_sized_tests<TTD, 3501, T>();
+        ftd_sized_tests<TTD, 2501, T>();
     }
+#endif
 }
 
 

@@ -24,6 +24,7 @@ using namespace hurchalla::detail;
 template <typename T>
 bool get_primality(T x)
 {
+    static_assert(!ut_numeric_limits<T>::is_signed);
     if (x < 2)
         return false;
     if (x % 2 == 0)
@@ -35,10 +36,13 @@ bool get_primality(T x)
 template <int SIZE, typename T>
 void iptd_test(T x, const std::vector<std::uint64_t>& primevec)
 {
+    static_assert(!ut_numeric_limits<T>::is_signed);
     using size_type = std::vector<std::uint64_t>::size_type;
     // a failure here would mean this test is buggy
     static_assert(ut_numeric_limits<int>::digits
                   <= ut_numeric_limits<size_type>::digits);
+    // a failure here would mean this test is buggy
+    EXPECT_TRUE(primevec.size() == SIZE + 1);
     std::uint64_t nextprime = primevec[static_cast<size_type>(SIZE)];
     // These tests need for nextprime*nextprime to still fit in a uint64_t.
     // The tests would be at fault if this is false, but mostly just for
@@ -80,25 +84,32 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
                 break;
         }
     }
+    // a failure here would mean this test is buggy
+    EXPECT_TRUE(primevec.size() == SIZE + 1);
+
     using size_type = std::vector<std::uint64_t>::size_type;
     // a failure here would mean this test is buggy
     static_assert(ut_numeric_limits<int>::digits
                   <= ut_numeric_limits<size_type>::digits);
 
-    T midpoint = (static_cast<T>(0) - 1)/2;
-    T midpoint_minus50 = static_cast<T>(midpoint - 50);
     T max = static_cast<T>(static_cast<T>(0) - 1);
+    T midpoint = max/2;
+    T midpoint_minus50 = static_cast<T>(midpoint - 50);
+    for (T x = 0; x < 255; ++x)
+        iptd_test<SIZE>(x, primevec);
+    for (T x = max; x > max - 100; --x)
+        iptd_test<SIZE>(x, primevec);
+    for (T x = midpoint_minus50; x < midpoint + 50; ++x)
+        iptd_test<SIZE>(x, primevec);
 
-    std::vector<int> limits = { 1, 2, 5, SIZE, SIZE-1, SIZE/2, SIZE/2 + 1 };
-    for (auto it = limits.cbegin(); it != limits.cend(); ++it) {
-        int size_limit = *it;
-        for (T x = 0; x < 255; ++x)
-            iptd_test<SIZE>(x, primevec);
-        for (T x = max; x > max - 100; --x)
-            iptd_test<SIZE>(x, primevec);
-        for (T x = midpoint_minus50; x < midpoint + 50; ++x)
-            iptd_test<SIZE>(x, primevec);
-        std::uint64_t prime = primevec[static_cast<size_type>(size_limit)];
+    std::vector<int> indices = { 0, 1, 2, SIZE, SIZE-1, SIZE/2, SIZE/2 + 1 };
+    if (5 < primevec.size())
+        indices.push_back(5);
+    for (auto index : indices) {
+        // a failure here would mean this test is buggy
+        EXPECT_TRUE(static_cast<unsigned int>(index) < primevec.size());
+        std::uint64_t prime = primevec[static_cast<size_type>(index)];
+        // it's fine if we under/overflow below- it will wrap around harmlessly.
         iptd_test<SIZE>(static_cast<T>(prime-2), primevec);
         iptd_test<SIZE>(static_cast<T>(prime-1), primevec);
         iptd_test<SIZE>(static_cast<T>(prime+0), primevec);
@@ -119,9 +130,11 @@ void iptd_typed_tests(const SieveOfEratosthenes& sieve)
         iptd_sized_tests<198,T>(sieve);
         iptd_sized_tests<1000,T>(sieve);
     }
-    // Using SIZE as large as 3501 (and even 1000 above) faces some risk of
+    // Using SIZE as large as 2501 (and even 1000 above) faces some risk of
     // getting a compiler failure of
     // "constexpr evaluation hit maximum step limit; possible infinite loop?"
+    // MSVC 2017 doesn't even compile it, giving an error that seems to have
+    // nothing to do with the real problem of exceeding a size limit.
     // It's not a bug in any of the code under test or the test itself, it's
     // just a limit of the compiler with constexpr initialization.  There's
     // probably a compiler flag you can set to increase the limit, but if
@@ -130,9 +143,11 @@ void iptd_typed_tests(const SieveOfEratosthenes& sieve)
     // than I expect we'd ever use in practice for trial division.  I'd only
     // try to fix such an error if it happens with SIZE < 200, since that's
     // a more practical range (though ~200 is still fairly large).
+#if !defined(_MSC_VER) || (_MSC_VER >= 1927)
     if constexpr (ut_numeric_limits<T>::digits >= 32) {
-        iptd_sized_tests<3501,T>(sieve);
+        iptd_sized_tests<2501,T>(sieve);
     }
+#endif
 }
 
 

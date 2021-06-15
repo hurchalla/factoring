@@ -1,8 +1,8 @@
 # Factoring
 
-This is a factoring and primality testing library for C++17, optimized for 64 and 32 bit integers and supporting sizes up to 128 bits.  It is a header-only library, designed for correctness and ideal performance when factoring or primality testing 64 bit and 32 bit integers.  128 bit integers are supported, but you should note that other algorithms are more suitable for values much above 2^64.  The algorithms used in this library are described further below.  
+This is a factoring and primality testing library for C++17, optimized for 32 or 64 bit integer types and supporting integer types up to 128 bits.  It is a header-only library, designed for correctness and ideal performance.  Though 128 bit integers are supported, you should note that other algorithms would be more suitable for values much above 2^64.  The algorithms used in this library are described further below.  
 
-This library requires a compiler that supports C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86/x64 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
+This library requires a compiler that supports C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
 
 For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
 
@@ -14,7 +14,7 @@ For good performance you *must* ensure that the standard macro NDEBUG (see &lt;c
 
 ### With CMake
 
-If you have your own CMake project and you wish to add this factoring library, then clone this git repository onto your system.  In your project's CMakeLists.txt file, add the following two lines with appropriate changes to their italic portions to match your project and paths ( an easy replacement for *your_binary_dir* is ${CMAKE_CURRENT_BINARY_DIR} ):  
+If you're using CMake for your project and you wish to add this factoring library to it, then clone this git repository onto your system.  In your project's CMakeLists.txt file, add the following two lines with appropriate changes to their italic portions to match your project and paths ( an easy replacement for *your_binary_dir* is ${CMAKE_CURRENT_BINARY_DIR} ):  
 add_subdirectory(*path_to_the_cloned_factoring_repository* &nbsp; *your_binary_dir*/factoring)  
 target_link_libraries(*your_project_target_name* &nbsp; hurchalla_factoring)  
 
@@ -24,7 +24,7 @@ It may help to see a simple [example project with CMake](example_with_cmake).
 
 ### Without CMake
 
-If you're not using CMake for your project, you'll need to install/copy these factoring headers and dependencies to some location so that you can use them.  To do so, first clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
+If you're not using CMake for your project, you'll need to install/copy these factoring headers and dependencies to some directory in order to use them.  To do this, first clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
 
 >cd *path_to_the_cloned_factoring_repository*  
 >mkdir tmp  

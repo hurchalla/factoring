@@ -9,9 +9,6 @@ evaluate: a (potential) factorization step in miller rabin might help, but
    probably not.
 
 MontgomeryForm - force_inline on every function?
-MontgomeryFormCommon - show proof that fmadd and fmsub are correct.
 NDEBUG defined for all release builds?
 Compare performance of asm to non-asm functions via the macros in modular
    arithmetic README
-
-publish the generalized form of the Dumas integer inverse algorithm

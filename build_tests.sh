@@ -12,10 +12,10 @@
 #
 # -c allows you to select the compiler, rather than using the default.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
-# -a specifies you want to compile the code using all available inline assembly
-#    optimizations, which makes for the fastest binaries but of course has the
-#    downsides of inline asm - primarily that inline asm is extremely difficult
-#    to properly test.
+# -a specifies you want to compile the code using typically helpful (how much it
+#    helps depends on your compiler) inline asm optimizations, which makes for
+#    the fastest binaries but of course has the downsides of inline asm -
+#    primarily that inline asm is extremely difficult to properly test.
 # -t specifies to compile tests for all Hurchalla libraries, as well as for this
 #    repository.  Without -t, only tests for this repository will be compiled.
 # -m allows you to choose between Release and Debug build configuration, rather
@@ -180,7 +180,7 @@ while getopts ":m:c:h-:rat" opt; do
       run_tests=true
       ;;
     a)
-      use_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
+      use_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_REDC=1"
       ;;
     t)
       test_all_hurchalla_libs="-DTEST_HURCHALLA_LIBS=ON"

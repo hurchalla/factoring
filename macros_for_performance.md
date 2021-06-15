@@ -106,6 +106,16 @@ this macro choice.
 \
 Miscellaneous macros:
 
+HURCHALLA_ALLOW_INLINE_ASM_REDC - predefining this macro will cause Montgomery
+arithemetic to use an inline asm version of REDC(), if available.  In some cases
+it may improve performance up to 10% (gcc seems to benefit), and in other cases
+it may make essentially no difference or harm performance (clang does not seem
+to benefit).  In all cases, inline asm is extremely difficult to thoroughly
+test, since the code surrounding the inline asm under test will determine part
+of the machine code generated from the inline asm.  Generally speaking,
+it is [difficult to recommend inline asm](https://gcc.gnu.org/wiki/DontUseInlineAsm)
+unless there is a large performance benefit or performance is critical.
+
 HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE - predefine this macro if your CPU has very
 fast division instructions (usually this is present only in CPUs from around
 2019 or later).

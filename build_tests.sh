@@ -8,7 +8,7 @@
 # This is my working rough-draft script for invoking the testing builds and
 # then running the tests.
 # The syntax is 
-# ./build_tests [-c<compiler_name>] [-r] [-a] [-t] [-m<Release|Debug>]
+# ./build_tests [-c<compiler_name>] [-r] [-a] [-t] [-m<Release|Debug|Profile>]
 #
 # -c allows you to select the compiler, rather than using the default.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
@@ -18,8 +18,8 @@
 #    primarily that inline asm is extremely difficult to properly test.
 # -t specifies to compile tests for all Hurchalla libraries, as well as for this
 #    repository.  Without -t, only tests for this repository will be compiled.
-# -m allows you to choose between Release and Debug build configuration, rather
-#    than using the default.
+# -m allows you to choose between Release, Debug, and Profile(Release with
+#    debug symbols) build configurations, rather than using the default.
 #
 # Currently it supports clang, gcc, and icc but you'll need to customize the
 # section under "#Compiler commands" to match the compilers on your system.  The
@@ -167,7 +167,7 @@ while getopts ":m:c:h-:rat" opt; do
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-m<Release|Debug>]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-m<Release|Debug|Profile>]" >&2
       exit 1
       ;;
     c)
@@ -506,6 +506,20 @@ elif [ "${mode,,}" = "debug" ]; then
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
     cmake --build ./$build_dir --config Debug
+    exit_on_failure
+    popd > /dev/null 2>&1
+elif [ "${mode,,}" = "profile" ]; then
+    pushd script_dir > /dev/null 2>&1
+    build_dir=build/profile_$compiler_name$compiler_version
+    mkdir -p $build_dir
+    cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
+            $test_all_hurchalla_libs \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_EXE_LINKER_FLAGS="-ldl" \
+            -DCMAKE_CXX_FLAGS="$cpp_standard  $use_inline_asm" \
+            $cmake_cpp_compiler $cmake_c_compiler
+    exit_on_failure
+    cmake --build ./$build_dir --config RelWithDebInfo
     exit_on_failure
     popd > /dev/null 2>&1
 else

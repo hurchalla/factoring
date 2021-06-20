@@ -9,6 +9,8 @@
 
 #include "gtest/gtest.h"
 
+//#include "coz.h"
+
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -76,6 +78,21 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
             EXPECT_TRUE(arr[0] != 0);
         }
     }
+# if HURCHALLA_COMPILER_HAS_UINT128_T()
+    TEST(HurchallaFactoringFactorize, speed_test128_small) {
+        using T = __uint128_t;
+        T start = 1 + (static_cast<T>(1) << 65);
+        for (T x = start; x < start + 200000; x = x+2) {
+//            COZ_PROGRESS
+            int num_factors;
+            auto arr = factorize(x, num_factors);
+            // We need to prevent the compiler from completely removing
+            // the factorize calls due to arr never being used.
+            // So we'll check arr[0] (which is never 0) just so it's used.
+            EXPECT_TRUE(arr[0] != 0);
+        }
+    }
+# endif
 #endif
 
 template <typename T>

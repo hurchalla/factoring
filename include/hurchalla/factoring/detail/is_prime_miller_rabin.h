@@ -490,7 +490,7 @@ bool is_prime_miller_rabin32_2_360018361(const MontType& mf)
               (ut_numeric_limits<T>::digits > 32 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT32_C(360018361));
+    HPBC_PRECONDITION2(1 < num && num < UINT32_C(360018361));
     // Dana Jacobsen, Wojciech Izykowski, and Marcin Panasiuk discovered these
     // bases; see https://miller-rabin.appspot.com/
     // I verified they are correct for all num < 360018361.
@@ -512,7 +512,7 @@ bool is_prime_miller_rabin64_2_1050535501(const MontType& mf)
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT32_C(1050535501));
+    HPBC_PRECONDITION2(1 < num && num < UINT32_C(1050535501));
     // Wojciech Izykowski and Marcin Panasiuk discovered these bases; see
     // https://miller-rabin.appspot.com/
     // I verified they are correct for all num < 1050535501.
@@ -534,7 +534,7 @@ bool is_prime_miller_rabin64_3_350269456337(const MontType& mf)
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT64_C(350269456337));
+    HPBC_PRECONDITION2(1 < num && num < UINT64_C(350269456337));
     // Steve Worley discovered these bases; see https://miller-rabin.appspot.com
     // I verified they are correct for all num < 350269456337.
     const std::array<std::uint64_t, 3> bases = { UINT64_C(4230279247111683200),
@@ -555,7 +555,7 @@ bool is_prime_miller_rabin64_4_55245642489451(const MontType& mf)
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT64_C(55245642489451));
+    HPBC_PRECONDITION2(1 < num && num < UINT64_C(55245642489451));
     // I verified these bases are correct for all num < 55245642489451, assuming
     // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
     // discovered the bases - see https://miller-rabin.appspot.com/
@@ -578,7 +578,7 @@ bool is_prime_miller_rabin64_5_7999252175582851(const MontType& mf)
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT64_C(7999252175582851));
+    HPBC_PRECONDITION2(1 < num && num < UINT64_C(7999252175582851));
     // I verified these bases are correct for all num < 7999252175582851, if
     // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
     // discovered the bases - see https://miller-rabin.appspot.com/
@@ -601,7 +601,7 @@ bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
     T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num <= UINT64_C(585226005592931977));
+    HPBC_PRECONDITION2(1 < num && num < UINT64_C(585226005592931977));
     // I verified these bases are correct for all num < 585226005592931977, if
     // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
     // discovered the bases - see https://miller-rabin.appspot.com/
@@ -612,7 +612,34 @@ bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
     return miller_rabin_trials<TRIAL_SIZE>(mf, bases);
 }
 
-
+// requires modulus < 3317044064679887385961981; uses 13 bases (no hash)
+template <std::size_t TRIAL_SIZE, typename MontType>
+bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
+{
+    using T = typename MontType::T_type;
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    // Technically any 128 bit or larger type should work, but we allow only the
+    // types for which this function would be an efficient choice.
+    static_assert(ut_numeric_limits<T>::digits == 128 ||
+              (ut_numeric_limits<T>::digits > 128 &&
+               ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
+    T num = mf.getModulus();
+    HPBC_PRECONDITION2(1 < num);
+    //HPBC_PRECONDITION2(num < UINT128_C(3317044064679887385961981));
+    // Note: 3317044064679887385961981 == (179817 << 64) + 5885577656943027709
+    constexpr T limit = (static_cast<T>(179817) << 64) +
+                        UINT64_C(5885577656943027709);
+    HPBC_PRECONDITION2(num < limit);
+    // Jonathan Sorenson and Jonathan Webster proved that no numbers exist below
+    // 3317044064679887385961981 that are pseudoprimes to all of these bases.
+    // See https://arxiv.org/abs/1509.00864
+    // These bases are unverified by me.  In practice it's not possible for me
+    // to verify them - the Feitsma database only covers numbers < (1<<64).
+    const std::array<std::uint8_t, 13> bases = { 2, 3, 5, 7, 11, 13, 17, 19, 23,
+                                                 29, 31, 37, 41 };
+    return miller_rabin_trials<TRIAL_SIZE>(mf, bases);
+}
 
 
 // ----------------------------
@@ -681,6 +708,16 @@ is_prime_miller_rabin(const MontType& mf)
     using T = typename MontType::T_type;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(mf.getModulus() > 1);
+    // Note: 3317044064679887385961981 == (179817 << 64) + 5885577656943027709
+    constexpr T limit13 =
+                 (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
+    if (mf.getModulus() < limit13) {
+        constexpr std::size_t TRIAL_SIZE = 4;
+        return
+          is_prime_miller_rabin128_13_3317044064679887385961981<TRIAL_SIZE>(mf);
+    }
+
     // 128 bit miller-rabin with 128 bases is going to be slow no matter what,
     // but a trial size of 4 will usually significantly improve performance
     // over trial size 1, due to more efficient use of the CPU's pipelined
@@ -691,7 +728,6 @@ is_prime_miller_rabin(const MontType& mf)
     // repeated speed gain from processing more bases per trial.
     constexpr std::size_t TOTAL_BASES = 128;
     constexpr std::size_t TRIAL_SIZE = 4;
-    HPBC_PRECONDITION2(mf.getModulus() > 1);
     return MillerRabinMontgomery
                          <MontType, 128, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
 }

@@ -13,10 +13,14 @@
 #include <cstddef>
 #include <array>
 #include <vector>
+#include <numeric>
+#include <functional>
 
 namespace hurchalla {
 
 
+// T can be any unsigned integral type <= 128 bits.
+//
 // Returns a std::array that contains all factors of x, and writes the total
 // number of factors to num_factors.  The array entries with index < num_factor
 // are the factors.
@@ -31,6 +35,7 @@ factorize(T x, int& num_factors)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
     using namespace hurchalla::detail;
@@ -60,6 +65,8 @@ factorize(T x, int& num_factors)
 // type T of uint32_t would take 128 bytes, uint64_t would take 512 bytes, and
 // __uint128_t would take 2kb.
 //
+// T can be any unsigned integral type <= 128 bits.
+//
 // Returns a vector that contains all factors of x.  The size of the vector is
 // the number of factors.
 template <typename T>
@@ -67,6 +74,7 @@ std::vector<T> factorize_to_vector(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
+    static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
     using namespace hurchalla::detail;

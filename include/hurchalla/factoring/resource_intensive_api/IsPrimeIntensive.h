@@ -12,6 +12,8 @@
 namespace hurchalla {
 
 
+// T can be any unsigned integral type <= 128 bits.
+//
 // This functor is intended for use when you plan to repeatedly and intensively
 // perform primality testing.  For some values of T (only uint32_t at the
 // moment) the constructor will likely take a couple of seconds to complete.

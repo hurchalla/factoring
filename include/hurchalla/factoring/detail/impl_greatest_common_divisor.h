@@ -52,16 +52,15 @@ impl_greatest_common_divisor(T a, T b)
 // Binary/Stein GCD.
 // For Binary GCD details see https://en.wikipedia.org/wiki/Binary_GCD_algorithm
 // This function is adapted from the Rust iterative version there.
+template <typename T>
 #if defined(HURCHALLA_PREFER_EUCLIDEAN_GCD) && \
         defined(HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE)
-template <typename T>
 HURCHALLA_FORCE_INLINE typename std::enable_if<!(ut_numeric_limits<T>::digits <=
                          HURCHALLA_TARGET_BIT_WIDTH), T>::type
-impl_greatest_common_divisor(T u, T v)
 #else
-template <typename T>
-HURCHALLA_FORCE_INLINE T impl_greatest_common_divisor(T u, T v)
+HURCHALLA_FORCE_INLINE T
 #endif
+impl_greatest_common_divisor(T u, T v)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");

@@ -154,11 +154,11 @@ struct ImplIpi64Delegate {
         // Using trial division on average boosts our performance (so long as x
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
-        bool res = is_prime_trialdivision<
+        bool isPrime = is_prime_trialdivision<
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
-            return res;
+            return isPrime;
         // is_prime_trialdivision() should have successfully handled any even x,
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);
@@ -213,11 +213,11 @@ public:
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
         bool success;
-        bool res = is_prime_trialdivision<
+        bool isPrime = is_prime_trialdivision<
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
-            return res;
+            return isPrime;
         // is_prime_trialdivision() should have successfully handled any even x,
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);

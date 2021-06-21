@@ -13,6 +13,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <array>
+#include <numeric>
+#include <functional>
 
 namespace hurchalla {
 

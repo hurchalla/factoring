@@ -52,17 +52,18 @@ operator()(const MontType& mf) const
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
 #if HURCHALLA_TARGET_BIT_WIDTH >= 64
-    // factorize_pollard_rho() should be the only user of this functor, and it
-    // will always use a native type when possible (e.g. on a 32 bit system it
-    // will switch from using a 64 bit type to instead use a 32 bit type if the
-    // modulus fits in the 32 bit type).  Thus the following conditional would
-    // always be false for a 64 bit target system, but the compiler won't know
-    // it and would still generate code.  We use the preprocessor ifdef above to
-    // to avoid generating code for a conditional that we know would always be
-    // false.  Even if we are wrong about this (because something changed in the
-    // future most likely), we'll still be okay because this conditional is used
-    // to run a more efficient version of the tests further below.  The tests
-    // further below will still produce a correct result.
+    // factorize_pollard_rho() should be the only user of this functor, and that
+    // template function will always use a native type when possible (e.g. on a
+    // 32 bit system it will switch from using a 64 bit type to instead use a 32
+    // bit type if the modulus fits in the 32 bit type).  Thus the following
+    // conditional would always be false for a 64 bit target system, but the
+    // compiler won't know this and would still generate code for the clause. 
+    // We use the preprocessor ifdef above to to avoid generating code for a
+    // conditional that we know would always be false.  Even if we are wrong
+    // about this (because something changed in the future most likely), we'll
+    // still be okay because this conditional is used to run a more efficient
+    // version of the tests further below.  The tests further below will still
+    // produce the correct result if they are run instead.
     if (mf.getModulus() < (static_cast<T>(1) << 32)) {
         constexpr std::size_t TOTAL_BASES = 2;
         constexpr std::size_t TRIAL_SIZE = 2;

@@ -116,7 +116,7 @@ trial_divide_mayer(T& div_result, T x, T n)
     T inv_n = inverse_mod_R(n);
     T m = static_cast<T>(static_cast<P>(x) * inv_n);
     T mn_lo;
-    T mn_hi = unsigned_multiply_to_hilo_product(&mn_lo, m, n);
+    T mn_hi = unsigned_multiply_to_hilo_product(mn_lo, m, n);
     div_result = m;
     return (mn_hi == 0);
 }

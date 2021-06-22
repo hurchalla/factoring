@@ -139,13 +139,10 @@ struct ImplIsPrimeIntensive<std::uint64_t, true, DUMMY> {
 };
 
 
-// This is a delegate struct.  Using a delegate avoids some compiler errors in
-// MSVC about implicit instantiation during definition of ImplIsPrimeIntensive.
-//
-// It implements 64 bit IsPrimeIntensive for the case that we don't particularly
-// expect the numbers we test will be prime
+// 64bit, specialized version for when we don't particularly expect the numbers
+// we test will be prime
 template <typename DUMMY>
-struct ImplIpi64Delegate {
+struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
     static_assert(std::is_same<DUMMY, void>::value, "");
     using T = std::uint64_t;
     bool operator()(T x) const
@@ -163,21 +160,47 @@ struct ImplIpi64Delegate {
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);
         HPBC_ASSERT2(x >= 2);
-        return detail::is_prime_miller_rabin_integral(x);
+
+// Visual Studio 2017 gets an internal compiler error (compiler bug) when
+// using TOTAL_BASES = 2.  VS2017 works if we set TOTAL_BASES = 3.
+#if !defined(_MSC_VER) || (_MSC_VER >= 1927)
+        constexpr std::size_t TOTAL_BASES = 2;
+        constexpr std::size_t TRIAL_SIZE = 1;
+#else
+        constexpr std::size_t TOTAL_BASES = 3;
+        constexpr std::size_t TRIAL_SIZE = 2;
+#endif
+
+#ifndef HURCHALLA_TARGET_BIT_WIDTH
+#  error "HURCHALLA_TARGET_BIT_WIDTH must be defined"
+#endif
+#if (HURCHALLA_TARGET_BIT_WIDTH <= 32)
+        if (x <= ut_numeric_limits<std::uint32_t>::max()) {
+            using U = std::uint32_t;
+            if (x < (static_cast<U>(1) << 30)) {
+                auto mf = MontgomeryQuarter<U>(static_cast<U>(x));
+                return MillerRabinMontgomery<decltype(mf), 32, TRIAL_SIZE,
+                                                     TOTAL_BASES>::is_prime(mf);
+            }
+            else {
+                auto mf = MontgomeryForm<U>(static_cast<U>(x));
+                return MillerRabinMontgomery<decltype(mf), 32, TRIAL_SIZE,
+                                                     TOTAL_BASES>::is_prime(mf);
+            }
+        }
+#endif
+        if (x < (static_cast<T>(1) << 62)) {
+            auto mf = MontgomeryQuarter<T>(x);
+            return MillerRabinMontgomery<decltype(mf), 64, TRIAL_SIZE,
+                                                 TOTAL_BASES>::is_prime(mf);
+        }
+        else {
+            auto mf = MontgomeryForm<T>(x);
+            return MillerRabinMontgomery<decltype(mf), 64, TRIAL_SIZE,
+                                                 TOTAL_BASES>::is_prime(mf);
+        }
     }
 };
-
-// 64bit, specialized version for when we don't particularly expect the numbers
-// we test will be prime
-template <typename DUMMY>
-struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
-    static_assert(std::is_same<DUMMY, void>::value, "");
-    using T = std::uint64_t;
-    const ImplIpi64Delegate<DUMMY> ipid64;
-    ImplIsPrimeIntensive() : ipid64() {}
-    bool operator()(T x) const { return ipid64(x); }
-};
-
 
 
 // primary template implementation.  Requires T is a 128 bit type
@@ -190,16 +213,16 @@ private:
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits == 128, "");
 #if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
-    const ImplIpi64Delegate<DUMMY> ipid64;
+    const ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> ipi64;
 public:
-    ImplIsPrimeIntensive() : ipid64() {}
+    ImplIsPrimeIntensive() : ipi64() {}
 #endif
 public:
     bool operator()(T x) const
     {
 #if (HURCHALLA_TARGET_BIT_WIDTH <= 64)
         if (x <= ut_numeric_limits<uint64_t>::max())
-            return ipid64(static_cast<std::uint64_t>(x));
+            return ipi64(static_cast<std::uint64_t>(x));
 #endif
         // For now, we won't do anything special for when we expect x is prime
         // or not prime (we ignore OPTIMIZE_PRIMES).  Currently the primality

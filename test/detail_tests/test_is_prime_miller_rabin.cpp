@@ -30,7 +30,7 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, super_simple_test) {
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
     using T = std::uint16_t;
-    for (T m= ut_numeric_limits<T>::max(); m >= 3; m= static_cast<T>(m-2)) {
+    for (T m = ut_numeric_limits<T>::max(); m >= 3; m = static_cast<T>(m-2)) {
         SCOPED_TRACE(testing::Message() << "m == " << m);
         MontgomeryForm<T> mf(m);
         EXPECT_TRUE(is_prime_miller_rabin(mf) == is_prime_wheel210(m));

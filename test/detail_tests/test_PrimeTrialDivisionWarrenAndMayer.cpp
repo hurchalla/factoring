@@ -72,11 +72,11 @@ void PTD_tests()
                                         static_cast<std::uint64_t>(next_prime));
 
     static_assert(!ut_numeric_limits<T>::is_signed);
-    T midpoint = (static_cast<T>(0) - 1)/2;
+    T midpoint = ut_numeric_limits<T>::max() / 2;
     if (midpoint % 2 == 0)
         ++midpoint;
 
-    T max = static_cast<T>(static_cast<T>(0) - 1);
+    T max = ut_numeric_limits<T>::max();
     if (max % 2 == 0)
         --max;
 

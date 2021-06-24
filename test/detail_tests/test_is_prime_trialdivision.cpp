@@ -92,7 +92,7 @@ void iptd_sized_tests(const SieveOfEratosthenes& sieve)
     static_assert(ut_numeric_limits<int>::digits
                   <= ut_numeric_limits<size_type>::digits);
 
-    T max = static_cast<T>(static_cast<T>(0) - 1);
+    T max = ut_numeric_limits<T>::max();
     T midpoint = static_cast<T>(max/2);
     T midpoint_minus50 = static_cast<T>(midpoint - 50);
     for (T x = 0; x < 255; ++x)

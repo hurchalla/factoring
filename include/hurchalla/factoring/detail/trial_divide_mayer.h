@@ -134,7 +134,7 @@ trial_divide_mayer(T& div_result, T x, T n)
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(n > 0);  // disallow division by 0
     HPBC_PRECONDITION2(n%2 == 1); // for consistency with trial_divide_mayer
-                                // above, though this version doesn't need evens
+                                 // above, though this version doesn't need odds
     using P = typename safely_promote_unsigned<T>::type;
     div_result = static_cast<T>(static_cast<P>(x) / n);
     // test whether the remainder (x - n*div_result) equals 0

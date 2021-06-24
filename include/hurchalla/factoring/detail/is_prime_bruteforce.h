@@ -26,7 +26,7 @@ constexpr bool is_prime_bruteforce(T x)
     T sqrtT = static_cast<T>(1) << (ut_numeric_limits<T>::digits / 2);
 
     // skip even factors- we already checked them
-    for (T f = 3; (f*f <= x) && (f < sqrtT); f = static_cast<T>(f + 2)) {
+    for (T f = 3; (f < sqrtT) && (f*f <= x); f = static_cast<T>(f + 2)) {
         if (x%f == 0) {
             HPBC_CONSTEXPR_ASSERT(f < x);
             return false;

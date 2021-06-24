@@ -138,7 +138,7 @@ TEST(HurchallaFactoringWheelFactorization210, basic_tests_16) {
 
 TEST(HurchallaFactoringWheelFactorization210, basic_tests_32) {
     using U = std::uint32_t;
-    std::vector<U> answer = { 2, 3, 5, 13, 17 };
+    std::vector<U> answer = { 2, 3, 5, 13, 13, 17, 101 };
     // multiply all the factors in answer to get the number to factorize.
     U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
                                                       std::multiplies<U>());
@@ -148,7 +148,7 @@ TEST(HurchallaFactoringWheelFactorization210, basic_tests_32) {
 
 TEST(HurchallaFactoringWheelFactorization210, basic_tests_64) {
     using U = std::uint64_t;
-    std::vector<U> answer = { 2, 3, 5, 13, 17 };
+    std::vector<U> answer = { 2, 3, 5, 13, 17, 101, 101, 131 };
     // multiply all the factors in answer to get the number to factorize.
     U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
                                                       std::multiplies<U>());
@@ -159,7 +159,7 @@ TEST(HurchallaFactoringWheelFactorization210, basic_tests_64) {
 #ifdef __SIZEOF_INT128__
 TEST(HurchallaFactoringWheelFactorization210, basic_tests_128) {
     using U = __uint128_t;
-    std::vector<U> answer = { 2, 3, 5, 13, 17 };
+    std::vector<U> answer = { 2, 2, 3, 5, 13, 17, 101, 131, 157, 157 };
     // multiply all the factors in answer to get the number to factorize.
     U x = std::accumulate(answer.begin(), answer.end(), static_cast<U>(1),
                                                       std::multiplies<U>());

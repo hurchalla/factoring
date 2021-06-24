@@ -4,11 +4,13 @@
 
 
 // factorize_pollard_rho.h by default uses PollardRhoBrentTrial.
-// If you instead want to test one of the experimental Pollard-Rho trials in
-// the detail/experimental folder, uncomment the #define below and set the
-// name to the experimental trial you want to use.  As an example, the
-// commented-out #define below is set to PollardRhoTrial.  Ordinarily there's
-// no reason to test any experimental trials.
+// If for some reason you instead want to test one of the experimental Pollard-
+// Rho trials in the detail/experimental folder, then uncomment the #define
+// below and specify the name of the experimental trial that you want to use.
+// As an example, the commented-out #define below specifies the name
+// PollardRhoTrial.  Ordinarily there's no reason for you to test any of the
+// experimental trials.
+
 //#define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoTrial
 
 

@@ -460,6 +460,7 @@ gcc_asan="-fsanitize=address"
 # <LANG>_INCLUDE_WHAT_YOU_USE
 # LINK_WHAT_YOU_USE
 
+# fuzz testing
 
 # valgrind/purity
 

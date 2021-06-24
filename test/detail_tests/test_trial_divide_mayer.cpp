@@ -42,12 +42,12 @@ template <typename T>
 void trial_divide_typed_tests()
 {
     static_assert(!ut_numeric_limits<T>::is_signed);
-    T midpoint = (static_cast<T>(0) - 1)/2;
+    T midpoint = ut_numeric_limits<T>::max() / 2;
     if (midpoint % 2 == 0)
         ++midpoint;
     T midpoint_minus10 = static_cast<T>(midpoint - 10);
 
-    T max = static_cast<T>(static_cast<T>(0) - 1);
+    T max = ut_numeric_limits<T>::max();
     if (max % 2 == 0)
         --max;
 

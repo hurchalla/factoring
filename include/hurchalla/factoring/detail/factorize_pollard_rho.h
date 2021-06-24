@@ -156,6 +156,7 @@ OutputIt factorize_pollard_rho(OutputIt iter, T x,
         return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
                                                 threshold_always_prime, base_c);
 #else
+        static_assert(ut_numeric_limits<U>::digits >= 2);
         U Udiv4 = static_cast<U>(static_cast<U>(1) <<
                                             (ut_numeric_limits<U>::digits - 2));
         if (x < Udiv4) {
@@ -178,6 +179,7 @@ OutputIt factorize_pollard_rho(OutputIt iter, T x,
         return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
                                                 threshold_always_prime, base_c);
 #else
+        static_assert(ut_numeric_limits<T>::digits >= 2);
         T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
                                             (ut_numeric_limits<T>::digits - 2));
         if (x < Rdiv4) {

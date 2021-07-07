@@ -648,25 +648,17 @@ bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
 
 // Implementation Notes: there are three general principles guiding the choices
 // in the default functions below.
-// First, we avoid optimizing speed via choosing to use a small number of bases,
-// whenever this would require a large hash table to be used.  We can't assume
-// large memory and cache usage would be justified for an average caller.
-// Nevertheless, we do use this optimization for the defaults if the associated
-// hash table is tiny (<= 320 bytes).
-// Second, in order to minimize the compiled machine code size, we try to avoid
-// causing additional function template instantiations when it's reasonable.
-// For example, the 64bit is_prime_miller_rabin template function below has an
-// optimization to call is_prime_miller_rabin64_3_350269456337 which fits nicely
-// with this guideline because the called function needs instantiations of
-// mr_trial() with TRIAL_SIZE 1 and 2 - those exact same instantiations are
-// also needed by the template function's MillerRabinMontgomery::is_prime call.
-// Thus it causes very little increase in machine code size.
-// Third, we normally choose an odd number of TOTAL_BASES and a TRIAL_SIZE of
+// First, we avoid using large hash tables to optimize speed (specifying a small
+// number of bases means you get large tables).  We can't assume large memory
+// and cache usage would be justified for the average caller.  Nevertheless, we
+// do use the hashed bases optimization for the defaults if the associated hash
+// table is tiny (<= 320 bytes).
+// Second, we normally choose an odd number of TOTAL_BASES and a TRIAL_SIZE of
 // 2, which ensures that the first miller-rabin trial has a trial size of 1 and
 // all the rest have a trial size of 2.  The first trial will almost always be
 // able to detect a composite number, so we maximize its speed at doing this by
 // having it check only one base.  If it does not detect a number to be
-// composite, it is usually because the number is a prime, and so we assume it's
+// composite, it is usually because the number is prime, and so we assume it's
 // unlikely that any of the further trials would detect composite-ness (which
 // would let the test end early without running all trials).  Instead we assume
 // all the remaining trials will probably run, and so for all remaining trials
@@ -689,6 +681,14 @@ bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
 // compared to TRIAL_SIZE 1, due to better instruction level parallelism.  The
 // downside of a 3-4x increase in code size (for the involved functions) seems
 // too great a cost for defaults.
+// Third, in order to minimize the compiled machine code size, we try to avoid
+// causing additional function template instantiations when it's reasonable.
+// For example, the 64bit is_prime_miller_rabin template function below has an
+// optimization to call is_prime_miller_rabin64_3_350269456337 which fits nicely
+// with this guideline because the called function needs instantiations of
+// mr_trial() with TRIAL_SIZE 1 and 2 - those exact same instantiations are
+// also needed by the template function's MillerRabinMontgomery::is_prime call.
+// Thus it causes very little increase in machine code size.
 //
 // Just as a FYI reference, on Intel Haswell, performing a single miller-rabin
 // trial with TRIAL_SIZE 2 (processing 2 bases) takes roughly 1.2x longer than a
@@ -696,9 +696,9 @@ bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
 // 3 trial takes about 1.5x longer than a TRIAL_SIZE 1 trial.  A TRIAL_SIZE 4
 // trial takes about 1.85x longer than a TRIAL_SIZE 1 trial.  So for Intel
 // Haswell, when processing the same number of total bases, TRIAL_SIZE 3 is
-// about double the speed of TRIAL_SIZE 1, and TRIAL_SIZE 4 is faster yet.
-// (This mostly ignores the more difficult to measure negative effects from
-// increased code size and increased instruction cache use, though.)
+// approximately double the speed of TRIAL_SIZE 1, and TRIAL_SIZE 4 is faster
+// yet.  (This mostly ignores the more difficult to measure negative effects
+// from increased code size and increased instruction cache use, though.)
 
 template <typename MontType>
 typename std::enable_if<

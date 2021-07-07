@@ -45,7 +45,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
     TEST(HurchallaFactoringFactorize, speed_test32) {
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;
-        for (T x = max; x >= max - 4000000; x = x-2) {
+        for (T x = max; x >= max - 8000000; x = x-2) {
             int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
@@ -57,7 +57,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
     TEST(HurchallaFactoringFactorize, speed_test64_small) {
         using T = std::uint64_t;
         T start = 1 + (static_cast<T>(1) << 33);
-        for (T x = start; x < start + 4000000; x = x+2) {
+        for (T x = start; x < start + 8000000; x = x+2) {
             int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
@@ -69,7 +69,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
     TEST(HurchallaFactoringFactorize, speed_test64) {
         using T = std::uint64_t;
         T max = ut_numeric_limits<T>::max();
-        for (T x = max; x >= max - 200000; x = x-2) {
+        for (T x = max; x >= max - 400000; x = x-2) {
             int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing

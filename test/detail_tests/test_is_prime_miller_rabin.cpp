@@ -44,27 +44,7 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
         using T = std::uint32_t;
         for (T m= ut_numeric_limits<T>::max(); m >= 3; m= static_cast<T>(m-2)) {
             MontgomeryForm<T> mf(m);
-#  if 1
             EXPECT_TRUE(is_prime_miller_rabin(mf) == is_prime_wheel210(m));
-#  else
-            // As of 10/20/20, find_factor_pollard_rho() is not yet implemented,
-            // so this section is blocked out with #if.  But once it's available
-            // it should be preferred over is_prime_wheel210(), since it should
-            // be far more efficient when m is believed to be composite:
-            bool is_pm = is_prime_miller_rabin(mf);
-            if (is_pm)
-                EXPECT_TRUE(is_prime_wheel210(m));
-            else {
-                int max_trials = 100;
-                // find_factor_pollard_rho() doesn't absolutely guarantee we
-                // will find a factor, but as max_trials becomes large, the
-                // probability becomes almost a certainty (if m is composite).
-                T f = find_factor_pollardrho(mf, max_trials);
-                // assume the returned factor is > 1 for composite m.
-                EXPECT_TRUE(f > 1 && m % f == 0) << "f==" << f <<
-                                                     ", m==" << m << "\n";
-            }
-#  endif
         }
     }
 #endif

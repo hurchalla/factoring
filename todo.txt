@@ -12,3 +12,9 @@ MontgomeryForm - force_inline on every function?
 NDEBUG defined for all release builds?
 Compare performance of asm to non-asm functions via the macros in modular
    arithmetic README
+
+gcc montgomery pow 2 base (miller-rabin) perf at -Os, vs -O1 -O2 or -O3.
+   why so slow? (inlining not happening)?
+   clang doesn't have the slowdown.
+   icc as I recall super-slows down at both -Os and -O1.
+   Could it be my Unroll class isn't working as desired at -Os?

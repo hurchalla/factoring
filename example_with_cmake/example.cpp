@@ -1,7 +1,7 @@
 
-// This example is intended for the case that you are not using CMake.
+// This example is intended for the case that you are using CMake.
 // If you haven't already, you need to follow the steps in the README.md
-// for "How to use the library" | "Without CMake"
+// for "How to use the library" | "With CMake"
 #include "hurchalla/factoring/factorize.h"
 #include <iostream>
 

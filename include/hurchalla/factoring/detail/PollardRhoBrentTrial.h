@@ -143,8 +143,11 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
     HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
 
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
+#if 0
     constexpr T pre_length = HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH;
-
+#else
+    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH + 2;
+#endif
     T distance = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
 
     V b = mf.getUnityValue();
@@ -194,6 +197,8 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
             V absValDiff;
             T j;
             for (j = 0; j < gcd_loop_length; ++j) {
+                b = mf.fmsub(b, b, negative_c);
+
                 HPBC_INVARIANT2(mf.convertOut(product) > 0);
                 // modular unordered subtract isn't the same as absolute value
                 // of a subtraction, but it works equally well for pollard rho.
@@ -215,7 +220,6 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
                     break;
                 }
                 product = result;
-                b = mf.fmsub(b, b, negative_c);
             }
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)

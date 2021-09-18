@@ -27,7 +27,7 @@ struct PollardRhoIsPrime {
 
 template <typename MontType>
 typename std::enable_if<
-      (ut_numeric_limits<typename MontType::T_type>::digits == 128), bool>::type
+   (ut_numeric_limits<typename MontType::IntegerType>::digits==128), bool>::type
 operator()(const MontType& mf) const
 {
     return is_prime_miller_rabin(mf);
@@ -44,10 +44,10 @@ operator()(const MontType& mf) const
 
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits == 64), bool>::type
+  (ut_numeric_limits<typename MontType::IntegerType>::digits == 64), bool>::type
 operator()(const MontType& mf) const
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
@@ -83,10 +83,10 @@ operator()(const MontType& mf) const
 
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits == 32), bool>::type
+  (ut_numeric_limits<typename MontType::IntegerType>::digits == 32), bool>::type
 operator()(const MontType& mf) const
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
@@ -98,10 +98,10 @@ operator()(const MontType& mf) const
 
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits < 32), bool>::type
+   (ut_numeric_limits<typename MontType::IntegerType>::digits < 32), bool>::type
 operator()(const MontType& mf) const
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);

@@ -130,11 +130,11 @@ T pollard_rho_brent_trial(T num, T c)
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
-{
-    using T = typename M::T_type;
-    using V = typename M::MontgomeryValue;
-    using C = typename M::CanonicalValue;
+  using T = typename M::IntegerType;
+  using V = typename M::MontgomeryValue;
+  using C = typename M::CanonicalValue;
+  T operator()(const M& mf, C c) const
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
 
@@ -206,7 +206,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
                 bool isZero;
                 // do montgomery multiplication of product*absValDiff, and set
                 // isZero to (mf.getCanonicalValue(result) == mf.getZeroValue())
-                V result = mf.multiplyIsZero(product, absValDiff, isZero);
+                V result = mf.multiply(product, absValDiff, isZero);
                 if (isZero) {
                     // Since result == 0, we know that absValDiff == 0 -or-
                     // product and absValDiff together had all the factors of
@@ -236,7 +236,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
         }
         distance = static_cast<T>(2 * distance);
     }
-}
+  }
 };
 
 

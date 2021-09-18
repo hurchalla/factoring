@@ -38,11 +38,11 @@ namespace hurchalla { namespace detail {
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentMontgomeryTrialParallel {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
-{
-    using T = typename M::T_type;
-    using V = typename M::MontgomeryValue;
-    using C = typename M::CanonicalValue;
+  using T = typename M::IntegerType;
+  using V = typename M::MontgomeryValue;
+  using C = typename M::CanonicalValue;
+  T operator()(const M& mf, C c) const
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
 
@@ -151,8 +151,8 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
                 gxiz = mf.fmsub(diffa2z, diffna3z, nega4z);
 
                 bool isZero, isZeroz;
-                V result = mf.multiplyIsZero(product, gxi, isZero);
-                V resultz = mf.multiplyIsZero(productz, gxiz, isZeroz);
+                V result = mf.multiply(product, gxi, isZero);
+                V resultz = mf.multiply(productz, gxiz, isZeroz);
                 if (isZero) {
                     // Since result == 0, we know that gxi == 0 -or-
                     // product and gxi together had all the factors of
@@ -172,12 +172,12 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
                     if (mf.getCanonicalValue(gxi) == mf.getZeroValue()) {
                         // if gxi == 0, backtrack slightly
                         V absValDiff1 = mf.unorderedSubtract(b, t1);
-                        V result2 = mf.multiplyIsZero(product, absValDiff1, isZero);
+                        V result2 = mf.multiply(product, absValDiff1, isZero);
                         if (isZero)
                             break;
                         product = result2;
                         V absValDiff3 = mf.unorderedSubtract(b, t3);
-                        V result3 = mf.multiplyIsZero(product, absValDiff3, isZero);
+                        V result3 = mf.multiply(product, absValDiff3, isZero);
                         if (isZero)
                             break;
                         product = result3;
@@ -203,12 +203,12 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
 #if 1
                     if (mf.getCanonicalValue(gxiz) == mf.getZeroValue()) {
                         V absValDiff1z = mf.unorderedSubtract(bz, t1z);
-                        V result2z = mf.multiplyIsZero(productz, absValDiff1z, isZeroz);
+                        V result2z = mf.multiply(productz, absValDiff1z, isZeroz);
                         if (isZeroz)
                             break;
                         productz = result2z;
                         V absValDiff3z = mf.unorderedSubtract(bz, t3z);
-                        V result3z = mf.multiplyIsZero(productz, absValDiff3z, isZeroz);
+                        V result3z = mf.multiply(productz, absValDiff3z, isZeroz);
                         if (isZeroz)
                             break;
                         productz = result3z;
@@ -226,7 +226,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
             }
 
             bool isZero3;
-            V result3 = mf.multiplyIsZero(product, productz, isZero3);
+            V result3 = mf.multiply(product, productz, isZero3);
             if (isZero3) {
                 // we know neither product nor productz are 0, due to loop
                 // invariant above.  So together they must have all factors,
@@ -253,7 +253,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
         }
         one_third_cycle_size = static_cast<T>(2*one_third_cycle_size);
     }
-}
+  }
 };
 
 

@@ -41,7 +41,7 @@ template <class MF, class PrimalityFunctor, class OutputIt, typename T>
 OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
                                              T threshold_always_prime, T base_c)
 {
-    using S = typename MF::T_type;
+    using S = typename MF::IntegerType;
     using C = typename MF::CanonicalValue;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");

@@ -172,12 +172,11 @@ T pollard_rho_trial(T num, T c)
 
 template <class M>
 struct PollardRhoTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
-{
-    using T = typename M::T_type;
-    using V = typename M::MontgomeryValue;
-    using C = typename M::CanonicalValue;
-
+  using T = typename M::IntegerType;
+  using V = typename M::MontgomeryValue;
+  using C = typename M::CanonicalValue;
+  T operator()(const M& mf, C c) const
+  {
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
     HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
@@ -214,7 +213,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
             bool isZero;
             // perform montgomery multiplication of product*absValDiff, and set
             // isZero to (mf.getCanonicalValue(result) == mf.getZeroValue()).
-            V result = mf.multiplyIsZero(product, absValDiff, isZero);
+            V result = mf.multiply(product, absValDiff, isZero);
             if (isZero) {
                 // Since result == 0, we know that absValDiff == 0 -or-
                 // product and absValDiff together had all the factors of
@@ -244,7 +243,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c) const
             break;
     }
     return 0;  // the sequence cycled before we could find a factor
-}
+  }
 };
 
 

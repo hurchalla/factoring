@@ -74,11 +74,11 @@ template <std::size_t TRIAL_SIZE, typename MontType>
 HURCHALLA_FLATTEN
 //typename std::enable_if<(TRIAL_SIZE != 1), bool>::type
 bool mr_trial(const MontType& mf,
-              const std::array<typename MontType::T_type, TRIAL_SIZE>& bases,
-              typename MontType::T_type d,
-              int r)
+            const std::array<typename MontType::IntegerType, TRIAL_SIZE>& bases,
+            typename MontType::IntegerType d,
+            int r)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     using V = typename MontType::MontgomeryValue;
     using C = typename MontType::CanonicalValue;
     static_assert(ut_numeric_limits<T>::is_integer, "");
@@ -157,12 +157,12 @@ template <std::size_t TRIAL_SIZE, typename MontType>
 HURCHALLA_FLATTEN
 typename std::enable_if<(TRIAL_SIZE == 1), bool>::type
 mr_trial(const MontType& mf,
-         const std::array<typename MontType::T_type, TRIAL_SIZE>& bases,
-         typename MontType::T_type d,
+         const std::array<typename MontType::IntegerType, TRIAL_SIZE>& bases,
+         typename MontType::IntegerType d,
          int r)
 {
     static_assert(TRIAL_SIZE == 1, "");
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
 
     auto zero = mf.getZeroValue();
@@ -245,7 +245,7 @@ miller_rabin_trials(
                 const std::array<B,TOTAL_BASES>& bases
                 )
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<B>::is_integer, "");
     static_assert(ut_numeric_limits<T>::max() >=
@@ -290,7 +290,7 @@ miller_rabin_trials(
                 const std::array<B,TOTAL_BASES>& bases
                 )
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<B>::is_integer, "");
     static_assert(ut_numeric_limits<T>::max() >=
@@ -389,7 +389,7 @@ template <typename MontType, int LOG2_MODULUS_LIMIT, std::size_t TRIAL_SIZE,
 struct MillerRabinMontgomery {
   static bool is_prime(const MontType& mf)
   {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // We restrict the allowed types of T to only those types for which this
@@ -421,7 +421,7 @@ template <typename MontType, std::size_t TRIAL_SIZE>
 struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
   static bool is_prime(const MontType& mf)
   {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
 
@@ -481,7 +481,7 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin32_2_360018361(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 32 bit or larger type should work, but we allow only the
@@ -503,7 +503,7 @@ bool is_prime_miller_rabin32_2_360018361(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin64_2_1050535501(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 64 bit or larger type should work, but we allow only the
@@ -525,7 +525,7 @@ bool is_prime_miller_rabin64_2_1050535501(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin64_3_350269456337(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 64 bit or larger type should work, but we allow only the
@@ -546,7 +546,7 @@ bool is_prime_miller_rabin64_3_350269456337(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin64_4_55245642489451(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 64 bit or larger type should work, but we allow only the
@@ -569,7 +569,7 @@ bool is_prime_miller_rabin64_4_55245642489451(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin64_5_7999252175582851(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 64 bit or larger type should work, but we allow only the
@@ -592,7 +592,7 @@ bool is_prime_miller_rabin64_5_7999252175582851(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 64 bit or larger type should work, but we allow only the
@@ -616,7 +616,7 @@ bool is_prime_miller_rabin64_6_585226005592931977(const MontType& mf)
 template <std::size_t TRIAL_SIZE, typename MontType>
 bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     // Technically any 128 bit or larger type should work, but we allow only the
@@ -702,10 +702,10 @@ bool is_prime_miller_rabin128_13_3317044064679887385961981(const MontType& mf)
 
 template <typename MontType>
 typename std::enable_if<
-      (ut_numeric_limits<typename MontType::T_type>::digits == 128), bool>::type
+   (ut_numeric_limits<typename MontType::IntegerType>::digits==128), bool>::type
 is_prime_miller_rabin(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
@@ -734,10 +734,10 @@ is_prime_miller_rabin(const MontType& mf)
 
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits == 64), bool>::type
+  (ut_numeric_limits<typename MontType::IntegerType>::digits == 64), bool>::type
 is_prime_miller_rabin(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
@@ -775,10 +775,10 @@ is_prime_miller_rabin(const MontType& mf)
 
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits == 32), bool>::type
+  (ut_numeric_limits<typename MontType::IntegerType>::digits == 32), bool>::type
 is_prime_miller_rabin(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
@@ -811,10 +811,10 @@ is_prime_miller_rabin(const MontType& mf)
 // you are already using the miller-rabin tests in this file.
 template <typename MontType>
 typename std::enable_if<
-       (ut_numeric_limits<typename MontType::T_type>::digits == 16), bool>::type
+  (ut_numeric_limits<typename MontType::IntegerType>::digits == 16), bool>::type
 is_prime_miller_rabin(const MontType& mf)
 {
-    using T = typename MontType::T_type;
+    using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);

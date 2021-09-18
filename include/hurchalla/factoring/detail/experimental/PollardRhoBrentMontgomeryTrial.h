@@ -38,11 +38,11 @@ namespace hurchalla { namespace detail {
 // hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentMontgomeryTrial {
-typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
-{
-    using T = typename M::T_type;
-    using V = typename M::MontgomeryValue;
-    using C = typename M::CanonicalValue;
+  using T = typename M::IntegerType;
+  using V = typename M::MontgomeryValue;
+  using C = typename M::CanonicalValue;
+  T operator()(const M& mf, C c) const
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
 
@@ -124,7 +124,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
                 V diffna3 = mf.subtract(b2, nega3);
                 gxi = mf.fmsub(diffa2, diffna3, nega4);
                 bool isZero;
-                V result = mf.multiplyIsZero(product, gxi, isZero);
+                V result = mf.multiply(product, gxi, isZero);
                 if (isZero) {
                     // Since result == 0, we know that gxi == 0 -or-
                     // product and gxi together had all the factors of
@@ -142,12 +142,12 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
                     if (mf.getCanonicalValue(gxi) == mf.getZeroValue()) {
                         // if gxi == 0, backtrack slightly
                         V absValDiff1 = mf.unorderedSubtract(b, t1);
-                        V result2 = mf.multiplyIsZero(product, absValDiff1, isZero);
+                        V result2 = mf.multiply(product, absValDiff1, isZero);
                         if (isZero)
                             break;
                         product = result2;
                         V absValDiff3 = mf.unorderedSubtract(b, t3);
-                        V result3 = mf.multiplyIsZero(product, absValDiff3, isZero);
+                        V result3 = mf.multiply(product, absValDiff3, isZero);
                         if (isZero)
                             break;
                         product = result3;
@@ -185,7 +185,7 @@ typename M::T_type operator()(const M& mf, typename M::CanonicalValue c)
         }
         one_third_cycle_size = static_cast<T>(2*one_third_cycle_size);
     }
-}
+  }
 };
 
 

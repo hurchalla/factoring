@@ -45,8 +45,12 @@ It may help to view code I wrote for the process:
 See the comments at the beginning of main() for info on the command line arguments.
 
 
-// This code is distributed under the MIT Open Source License, as detailed
-// by the file "LICENSE.TXT" in the root of this repository
+// Copyright (c) 2020-2022 Jeffrey Hurchalla.
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
 
 // This code uses my github repos: factoring, modular_arithmetic, and util
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"

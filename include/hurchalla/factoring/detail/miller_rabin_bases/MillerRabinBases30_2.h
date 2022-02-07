@@ -18,9 +18,10 @@ namespace hurchalla { namespace detail {
 
 // This 8 byte hash table lets you determine the primality of any unsigned int
 // number less than (1<<30), via miller-rabin primality testing using 2 bases.
-// This test permits numbers that are even, as well as of course odd numbers.
-// Note however that montgomery arithmetic (which is one way to implement the
-// miller-rabin test) always requires odds.
+// This function can of course test an odd number for primality; it can also
+// test an even number if the macro HURCHALLA_MILLER_RABIN_ALLOW_EVEN_NUMBERS is
+// defined.  Note however that montgomery arithmetic (which is one way to
+// implement the miller-rabin test) always requires odds.
 
 // see MillerRabinBases.h for why this template uses a DUMMY parameter.
 template <typename DUMMY>

@@ -2,8 +2,8 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 // Author: Jeffrey Hurchalla
 
-#ifndef HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_ALT_H_INCLUDED
-#define HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_ALT_H_INCLUDED
+#ifndef HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_H_INCLUDED
+#define HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_H_INCLUDED
 
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h"

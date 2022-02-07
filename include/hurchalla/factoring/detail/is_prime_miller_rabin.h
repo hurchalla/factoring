@@ -15,6 +15,12 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_6.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases64_7.h"
 
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases63_2.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases63_3.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases63_4.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases63_5.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases63_6.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_3.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_4.h"
@@ -24,6 +30,9 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_3.h"
+
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases31_1.h"
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases31_2.h"
 
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases30_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases30_2.h"
@@ -340,12 +349,13 @@ miller_rabin_trials(
 // preconditions on the modulus size.
 // -----------------
 // Template parameters:
-// LOG2_MODULUS_LIMIT can be 128, 64, 62, 32, or 16, and creates a precondition
-// of modulus < (1 << LOG2_MODULUS_LIMIT).  Typically the type T satisfies this
-// at compile time (e.g. a type T of uint64_t with a LOG2_MODULUS_LIMIT of 64),
-// but if a type T bit-width is larger than LOG2_MODULUS_LIMIT, then the caller
-// needs to ensure at run-time that the precondition will be satisfied.
-// Primality testing is generally faster with smaller LOG2_MODULUS_LIMIT.
+// LOG2_MODULUS_LIMIT can be 128, 64, 63, 62, 32, 31, 30 or 16, and creates a
+// precondition of modulus < (1 << LOG2_MODULUS_LIMIT).  Typically the type T
+// satisfies this at compile time (e.g. a type T of uint64_t with a
+// LOG2_MODULUS_LIMIT of 64), but if a type T bit-width is larger than
+// LOG2_MODULUS_LIMIT, then the caller needs to ensure at run-time that the
+// precondition will be satisfied.  Primality testing is generally faster as you
+// decrease the LOG2_MODULUS_LIMIT.
 // The TOTAL_BASES valid choices depend upon the choice of LOG2_MODULUS_LIMIT.
 // Here are the valid combinations of LOG2_MODULUS_LIMIT and TOTAL_BASES, along
 // with the resulting internal hash table size.  (Roughly speaking, using fewer
@@ -354,18 +364,33 @@ miller_rabin_trials(
 //   16 bit LOG2_MODULUS_LIMIT, 1 base TOTAL_BASES - 8 byte hash table
 //   16 bit, 2 bases - 0 bytes (no hash table used)
 //
+//   30 bit, 1 base - 320 byte hash table
+//   30 bit, 2 bases - 8 byte hash table
+//
+//   31 bit, 1 base - 384 byte hash table
+//   31 bit, 2 bases - 12 byte hash table
+//
 //   32 bit, 1 base - 512 byte hash table
-//   32 bit, 2 bases - 16 bytes
+//   32 bit, 2 bases - 16 byte hash table
 //   32 bit, 3 bases - 0 bytes (no hash table used)
 //
 //   62 bit, 2 bases - 240 KB hash table
 //   62 bit, 3 bases - 16 KB hash table
+//   62 bit, 4 bases - 1.4375 KB hash table
+//   62 bit, 5 bases - 192 byte hash table
+//   62 bit, 6 bases - 20 byte hash table
+//
+//   63 bit, 2 bases - 320 KB hash table
+//   63 bit, 3 bases - 19 KB hash table
+//   63 bit, 4 bases - 2 KB hash table
+//   63 bit, 5 bases - 256 byte hash table
+//   63 bit, 6 bases - 16 byte hash table
 //
 //   64 bit, 2 bases - 448 KB hash table
-//   64 bit, 3 bases - 25.5 KB
-//   64 bit, 4 bases - 2.75 KB
-//   64 bit, 5 bases - 320 bytes
-//   64 bit, 6 bases - 40 bytes
+//   64 bit, 3 bases - 25.5 KB hash table
+//   64 bit, 4 bases - 2.75 KB hash table
+//   64 bit, 5 bases - 320 byte hash table
+//   64 bit, 6 bases - 40 byte hash table
 //   64 bit, 7 bases - 0 bytes (no hash table used)
 //
 //   128 bit, 128 bases - 0 bytes (no hash table used, probabilistic testing)

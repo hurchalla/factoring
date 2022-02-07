@@ -8,6 +8,6 @@ clang++ -stdlib=libc++  -Wall -Wextra -Wpedantic  -ferror-limit=3  \
         -I/home/jeff/Desktop/modular_arithmetic/modular_arithmetic/include \
         -I/home/jeff/Desktop/modular_arithmetic/montgomery_arithmetic/include \
         -I/home/jeff/Desktop/util/include \
-        test_mr64_62_tables.cpp  -o test_mr64_62_tables
+        test_mr64_63_62_tables.cpp  -o test_mr64_63_62_tables
 
-./test_mr64_62_tables  strong_psps_to_2_64.txt
+./test_mr64_63_62_tables  strong_psps_to_2_64.txt

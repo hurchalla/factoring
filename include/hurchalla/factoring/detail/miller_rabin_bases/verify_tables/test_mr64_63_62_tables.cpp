@@ -1,3 +1,7 @@
+// --- This file is distributed under the MIT Open Source License, as detailed
+// by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
+
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
@@ -73,6 +77,7 @@ int main(int argc, char* argv[])
 
     std::cout << "all psps have been read\n";
 
+#if 1
     // test the bases that cover the full range of uint64_t
     for (auto psp : psps) {
         hurchalla::MontgomeryForm<decltype(psp)> mf(psp);
@@ -198,8 +203,113 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+#endif
 
 
+#if 1
+    // test the bases that allow a max of 63bit modulus
+
+    std::uint64_t Rdiv2 = (static_cast<std::uint64_t>(1) << 63);
+
+    for (auto psp : psps) {
+        if (psp >= Rdiv2)
+            continue;
+        hurchalla::MontgomeryForm<decltype(psp)> mf(psp);
+
+// this bunch all succeeded.
+        if (is_prime_mr<63, 6, 6>(mf)) {
+            std::cout << "failure 28a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 5, 6>(mf)) {
+            std::cout << "failure 29a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 4, 6>(mf)) {
+            std::cout << "failure 30a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 3, 6>(mf)) {
+            std::cout << "failure 31a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 2, 6>(mf)) {
+            std::cout << "failure 32a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 6>(mf)) {
+            std::cout << "failure 33a on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<63, 5, 5>(mf)) {
+            std::cout << "failure 34 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 4, 5>(mf)) {
+            std::cout << "failure 35a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 3, 5>(mf)) {
+            std::cout << "failure 36a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 2, 5>(mf)) {
+            std::cout << "failure 37a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 5>(mf)) {
+            std::cout << "failure 38a on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<63, 4, 4>(mf)) {
+            std::cout << "failure 39a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 3, 4>(mf)) {
+            std::cout << "failure 40a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 2, 4>(mf)) {
+            std::cout << "failure 41a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 4>(mf)) {
+            std::cout << "failure 42a on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<63, 3, 3>(mf)) {
+            std::cout << "failure 43a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 2, 3>(mf)) {
+            std::cout << "failure 44a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 3>(mf)) {
+            std::cout << "failure 45a on " << psp << "\n";
+            return 1;
+        }
+
+// this bunch all succeeded.
+        if (is_prime_mr<63, 2, 2>(mf)) {
+            std::cout << "failure 46a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 2>(mf)) {
+            std::cout << "failure 47a on " << psp << "\n";
+            return 1;
+        }
+    }
+#endif
+
+
+#if 1
     // test the bases that allow a max of 62bit modulus
 
     std::uint64_t Rdiv4 = (static_cast<std::uint64_t>(1) << 62);
@@ -299,7 +409,7 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
-
+#endif
 
 
     std::cout << "success\n";

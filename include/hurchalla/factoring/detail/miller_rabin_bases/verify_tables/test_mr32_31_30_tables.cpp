@@ -1,3 +1,7 @@
+// --- This file is distributed under the MIT Open Source License, as detailed
+// by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
+
 
 // normally we wouldn't define this, since there's almost never a reason to
 // test any even number for primality, but here we want to verify that the
@@ -53,11 +57,13 @@ int main()
     std::cout << "started\n";
 
     constexpr uint64_t LIMIT_U32 = static_cast<uint64_t>(1) << 32;
+    constexpr uint64_t LIMIT_U31 = static_cast<uint64_t>(1) << 31;
     constexpr uint64_t LIMIT_U30 = static_cast<uint64_t>(1) << 30;
     auto primevec = init_primes(LIMIT_U32);
 
     std::cout << "primes are initialized\n";
 
+#if 1
 // this bunch all succeeded.
     // -----Test 3 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
@@ -116,8 +122,9 @@ int main()
         }
     }
     std::cout << "3 base MR for the number 2 passed verification\n";
+#endif
 
-
+#if 1
 // this bunch all succeeded.
     // -----Test 2 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
@@ -130,6 +137,16 @@ int main()
         if (is_prime_mr<32, 1, 2>(mf) != primevec[i]) {
             std::cout << "failure 11 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U31) {
+            if (is_prime_mr<31, 2, 2>(mf) != primevec[i]) {
+                std::cout << "failure 10.5 on " << i << "\n";
+                return 1;
+            }
+            if (is_prime_mr<31, 1, 2>(mf) != primevec[i]) {
+                std::cout << "failure 11.5 on " << i << "\n";
+                return 1;
+            }
         }
         if (i < LIMIT_U30) {
             if (is_prime_mr<30, 2, 2>(mf) != primevec[i]) {
@@ -158,6 +175,16 @@ int main()
             std::cout << "failure 15 on " << i << "\n";
             return 1;
         }
+        if (i < LIMIT_U31) {
+            if (is_prime_mr<31, 2, 2>(mf)) {
+                std::cout << "failure 14.5 on " << i << "\n";
+                return 1;
+            }
+            if (is_prime_mr<31, 1, 2>(mf)) {
+                std::cout << "failure 15.5 on " << i << "\n";
+                return 1;
+            }
+        }
         if (i < LIMIT_U30) {
             if (is_prime_mr<30, 2, 2>(mf)) {
                 std::cout << "failure 16 on " << i << "\n";
@@ -182,6 +209,16 @@ int main()
             std::cout << "failure 19 on " << i << "\n";
             return 1;
         }
+        if (i < LIMIT_U31) {
+            if (!is_prime_mr<31, 2, 2>(mf)) {
+                std::cout << "failure 18.5 on " << i << "\n";
+                return 1;
+            }
+            if (!is_prime_mr<31, 1, 2>(mf)) {
+                std::cout << "failure 19.5 on " << i << "\n";
+                return 1;
+            }
+        }
         if (i < LIMIT_U30) {
             if (!is_prime_mr<30, 2, 2>(mf)) {
                 std::cout << "failure 20 on " << i << "\n";
@@ -194,8 +231,9 @@ int main()
         }
     }
     std::cout << "2 base MR for the number 2 passed verification\n";
+#endif
 
-
+#if 1
 // this bunch all succeeded.
     // -----Test 1 base uint32_t miller-rabin-----
     for (std::uint64_t i = 3; i < LIMIT_U32; i += 2) {
@@ -204,6 +242,12 @@ int main()
         if (is_prime_mr<32, 1, 1>(mf) != primevec[i]) {
             std::cout << "failure 22 on " << i << "\n";
             return 1;
+        }
+        if (i < LIMIT_U31) {
+            if (is_prime_mr<31, 1, 1>(mf) != primevec[i]) {
+                std::cout << "failure 22.5 on " << i << "\n";
+                return 1;
+            }
         }
         if (i < LIMIT_U30) {
             if (is_prime_mr<30, 1, 1>(mf) != primevec[i]) {
@@ -224,6 +268,12 @@ int main()
             std::cout << "failure 24 on " << i << "\n";
             return 1;
         }
+        if (i < LIMIT_U31) {
+            if (is_prime_mr<31, 1, 1>(mf)) {
+                std::cout << "failure 24.5 on " << i << "\n";
+                return 1;
+            }
+        }
         if (i < LIMIT_U30) {
             if (is_prime_mr<30, 1, 1>(mf)) {
                 std::cout << "failure 25 on " << i << "\n";
@@ -240,6 +290,12 @@ int main()
             std::cout << "failure 26 on " << i << "\n";
             return 1;
         }
+        if (i < LIMIT_U31) {
+            if (!is_prime_mr<31, 1, 1>(mf)) {
+                std::cout << "failure 26.5 on " << i << "\n";
+                return 1;
+            }
+        }
         if (i < LIMIT_U30) {
             if (!is_prime_mr<30, 1, 1>(mf)) {
                 std::cout << "failure 27 on " << i << "\n";
@@ -248,7 +304,7 @@ int main()
         }
     }
     std::cout << "1 base MR for the number 2 passed verification\n";
-
+#endif
 
     std::cout << "Complete - all tests succeeded.\n";
     return 0;

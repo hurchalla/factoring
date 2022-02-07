@@ -1,12 +1,20 @@
+// --- This file is distributed under the MIT Open Source License, as detailed
+// by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
 
-// Unfortunately, the only way to test MillerRabinBases64_3_alt.h is to define
-// the macro below, which causes is_prime_miller_rabin.h to #include the
-// desired alternative header, and not to #include of MillerRabinBases64_3.h.
-// The reason why this is necessary is that both those headers have an identical
-// class name of MillerRabinBases<64, 3, DUMMY>, which would cause a compile
-// error or undefined behavior (due to ODR) if both were included.
+
+// The only way to test MillerRabinBases64_3_alt.h is to define the macro below,
+// which causes MillerRabinBases64_3.h to #include the desired alternative
+// header.  This in turn causes its include guard macro to get defined, which
+// prevents the rest of MillerRabinBases64_3.h's contents from being used.
+// This unusual process is necessary because both headers contain an identical
+// class name MillerRabinBases<64, 3, DUMMY>, and the replication would cause a
+// compile error or undefined behavior (due to ODR) if both were used.
+//
+// The same is true for MillerRabinBases63_5_alt.h
 
 #define HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3 1
+#define HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES63_5 1
 
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
@@ -83,10 +91,11 @@ int main(int argc, char* argv[])
 
     std::cout << "all psps have been read\n";
 
+    std::uint64_t Rdiv2 = (static_cast<std::uint64_t>(1) << 63);
+
     for (auto psp : psps) {
         hurchalla::MontgomeryForm<decltype(psp)> mf(psp);
 
-// this bunch all succeeded.
         if (is_prime_mr<64, 3, 3>(mf)) {
             std::cout << "failure 5 on " << psp << "\n";
             return 1;
@@ -97,6 +106,31 @@ int main(int argc, char* argv[])
         }
         if (is_prime_mr<64, 1, 3>(mf)) {
             std::cout << "failure 7 on " << psp << "\n";
+            return 1;
+        }
+
+
+        if (psp >= Rdiv2)
+            continue;
+
+        if (is_prime_mr<63, 5, 5>(mf)) {
+            std::cout << "failure 34 on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 4, 5>(mf)) {
+            std::cout << "failure 35a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 3, 5>(mf)) {
+            std::cout << "failure 36a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 2, 5>(mf)) {
+            std::cout << "failure 37a on " << psp << "\n";
+            return 1;
+        }
+        if (is_prime_mr<63, 1, 5>(mf)) {
+            std::cout << "failure 38a on " << psp << "\n";
             return 1;
         }
     }

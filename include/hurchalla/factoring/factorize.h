@@ -19,8 +19,26 @@
 namespace hurchalla {
 
 
-// T can be any unsigned integral type <= 128 bits.
+// Factorize() uses the Pollar-Rho factorization algorithm, with Brent's
+// improvements.  See https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm
+// I have also made additional small novel improvements to the algorithm.
+// The code itself is highly optimized.
+// Prior to Pollard-Rho there is a small prime trial division stage.  Upon
+// beginning Pollard-Rho, we test for primality before trying to extract each
+// factor, by using the the deterministic Miller-Rabin algorithm - we usually
+// speed up this algorithm by using one of the very small hash tables (~100
+// bytes for example) from
+// factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
 //
+// This resulting factorization algorithm/function is likely to be the fastest
+// method available for factoring arbitrary 64 bit numbers.
+// [Again for arbitary inputs, Hart's One Line Factoring algorithm and/or
+// Lehman's method have a good chance to be fastest for factoring non-large
+// 32 bit numbers; ECM will likely be fastest for 128 bit and 256 bit numbers;
+// and for larger numbers still, see Quadratic Sieve and GNFS.]
+
+// ------------------------------------
+
 // Returns a std::array that contains all factors of x, and writes the total
 // number of factors to num_factors.  The array entries with index < num_factor
 // are the factors.
@@ -29,6 +47,7 @@ namespace hurchalla {
 // is uint32_t, then this function returns std::array<uint32_t, 32>.  (The bit
 // width has significance because it is impossible to have more factors than
 // type T's bit width.)
+// T can be any unsigned integral type <= 128 bits.
 template <typename T>
 std::array<T, ut_numeric_limits<T>::digits>
 factorize(T x, int& num_factors)
@@ -65,10 +84,9 @@ factorize(T x, int& num_factors)
 // type T of uint32_t would take 128 bytes, uint64_t would take 512 bytes, and
 // __uint128_t would take 2kb.
 //
-// T can be any unsigned integral type <= 128 bits.
-//
 // Returns a vector that contains all factors of x.  The size of the vector is
 // the number of factors.
+// T can be any unsigned integral type <= 128 bits.
 template <typename T>
 std::vector<T> factorize_to_vector(T x)
 {

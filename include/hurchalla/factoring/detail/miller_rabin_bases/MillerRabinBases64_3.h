@@ -2,6 +2,10 @@
 // by the file "LICENSE.TXT" in the root of this repository ---
 // Author: Jeffrey Hurchalla
 
+// purposely placed outside the include guard
+#ifdef HURCHALLA_CHOOSE_ALTERNATE_MILLER_RABIN_BASES64_3
+#include "hurchalla/factoring/detail/miller_rabin_bases/alternative_tables/MillerRabinBases64_3_alt.h"
+#endif
 #ifndef HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_H_INCLUDED
 #define HURCHALLA_FACTORING_MILLER_RABIN_BASES64_3_H_INCLUDED
 

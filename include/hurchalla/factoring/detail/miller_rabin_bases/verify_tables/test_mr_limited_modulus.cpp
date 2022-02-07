@@ -1,3 +1,7 @@
+// --- This file is distributed under the MIT Open Source License, as detailed
+// by the file "LICENSE.TXT" in the root of this repository ---
+// Author: Jeffrey Hurchalla
+
 
 // normally we wouldn't define this, since there's almost never a reason to
 // test any even number for primality, but here we want to verify that the

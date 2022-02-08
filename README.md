@@ -1,6 +1,6 @@
 # Factoring
 
-This is a factoring and primality testing library for C++17, optimized for 32 or 64 bit integer types and supporting integer types up to 128 bits.  It is a header-only library, designed for correctness and ideal performance.  Though 128 bit integers are supported, you should note that other algorithms would be more suitable for values much above 2^64.  The algorithms used in this library are described further below.  
+This is a factoring and primality testing library for C++17, optimized for 32 or 64 bit integer types and supporting integer types up to 128 bits.  It is a header-only library, designed for correctness and ideal performance.  Though 128 bit integers are supported, you should note that other algorithms would be more suitable for values much above (1<<64).  The algorithms used in this library are described further below.
 
 This library requires a compiler that supports C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
 

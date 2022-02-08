@@ -89,8 +89,8 @@ TEST(HurchallaFactoringFactorizeIntensiveUint32, basic_tests_and_hard_semiprimes
 
     // hard semiprimes
     U twoPow16 = static_cast<U>(1) << 16;
-    // use largest primes < 2^16:
-    // 2^16 minus { 15, 17, 39, 57, 87, 89, 99, 113, 117, 123 }
+    // use largest primes < (1<<16):
+    // (1<<16) minus { 15, 17, 39, 57, 87, 89, 99, 113, 117, 123 }
     std::vector<U> answer2 = { twoPow16 - 17, twoPow16 - 15 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer2));
     test_factorize(answer2, ipi);

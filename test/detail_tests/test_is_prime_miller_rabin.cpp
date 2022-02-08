@@ -79,7 +79,7 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
 }
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
-    // Populate a vector of some of the largest primes less than 2^64.
+    // Populate a vector of some of the largest primes less than (1<<64).
     // Primes obtained from  https://primes.utm.edu/lists/2small/0bit.html
     using std::uint64_t;
     uint64_t zero = 0;
@@ -131,7 +131,7 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
 
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
 TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow128) {
-    // Populate a vector of some of the largest primes less than 2^128.
+    // Populate a vector of some of the largest primes less than (1<<128).
     // Primes obtained from  https://primes.utm.edu/lists/2small/100bit.html
     __uint128_t zero = 0;
     // rely on wrap-around when subtracting on next line:

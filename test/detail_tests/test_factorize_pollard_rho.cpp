@@ -86,8 +86,8 @@ void test_factorize(const std::vector<T>& answer)
 TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes) {
     using U = std::uint64_t;
     U twoPow32 = static_cast<U>(1) << 32;
-    // use largest primes < 2^32:
-    // 2^32 minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
+    // use largest primes < (1<<32):
+    // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer = { twoPow32 - 99, twoPow32 - 65 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
     test_factorize(answer);
@@ -98,8 +98,8 @@ TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes) {
 TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes128_32) {
     using U = __uint128_t;
     U twoPow32 = static_cast<U>(1) << 32;
-    // use largest primes < 2^32:
-    // 2^32 minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
+    // use largest primes < (1<<32):
+    // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer =
                      { twoPow32-185, twoPow32-153, twoPow32-135, twoPow32-107 };
     test_factorize<U>(answer);

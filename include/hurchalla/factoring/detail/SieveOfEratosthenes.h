@@ -84,11 +84,11 @@ class SieveBitVector {
 // In most respects, having a std::vector<bool> member do this work is
 // preferable to having custom bit vector logic, but unfortunately on 32 bit
 // architectures std::vector<bool> doesn't always permit a large enough vector
-// to be created for our uses (std::vector<bool>::max_size() might be 2^31 - 1,
-// which isn't large enough.  Note that 2^31 - 1 is a much smaller limit to the
+// to be created for our uses (std::vector<bool>::max_size() might be (1<<31)-1,
+// which isn't large enough.  Note that (1<<31)-1 is a much smaller limit to the
 // vector<bool> length than a 32bit architecture would actually require, given
 // that vector<bool> uses approximately vectorlength/8 bytes of memory; for
-// example, a length of 2^31 would need only ~256MB).
+// example, a length of (1<<31) would need only ~256MB).
 #if HURCHALLA_TARGET_BIT_WIDTH > 32
     std::vector<bool> vb;
 public:

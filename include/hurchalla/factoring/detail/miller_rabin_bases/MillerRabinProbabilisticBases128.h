@@ -29,19 +29,19 @@ namespace hurchalla { namespace detail {
 // miller-rabin testing will ever declare that a composite number is prime after
 // completing all trials.  According to
 // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Miller%E2%80%93Rabin_test
-// if k is the number of bases, then the probability is 4^(-k) that all trials
-// will declare that a particular composite number is prime (it will never
-// declare a prime is composite).  So with 64 bases, if we tested every number
-// from 1 to 2^128, we might expect very roughly about 1 false declaration of
+// if k is the number of bases, then the probability is  pow(4,-k)  that all
+// trials will declare that a particular composite number is prime (it never
+// declares a prime is composite).  So with 64 bases, if we tested every number
+// from 1 to (1<<128), we might expect very roughly about 1 false declaration of
 // prime.  With an additional 64 bases (for a total of 128), the probability
 // that this single expected false declaration would still remain would be very
-// roughly 1/2^128, or 1 chance in 340282366920938463463374607431768211456.  See
-// the Wikipedia link's discussion of the conditional probability and Bayes'
+// roughly 1/(1<<128), or 1 chance in 340282366920938463463374607431768211456.
+// See the Wikipedia link's discussion of the conditional probability and Bayes'
 // theorem for some info on why I wouldn't be surprised if the true probability
 // is 100x more likely.  Yet even assuming it's 100000 times more likely, it
 // would have odds of 1 in a decillion (roughly one over the number of grains of
-// sand on earth, squared) that any number exists between 1 and 2^128 for which
-// it would deliver a wrong answer.
+// sand on earth, squared) that any number exists between 1 and (1<<128) for
+// which it would deliver a wrong answer.
 
 // see MillerRabinBases.h for why this template uses a DUMMY parameter.
 template <typename DUMMY=void>

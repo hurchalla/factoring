@@ -55,7 +55,8 @@ namespace hurchalla { namespace detail {
 // https://github.com/hurchalla/modular_arithmetic/blob/master/montgomery_arithmetic/include/hurchalla/montgomery_arithmetic/low_level_api/detail/platform_specific/README_REDC.md
 //
 // Using the linked REDC algorithm, REDC(x, R, n, inv_n) outputs a value
-// t ≡ x * R^(-1)  (mod n).  Multiplying both sides by R,  t*R ≡ x (mod n).
+// t ≡ x * R^(-1)  (mod n).  Again, we are using '^' to denote exponentiation.
+// Multiplying both sides by R,  t*R ≡ x (mod n).
 // Therefore if t ≡ 0 (mod n), then x ≡ 0 (mod n).
 // If instead we assume x ≡ 0 (mod n), then  t ≡ 0 * R^(-1) ≡ 0  (mod n);  by
 // the converse, if t !≡ 0 (mod n), then x !≡ 0 (mod n).

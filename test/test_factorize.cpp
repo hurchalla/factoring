@@ -122,8 +122,8 @@ void test_factorize(const std::vector<T>& answer)
 TEST(HurchallaFactoringFactorize, hard_semi_primes) {
     using U = std::uint64_t;
     U twoPow32 = static_cast<U>(1) << 32;
-    // use largest primes < 2^32:
-    // 2^32 minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
+    // use largest primes < (1<<32):
+    // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer = { twoPow32 - 17, twoPow32 - 5 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
     test_factorize(answer);
@@ -134,8 +134,8 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes) {
 TEST(HurchallaFactoringFactorize, hard_semi_primes128_32) {
     using U = __uint128_t;
     U twoPow32 = static_cast<U>(1) << 32;
-    // use largest primes < 2^32:
-    // 2^32 minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
+    // use largest primes < (1<<32):
+    // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer =
                       { twoPow32-99, twoPow32-65, twoPow32-17, twoPow32-5 };
     test_factorize<U>(answer);
@@ -144,8 +144,8 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_32) {
 TEST(HurchallaFactoringFactorize, hard_semi_primes128_42) {
     using U = __uint128_t;
     U twoPow42 = static_cast<U>(1) << 42;
-    // use largest primes < 2^42:
-    // 2^42 minus { 11, 17, 33, 53, 65, 143, 161, 165, 215, 227 }
+    // use largest primes < (1<<42):
+    // (1<<42) minus { 11, 17, 33, 53, 65, 143, 161, 165, 215, 227 }
     {
         std::vector<U> answer = { twoPow42-33, twoPow42-17, twoPow42-11 };
         test_factorize<U>(answer);
@@ -163,8 +163,8 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_42) {
 TEST(HurchallaFactoringFactorize, hard_semi_primes128_52) {
     using U = __uint128_t;
     U twoPow52 = static_cast<U>(1) << 52;
-    // use largest primes < 2^52:
-    // 2^52 minus { 47, 143, 173, 183, 197, 209, 269, 285, 335, 395 }
+    // use largest primes < (1<<52):
+    // (1<<52) minus { 47, 143, 173, 183, 197, 209, 269, 285, 335, 395 }
     {
         std::vector<U> answer = { twoPow52-143, twoPow52-47 };
         test_factorize<U>(answer);
@@ -178,8 +178,8 @@ TEST(HurchallaFactoringFactorize, hard_semi_primes128_52) {
 TEST(HurchallaFactoringFactorize, hard_semi_primes128_64) {
     using U = __uint128_t;
     U twoPow64 = static_cast<U>(1) << 64;
-    // use largest primes < 2^64:
-    // 2^64 minus { 59, 83, 95, 179, 189, 257, 279, 323, 353, 363  }
+    // use largest primes < (1<<64):
+    // (1<<64) minus { 59, 83, 95, 179, 189, 257, 279, 323, 353, 363  }
 //    std::vector<U> answer = { twoPow64-83, twoPow64-59 };
 //    std::vector<U> answer = { twoPow64-179, twoPow64-95 };
     {

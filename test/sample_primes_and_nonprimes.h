@@ -45,7 +45,7 @@ static std::uint64_t nonprime_numbers64[] = {
     UINT64_C(40000000027),
     UINT64_C(40000000025),
     UINT64_C(40000000024),
-    UINT64_C(8589934592),   // 2^33
+    UINT64_C(8589934592),   // (1<<33)
     UINT64_C(18446744073709551558),
     UINT64_C(18446744073709551555),
     UINT64_C(18446744073709551554),
@@ -61,7 +61,7 @@ static std::uint64_t nonprime_numbers64[] = {
 };
 
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
-// rely on 2^128 wrap-around in the subtractions below
+// rely on (1<<128) wrap-around in the subtractions below
 static __uint128_t prime_numbers128[] = {
     static_cast<__uint128_t>(0) - 159,
     static_cast<__uint128_t>(0) - 173,

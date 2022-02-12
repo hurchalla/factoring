@@ -11,7 +11,6 @@
 
 #include "hurchalla/factoring/detail/is_prime_miller_rabin.h"
 #include "hurchalla/factoring/greatest_common_divisor.h"
-#include "hurchalla/factoring/detail/PollardRhoTrial.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 
@@ -44,6 +43,7 @@ struct PollardRhoBrentMontgomeryTrial {
   using T = typename M::IntegerType;
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
+  using FV = typename M::FusingValue;
   T operator()(const M& mf, C c) const
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
@@ -65,30 +65,31 @@ struct PollardRhoBrentMontgomeryTrial {
     T one_third_cycle_size = ONE_THIRD_INITIAL_CYCLE_SIZE;
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
-    // negate c so that we can use fmsub inside the loop instead of fmadd (fmsub
-    // is very slightly more efficient).
+    // negate c so that we can use fusedSquareSub inside the loop instead of
+    // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
     C negative_c = mf.negate(c);
 
     for (T i = 0; i < PRE_CYCLE_SIZE; ++i)
-        b = mf.fmsub(b, b, negative_c);
+        b = mf.fusedSquareSub(b, negative_c);
 
     V product = mf.getUnityValue();
     while (true) {
         V t1 = b;
         // for negt2, we want -(b*b+c)
-        b = mf.multiply(b, b);
+        b = mf.square(b);
         b = mf.subtract(negative_c, b);
         V negt2 = b;
-        b = mf.fmsub(b, b, negative_c);
+        b = mf.fusedSquareSub(b, negative_c);
         V t3 = b;
         V a1 = mf.subtract(t3, negt2);
         V a2 = mf.add(a1, t1);
         V tmpna3 = mf.fmadd(a1, t1, negative_c);
         V nega3 = mf.subtract(mf.multiply(negt2, t3), tmpna3);
-        C nega4 = mf.getCanonicalValue(mf.multiply(a1, mf.add(negt2, nega3)));
+//        C nega4 = mf.getCanonicalValue(mf.multiply(a1, mf.add(negt2, nega3)));
+        FV nega4 = mf.getFusingValue(mf.multiply(a1, mf.add(negt2, nega3)));
 
         for (T i = 0; i < 3*one_third_cycle_size; ++i) {
-            b = mf.fmsub(b, b, negative_c);
+            b = mf.fusedSquareSub(b, negative_c);
         }
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
@@ -122,7 +123,7 @@ struct PollardRhoBrentMontgomeryTrial {
             T j;
             for (j = 0; j < gcd_loop_size; ++j) {
                 HPBC_INVARIANT2(mf.convertOut(product) > 0);
-                V b2 = mf.fmsub(b, b, negative_c);
+                V b2 = mf.fusedSquareSub(b, negative_c);
                 V diffa2 = mf.subtract(b, a2);
                 V diffna3 = mf.subtract(b2, nega3);
                 gxi = mf.fmsub(diffa2, diffna3, nega4);
@@ -171,12 +172,14 @@ struct PollardRhoBrentMontgomeryTrial {
                     break;
                 }
                 product = result;
-                b = mf.fmsub(b2, b2, negative_c);
-                b = mf.fmsub(b, b, negative_c);
+                b = mf.fusedSquareSub(b2, negative_c);
+                b = mf.fusedSquareSub(b, negative_c);
             }
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
-            T p = mf.template gcd_with_modulus<PrtGcdFunctor>(product);
+            T p = mf.gcd_with_modulus(product, [](auto x, auto y)
+                                    { return greatest_common_divisor(x, y); } );
+
             // Since product is in the range [1,num) and num is required to
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).

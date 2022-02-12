@@ -26,9 +26,6 @@ namespace hurchalla { namespace detail {
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD
 #  define HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD 608
 #endif
-#ifndef HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH
-#  define HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH 40
-#endif
 #ifndef HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH
 #  define HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH 19
 #endif
@@ -87,8 +84,8 @@ T pollard_rho_brent_trial(T num, T c)
         for (T i = 0; i < distance; i += gcd_threshold) {
             T gcd_loop_length = (gcd_threshold < distance - i) ? gcd_threshold
                                                                : distance - i;
-            T j, absValDiff;
-            for (j = 0; j < gcd_loop_length; ++j) {
+            T absValDiff;
+            for (T j = 0; j < gcd_loop_length; ++j) {
                 HPBC_INVARIANT2(1 <= product && product < num);
                 // set b := (b*b + c) % num, while ensuring no overflow
                 b = modular_multiplication_prereduced_inputs(b, b, num);
@@ -146,27 +143,24 @@ struct PollardRhoBrentTrial {
     HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
 
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
-#if 0
-    constexpr T pre_length = HURCHALLA_POLLARD_RHO_BRENT_PRE_LENGTH;
-#else
+    T advancement_len = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
     constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH + 2;
-#endif
-    T distance = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
 
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
-    // negate c so that we can use fmsub inside the loop instead of fmadd (fmsub
-    // is just slightly more efficient).
+
+    // negate c so that we can use fusedSquareSub inside the loop instead of
+    // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
     C negative_c = mf.negate(c);
 
     for (T i = 0; i < pre_length; ++i)
-        b = mf.fmsub(b, b, negative_c);
+        b = mf.fusedSquareSub(b, negative_c);
 
     V product = mf.getUnityValue();
     while (true) {
         V a_fixed = b;
-        for (T i = 0; i < distance; ++i) {
-            b = mf.fmsub(b, b, negative_c);
+        for (T i = 0; i < advancement_len; ++i) {
+            b = mf.fusedSquareSub(b, negative_c);
         }
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
@@ -177,9 +171,10 @@ struct PollardRhoBrentTrial {
         // which is <= sqrt(ut_numeric_limits<T>::max()).  Since the worst case
         // length for the smallest hidden cycle that we will eventually uncover
         // is a length no larger than the smallest factor, the variable
-        // distance will never grow larger than double that factor.  So since
-        // distance <= 2*smallestfactor <= 2*sqrt(ut_numeric_limits<T>::max())
-        // we know distance <= 2*sqrt(ut_numeric_limits<T>::max())
+        // advancement_len will never grow larger than double that factor.  So
+        // since advancement_len <= 2*smallestfactor, and
+        // 2*smallestfactor <= 2*sqrt(ut_numeric_limits<T>::max()),
+        // we know advancement_len <= 2*sqrt(ut_numeric_limits<T>::max()).
         //
         // Our only problem would be if gcd_threshold is (significantly) larger
         // than 1 << (ut_numeric_limits<T>::digits - 1), which perhaps could
@@ -190,17 +185,16 @@ struct PollardRhoBrentTrial {
         static_assert(gcd_threshold <
                       (static_cast<T>(1) << (ut_numeric_limits<T>::digits -1)));
 
-        for (T i = 0; i < distance; i = static_cast<T>(i + gcd_threshold)) {
+        for (T i=0; i < advancement_len; i = static_cast<T>(i+gcd_threshold)) {
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic pop
 #endif
-            T gcd_loop_length = (gcd_threshold < static_cast<T>(distance - i))
-                                ? gcd_threshold : static_cast<T>(distance - i);
+            T gcd_loop_len = (gcd_threshold < static_cast<T>(advancement_len-i))
+                           ? gcd_threshold : static_cast<T>(advancement_len-i);
             V absValDiff;
-            T j;
-            for (j = 0; j < gcd_loop_length; ++j) {
-                b = mf.fmsub(b, b, negative_c);
+            for (T j = 0; j < gcd_loop_len; ++j) {
+                b = mf.fusedSquareSub(b, negative_c);
 
                 HPBC_INVARIANT2(mf.convertOut(product) > 0);
                 // modular unordered subtract isn't the same as absolute value
@@ -237,7 +231,7 @@ struct PollardRhoBrentTrial {
             if (mf.getCanonicalValue(absValDiff) == mf.getZeroValue())
                 return 0; // the sequence cycled before we could find a factor
         }
-        distance = static_cast<T>(2 * distance);
+        advancement_len = static_cast<T>(2 * advancement_len);
     }
   }
 };

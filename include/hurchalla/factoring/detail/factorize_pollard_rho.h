@@ -9,9 +9,13 @@
 #define HURCHALLA_FACTORING_FACTORIZE_POLLARD_RHO_H_INCLUDED
 
 
+//#define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentSwitchingTrial
+
+
 #include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
 #ifdef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
 #  include "hurchalla/factoring/detail/experimental/PollardRhoTrial.h"
+#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentSwitchingTrial.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrial.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrialParallel.h"
 #else
@@ -106,7 +110,7 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
             // unlikely to happen that it's nearly impossible).
             // Meanwhile, we don't need to do anything here.
         }
-        cc = mf.getCanonicalValue(mf.add(cc,unity));
+        cc = mf.add(cc, unity);
     }
     // We went through every allowed value of i, but didn't find a factor.  This
     // is so unlikely that we could assert it never happens, since it's more

@@ -186,8 +186,8 @@ struct PollardRhoTrial {
 
     constexpr int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
 
-    // negate c so that we can use fmsub inside the loop instead of fmadd (fmsub
-    // is very slightly more efficient).
+    // negate c so that we can use fusedSquareSub inside the loop instead of
+    // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
     C negative_c = mf.negate(c);
 
     V a = mf.getUnityValue();
@@ -197,7 +197,7 @@ struct PollardRhoTrial {
 // Trial (although it does help Pollard-Rho Brent Trials).
     constexpr int PRE_CYCLE_SIZE = 48;
     for (int i = 0; i < PRE_CYCLE_SIZE; ++i)
-        a = mf.fmsub(a, a, negative_c);
+        a = mf.fusedSquareSub(a, negative_c);
 #endif
 
     V b = a;
@@ -206,9 +206,9 @@ struct PollardRhoTrial {
         V absValDiff;
         for (int i = 0; i < gcd_threshold; ++i) {
             HPBC_INVARIANT2(mf.convertOut(product) > 0);
-            b = mf.fmsub(b, b, negative_c);
-            b = mf.fmsub(b, b, negative_c);
-            a = mf.fmsub(a, a, negative_c);
+            b = mf.fusedSquareSub(b, negative_c);
+            b = mf.fusedSquareSub(b, negative_c);
+            a = mf.fusedSquareSub(a, negative_c);
 
             // modular unordered subtract isn't the same as absolute value of a
             // subtraction, but it works equally well for pollard rho.

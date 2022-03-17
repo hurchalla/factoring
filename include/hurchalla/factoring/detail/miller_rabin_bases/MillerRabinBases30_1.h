@@ -45,7 +45,7 @@ public:
         using std::uint32_t;
         std::array<std::uint16_t, 1> bases;
         uint32_t mask = (static_cast<uint32_t>(1) << 14) - 1u;
-        uint32_t hash_bucket = (((9*num) & mask) * 5) >> 9;
+        uint32_t hash_bucket = (((9u*num) & mask) * 5u) >> 9;
         bases[0] = table[hash_bucket];
         return bases;
     }

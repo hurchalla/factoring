@@ -22,8 +22,6 @@
 namespace hurchalla { namespace detail {
 
 
-namespace fz_detail {
-
 #ifndef HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
 #  define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
 //#  define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
@@ -36,10 +34,13 @@ namespace fz_detail {
 #endif
 
 
-template <class OutputIt, typename T, class PrimalityFunctor>
-OutputIt
-factorize_dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct impl_factorize {
+private:
+  template <class OutputIt, typename T, class PrimalityFunctor>
+  static OutputIt
+  dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits % 2 == 0, "");
@@ -53,7 +54,7 @@ factorize_dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
     constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
     T q, next_prime;
-    iter = factorize_trialdivision<HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE,
+    iter = factorize_trialdivision::call<HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE,
                       HURCHALLA_PR_TRIAL_DIVISION_SIZE>(iter, q, next_prime, x);
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this
     if (q == 1)   // if factorize_trialdivision() completely factored x
@@ -63,19 +64,17 @@ factorize_dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
     T threshold_always_prime = (next_prime < sqrtR) ?
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 
-    iter = factorize_pollard_rho(iter, q, is_prime_mf, threshold_always_prime);
+    iter = factorize_pollard_rho::call(iter, q, is_prime_mf,
+                                                        threshold_always_prime);
     return iter;
-}
-
-} // end namespace fz_detail
+  }
 
 
-
-template <typename T, class PrimalityFunctor>
-std::array<T, ut_numeric_limits<T>::digits>
-impl_factorize_to_array(T x, int& num_factors,
-                        const PrimalityFunctor& is_prime_mf)
-{
+public:
+  template <typename T, class PrimalityFunctor>
+  static std::array<T, ut_numeric_limits<T>::digits>
+  factorize_to_array(T x, int& num_factors, const PrimalityFunctor& is_prime_mf)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
 
@@ -99,30 +98,32 @@ impl_factorize_to_array(T x, int& num_factors,
         std::size_t factor_count;
     };
     FactorArrayAdapter faa(arr);
-    fz_detail::factorize_dispatch(std::back_inserter(faa), x, is_prime_mf);
+    dispatch(std::back_inserter(faa), x, is_prime_mf);
     num_factors = static_cast<int>(faa.size());
 
     HPBC_POSTCONDITION(num_factors > 0);
     HPBC_POSTCONDITION(static_cast<std::size_t>(num_factors) <= array_size);
     return arr;
-}
+  }
 
 
-template <typename T, class PrimalityFunctor>
-std::vector<T> impl_factorize_to_vector(T x, int max_num_factors,
-                                        const PrimalityFunctor& is_prime_mf)
-{
+  template <typename T, class PrimalityFunctor>
+  static std::vector<T> factorize_to_vector(T x, int max_num_factors,
+                                            const PrimalityFunctor& is_prime_mf)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
 
     std::vector<T> vec;
     vec.reserve(max_num_factors);
-    fz_detail::factorize_dispatch(std::back_inserter(vec), x, is_prime_mf);
+    dispatch(std::back_inserter(vec), x, is_prime_mf);
 
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
     return vec;
-}
+  }
+
+}; // end struct impl_factorize
 
 
 }} // end namespace

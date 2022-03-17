@@ -36,17 +36,103 @@ namespace hurchalla { namespace detail {
 
 
 // defined lower in this file
-template <class PrimalityFunctor, class OutputIt, typename T>
-OutputIt factorize_pollard_rho(OutputIt iter, T x,
-                               const PrimalityFunctor& is_prime_pr,
-                               T threshold_always_prime = 0, T base_c = 1);
+template <class MF, class PrimalityFunctor, class OutputIt, typename T>
+OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
+        const PrimalityFunctor& is_prime_pr, T threshold_always_prime, T base_c);
 
 
-namespace prf_detail {
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4127)
+#  pragma warning(disable : 4702)
+#endif
+
+// Dispatch function to the fastest  hurchalla_factorize_pr_internal  template
+// function instantiation available for x (parameterized on the fastest
+// MontgomeryForm for x).
+
+// Note: we use a struct with static functions in order to disallow ADL
+struct factorize_pollard_rho {
+  template <class PrimalityFunctor, class OutputIt, typename T>
+  static OutputIt call(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
+                                    T threshold_always_prime = 0, T base_c = 1)
+  {
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
+    HPBC_PRECONDITION2(x % 2 == 1);  // x odd is required for montgomery form
+
+    using S = sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
+
+    // factor using a native integer type if possible
+    if (ut_numeric_limits<T>::digits <= ut_numeric_limits<S>::digits ||
+        x <= ut_numeric_limits<S>::max()) {
+        using U = typename std::conditional<
+                    ut_numeric_limits<T>::digits < ut_numeric_limits<S>::digits,
+                    T, S>::type;
+#if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
+        using MF = MontgomeryStandardMathWrapper<U>;
+        return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+#else
+        static_assert(ut_numeric_limits<U>::digits >= 2);
+        U Udiv4 = static_cast<U>(static_cast<U>(1) <<
+                                            (ut_numeric_limits<U>::digits - 2));
+        if (x < Udiv4) {
+            using MF = MontgomeryQuarter<U>;
+            return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+        } else {
+            using MF = MontgomeryForm<U>;
+            return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+        }
+#endif
+    }
+    // If we reach this point, the following clause will be true.  We explicitly
+    // use an 'if' anyway, so that we can be sure the compiler will not generate
+    // any code for it when T's bit width <= HURCHALLA_TARGET_BIT_WIDTH.
+    if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
+#if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
+        using MF = MontgomeryStandardMathWrapper<T>;
+        return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+#else
+        static_assert(ut_numeric_limits<T>::digits >= 2);
+        T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
+                                            (ut_numeric_limits<T>::digits - 2));
+        if (x < Rdiv4) {
+            using MF = MontgomeryQuarter<T>;
+            return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+        } else {
+            using MF = MontgomeryForm<T>;
+            return hurchalla_factorize_pr_internal<MF>(iter, x, is_prime_pr,
+                                                threshold_always_prime, base_c);
+        }
+#endif
+    } else {
+        ::hurchalla::unreachable();
+        HPBC_ASSERT2(false);  // it ought to be impossible to reach this code.
+        return iter;
+    }
+#if defined(__INTEL_COMPILER)
+    // for some reason icc doesn't see that all paths return prior to this point
+    // so we'll uselessly return iter to quiet icc's warning/error
+    return iter;
+#endif
+  }
+};
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
+
+
 
 template <class MF, class PrimalityFunctor, class OutputIt, typename T>
-OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
-                                             T threshold_always_prime, T base_c)
+OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
+        const PrimalityFunctor& is_prime_pr, T threshold_always_prime, T base_c)
 {
     using S = typename MF::IntegerType;
     using C = typename MF::CanonicalValue;
@@ -92,13 +178,13 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
             // efficiency that it didn't, but any T value would be valid.
             T next_c = static_cast<T>(base_c + static_cast<P>(i) + 1);
             // Try to factor the factor (it may or may not be prime)
-            iter = factorize_pollard_rho(iter, tmp_factor, is_prime_pr,
-                                   threshold_always_prime, next_c);
+            iter = factorize_pollard_rho::call(iter, tmp_factor, is_prime_pr,
+                                               threshold_always_prime, next_c);
             // Next try to factor the quotient.
             // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
             T quotient = static_cast<T>(x/tmp_factor);  
-            iter = factorize_pollard_rho(iter, quotient, is_prime_pr,
-                                   threshold_always_prime, next_c);
+            iter = factorize_pollard_rho::call(iter, quotient, is_prime_pr,
+                                               threshold_always_prime, next_c);
             return iter;
         }
         else {
@@ -126,93 +212,8 @@ OutputIt factorize_pr(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
     // Since we didn't find a factor, fall back to slow trial division.
     // factorize_wheel210 in principle will always completely factor x, though
     // for values of x > (1<<64), it may be too slow to be usable in practice.
-    return factorize_wheel210(iter, x);
+    return factorize_wheel210::call(iter, x);
 }
-
-} // end namespace prf_detail
-
-
-
-#if defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4127)
-#  pragma warning(disable : 4702)
-#endif
-// Dispatch function to the fastest factorize_pr template function instantiation
-// available for x (parameterized on the fastest MontgomeryForm for x).
-template <class PrimalityFunctor, class OutputIt, typename T>
-OutputIt factorize_pollard_rho(OutputIt iter, T x,
-                               const PrimalityFunctor& is_prime_pr,
-                               T threshold_always_prime, T base_c)
-{
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
-    HPBC_PRECONDITION2(x % 2 == 1);  // x odd is required for montgomery form
-
-    using S = sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
-
-    // factor using a native integer type if possible
-    if (ut_numeric_limits<T>::digits <= ut_numeric_limits<S>::digits ||
-        x <= ut_numeric_limits<S>::max()) {
-        using U = typename std::conditional<
-                    ut_numeric_limits<T>::digits < ut_numeric_limits<S>::digits,
-                    T, S>::type;
-#if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
-        using MF = MontgomeryStandardMathWrapper<U>;
-        return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-#else
-        static_assert(ut_numeric_limits<U>::digits >= 2);
-        U Udiv4 = static_cast<U>(static_cast<U>(1) <<
-                                            (ut_numeric_limits<U>::digits - 2));
-        if (x < Udiv4) {
-            using MF = MontgomeryQuarter<U>;
-            return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-        } else {
-            using MF = MontgomeryForm<U>;
-            return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-        }
-#endif
-    }
-    // If we reach this point, the following clause will be true.  We explicitly
-    // use an 'if' anyway, so that we can be sure the compiler will not generate
-    // any code for it when T's bit width <= HURCHALLA_TARGET_BIT_WIDTH.
-    if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
-#if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
-        using MF = MontgomeryStandardMathWrapper<T>;
-        return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-#else
-        static_assert(ut_numeric_limits<T>::digits >= 2);
-        T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
-                                            (ut_numeric_limits<T>::digits - 2));
-        if (x < Rdiv4) {
-            using MF = MontgomeryQuarter<T>;
-            return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-        } else {
-            using MF = MontgomeryForm<T>;
-            return prf_detail::factorize_pr<MF>(iter, x, is_prime_pr,
-                                                threshold_always_prime, base_c);
-        }
-#endif
-    } else {
-        unreachable();
-        HPBC_ASSERT2(false);  // it ought to be impossible to reach this code.
-        return iter;
-    }
-#if defined(__INTEL_COMPILER)
-    // for some reason icc doesn't see that all paths return prior to this point
-    // so we'll uselessly return iter to quiet icc's warning/error
-    return iter;
-#endif
-}
-#if defined(_MSC_VER)
-#  pragma warning(pop)
-#endif
 
 
 }}  // end namespace

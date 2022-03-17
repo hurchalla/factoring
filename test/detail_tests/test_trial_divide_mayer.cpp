@@ -34,7 +34,7 @@ void trial_divide_test(T x, T divisor)
     EXPECT_TRUE(divisor % 2 == 1);   // required to use trial_divide_mayer
 
     T div_result;
-    bool isdivisible = trial_divide_mayer(div_result, x, divisor);
+    bool isdivisible = trial_divide_mayer::call(div_result, x, divisor);
     EXPECT_TRUE(isdivisible == (x % divisor == 0));
     if (isdivisible) {
         EXPECT_TRUE(div_result == x/divisor);

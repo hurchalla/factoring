@@ -9,7 +9,7 @@
 #define HURCHALLA_FACTORING_PRIME_TRIAL_DIVISION_WARREN_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/odd_primes.h"
+#include "hurchalla/factoring/detail/OddPrimes.h"
 #include "hurchalla/montgomery_arithmetic/low_level_api/inverse_mod_R.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -47,7 +47,8 @@ public:
         U prime = oddprimes[static_cast<std::size_t>(divisor_index)];
         // get the smallest type that can always square an element of oddprimes
         // without overflow.
-        using U2 = decltype(get_constant_squared<U, oddprimes[SIZE-1]>());
+        using U2 =
+              decltype(OddPrimes::get_constant_squared<U, oddprimes[SIZE-1]>());
         using P2 = typename safely_promote_unsigned<U2>::type;
         return static_cast<U2>(static_cast<P2>(prime) * static_cast<P2>(prime));
     }
@@ -55,7 +56,7 @@ public:
     // Returns the first prime larger than the last prime used by this class
     static constexpr auto nextPrimePastEnd()
     {
-        constexpr auto next = get_next_prime<U, oddprimes[SIZE-1]>();
+        constexpr auto next = OddPrimes::get_next_prime<U, oddprimes[SIZE-1]>();
         return next;
     }
 
@@ -64,7 +65,8 @@ public:
     {
         constexpr auto prime = nextPrimePastEnd();  // compile-time init
         // square the constant without overflow.
-        constexpr auto square = get_constant_squared<decltype(prime), prime>();
+        constexpr auto square =
+                      OddPrimes::get_constant_squared<decltype(prime), prime>();
         return square;
     }
 
@@ -89,13 +91,14 @@ public:
         // condition (tmp <= umax_div_prime)  is equivalent to testing
         // the condition (dividend % prime == 0).
         // And if the prime divides dividend, tmp is the quotient.  But tmp is
-        quotient = tmp;      // an unspecified value if (dividend % prime != 0).
+        // an unspecified value if (dividend % prime != 0).
+        quotient = tmp;
         return (tmp <= umax_div_prime);
     }
 
 private:
     // get the first N=SIZE odd primes
-    static constexpr auto oddprimes = get_odd_primes<SIZE>();
+    static constexpr auto oddprimes = OddPrimes::get_array<SIZE>();
 
     using U = typename decltype(oddprimes)::value_type;
     static_assert(ut_numeric_limits<U>::is_integer);
@@ -114,10 +117,11 @@ private:
                 const std::array<U, static_cast<std::size_t>(SIZE)>& odd_primes)
     {
         using P = typename safely_promote_unsigned<T>::type;
+        namespace hc = ::hurchalla;
         std::array<PrimeInfo, static_cast<std::size_t>(SIZE)> pia{};
         for (std::size_t i=0; i<SIZE; ++i) {
             HPBC_CONSTEXPR_ASSERT(odd_primes[i] % 2 == 1);
-            pia[i].inverse = inverse_mod_R(static_cast<T>(odd_primes[i]));
+            pia[i].inverse = hc::inverse_mod_R(static_cast<T>(odd_primes[i]));
             pia[i].umax_div_prime = static_cast<T>(
                    static_cast<P>(ut_numeric_limits<T>::max()) / odd_primes[i]);
         }

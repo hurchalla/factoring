@@ -119,23 +119,24 @@ T pollard_rho_trial(T num, T c)
     T product = 1;
     HPBC_ASSERT2(product < num);
 
+    namespace hc = ::hurchalla;
     while (true) {
         T absValDiff;
         for (int i = 0; i < gcd_threshold; ++i) {
             HPBC_INVARIANT2(1 <= product && product < num);
 
             // set a := (a*a + c) % num, while ensuring overflow doesn't happen.
-            a = modular_multiplication_prereduced_inputs(a, a, num);
-            a = modular_addition_prereduced_inputs(a, c, num);
+            a = hc::modular_multiplication_prereduced_inputs(a, a, num);
+            a = hc::modular_addition_prereduced_inputs(a, c, num);
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
-            b = modular_multiplication_prereduced_inputs(b, b, num);
-            b = modular_addition_prereduced_inputs(b, c, num);
+            b = hc::modular_multiplication_prereduced_inputs(b, b, num);
+            b = hc::modular_addition_prereduced_inputs(b, c, num);
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
-            b = modular_multiplication_prereduced_inputs(b, b, num);
-            b = modular_addition_prereduced_inputs(b, c, num);
+            b = hc::modular_multiplication_prereduced_inputs(b, b, num);
+            b = hc::modular_addition_prereduced_inputs(b, c, num);
 
             absValDiff = (a>b) ? a-b : b-a;
-            T result = modular_multiplication_prereduced_inputs(product,
+            T result = hc::modular_multiplication_prereduced_inputs(product,
                                                                absValDiff, num);
             if (result == 0) {
                 // Since result == 0, we know that absValDiff == 0 -or-
@@ -152,7 +153,7 @@ T pollard_rho_trial(T num, T c)
             }
             product = result;
         }
-        T p = greatest_common_divisor(product, num);
+        T p = hc::greatest_common_divisor(product, num);
         // Since product is in the range [1,num) and num is required to be > 1,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).
@@ -182,7 +183,7 @@ struct PollardRhoTrial {
   {
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
-    HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
+    HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
 
@@ -235,7 +236,7 @@ struct PollardRhoTrial {
         // The following is a more efficient way to compute
         // p = greatest_common_divisor(mf.convertOut(product), num)
         T p = mf.gcd_with_modulus(product, [](auto x, auto y)
-                                    { return greatest_common_divisor(x, y); } );
+                       { return ::hurchalla::greatest_common_divisor(x, y); } );
         // Since product is in the range [1,num) and num is required to be >1,
         // GCD will never return num or 0.  So we know the GCD will be in the
         // range [1, num).

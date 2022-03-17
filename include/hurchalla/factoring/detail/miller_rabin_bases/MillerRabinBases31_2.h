@@ -43,7 +43,7 @@ public:
         bases[0] = 41334;
         const std::array<std::uint16_t, 6> table =
                          { 554, 29078, 61981, 25681, 44173, 28415 };
-        std::uint32_t hash_bucket = ((num & 4095) * 3) >> 11;
+        std::uint32_t hash_bucket = ((num & 4095u) * 3u) >> 11;
         bases[1] = table[hash_bucket];
         return bases;
     }

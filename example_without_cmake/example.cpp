@@ -20,7 +20,7 @@
 
 int main()
 {
-   unsigned int x = 322;
+   unsigned int x = 322u;
 
    int num_factors;
    auto array = hurchalla::factorize(x, num_factors);

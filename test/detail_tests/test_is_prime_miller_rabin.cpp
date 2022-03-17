@@ -28,7 +28,7 @@ using namespace hurchalla::detail;
 TEST(HurchallaFactoringIsPrimeMillerRabin, super_simple_test) {
     std::uint64_t modulus = 53;
     MontgomeryForm<std::uint64_t> mf(modulus);
-    EXPECT_TRUE(is_prime_miller_rabin(mf));
+    EXPECT_TRUE(is_prime_miller_rabin::call(mf));
 }
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
@@ -36,7 +36,7 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
     for (T m = ut_numeric_limits<T>::max(); m >= 3; m = static_cast<T>(m-2)) {
         SCOPED_TRACE(testing::Message() << "m == " << m);
         MontgomeryForm<T> mf(m);
-        EXPECT_TRUE(is_prime_miller_rabin(mf) == is_prime_wheel210(m));
+        EXPECT_TRUE(is_prime_miller_rabin::call(mf) == is_prime_wheel210(m));
     }
 }
 
@@ -46,8 +46,8 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
     TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint32_t) {
         using T = std::uint32_t;
         for (T m= ut_numeric_limits<T>::max(); m >= 3; m= static_cast<T>(m-2)) {
-            MontgomeryForm<T> mf(m);
-            EXPECT_TRUE(is_prime_miller_rabin(mf) == is_prime_wheel210(m));
+           MontgomeryForm<T> mf(m);
+           EXPECT_TRUE(is_prime_miller_rabin::call(mf) == is_prime_wheel210(m));
         }
     }
 #endif
@@ -60,9 +60,9 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test1) {
     MontgomeryForm<T>    mFR(modulus);
     MontgomeryQuarter<T> mQR(modulus);
 
-    EXPECT_TRUE(is_prime_miller_rabin(mWM));
-    EXPECT_TRUE(is_prime_miller_rabin(mFR));
-    EXPECT_TRUE(is_prime_miller_rabin(mQR));
+    EXPECT_TRUE(is_prime_miller_rabin::call(mWM));
+    EXPECT_TRUE(is_prime_miller_rabin::call(mFR));
+    EXPECT_TRUE(is_prime_miller_rabin::call(mQR));
 }
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
@@ -73,9 +73,9 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
     MontgomeryForm<T>    mFR(modulus);
     MontgomeryQuarter<T> mQR(modulus);
 
-    EXPECT_FALSE(is_prime_miller_rabin(mWM));
-    EXPECT_FALSE(is_prime_miller_rabin(mFR));
-    EXPECT_FALSE(is_prime_miller_rabin(mQR));
+    EXPECT_FALSE(is_prime_miller_rabin::call(mWM));
+    EXPECT_FALSE(is_prime_miller_rabin::call(mFR));
+    EXPECT_FALSE(is_prime_miller_rabin::call(mQR));
 }
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
@@ -93,8 +93,8 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         using T = decltype(i);
         MontgomeryStandardMathWrapper<T> mWM(i);
         MontgomeryForm<T> mFR(i);
-        bool is_primeSM = is_prime_miller_rabin(mWM);
-        bool is_primeFR = is_prime_miller_rabin(mFR);
+        bool is_primeSM = is_prime_miller_rabin::call(mWM);
+        bool is_primeFR = is_prime_miller_rabin::call(mFR);
         if (i == primes[prime_index]) {
             EXPECT_TRUE(is_primeSM);
             EXPECT_TRUE(is_primeFR);
@@ -111,9 +111,9 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow64) {
         MontgomeryStandardMathWrapper<T> mWM(i);
         MontgomeryForm<T>    mFR(i);
         MontgomeryQuarter<T> mQR(i);
-        bool is_primeSM = is_prime_miller_rabin(mWM);
-        bool is_primeFR = is_prime_miller_rabin(mFR);
-        bool is_primeQR = is_prime_miller_rabin(mQR);
+        bool is_primeSM = is_prime_miller_rabin::call(mWM);
+        bool is_primeFR = is_prime_miller_rabin::call(mFR);
+        bool is_primeQR = is_prime_miller_rabin::call(mQR);
         if (i == primes[prime_index]) {
             EXPECT_TRUE(is_primeSM);
             EXPECT_TRUE(is_primeFR);
@@ -144,8 +144,8 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, primes_close_to_twoPow128) {
         using T = decltype(i);
         MontgomeryStandardMathWrapper<T> mWM(i);
         MontgomeryForm<T> mFR(i);
-        bool is_primeSM = is_prime_miller_rabin(mWM);
-        bool is_primeFR = is_prime_miller_rabin(mFR);
+        bool is_primeSM = is_prime_miller_rabin::call(mWM);
+        bool is_primeFR = is_prime_miller_rabin::call(mFR);
         if (i == primes[prime_index]) {
             EXPECT_TRUE(is_primeSM);
             EXPECT_TRUE(is_primeFR);

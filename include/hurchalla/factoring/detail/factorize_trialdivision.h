@@ -63,13 +63,13 @@ namespace hurchalla { namespace detail {
 // 2*SIZE bytes of memory).
 
 
-// overload for uint8_t (not a partial specialization, which is impossible)
-template <template<class,int> class TTD, int SIZE=54, class OutputIt>
-OutputIt factorize_trialdivision(OutputIt iter,
-                                 std::uint8_t& HURCHALLA_RESTRICT q,
-                                 std::uint8_t& HURCHALLA_RESTRICT next_prime,
-                                 std::uint8_t x)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct factorize_trialdivision {
+  // overload for uint8_t (not a partial specialization)
+  template <template<class,int> class TTD, int SIZE=54, class OutputIt>
+  static OutputIt call(OutputIt iter, std::uint8_t& HURCHALLA_RESTRICT q,
+                    std::uint8_t& HURCHALLA_RESTRICT next_prime, std::uint8_t x)
+  {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
 
@@ -114,15 +114,14 @@ OutputIt factorize_trialdivision(OutputIt iter,
     *iter++ = q;
     q = 1;   // we completely factored x
     return iter;
-}
+  }
 
 
-template <template<class,int>class TTD, int SIZE=54, class OutputIt, typename T>
-OutputIt factorize_trialdivision(OutputIt iter,
-                                 T& HURCHALLA_RESTRICT q,
-                                 T& HURCHALLA_RESTRICT next_prime,
-                                 T x)
-{
+  template <template<class,int>class TTD, int SIZE = 54, class OutputIt,
+            typename T>
+  static OutputIt call(OutputIt iter, T& HURCHALLA_RESTRICT q,
+                                          T& HURCHALLA_RESTRICT next_prime, T x)
+  {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     static_assert(SIZE > 1);
@@ -178,7 +177,8 @@ OutputIt factorize_trialdivision(OutputIt iter,
         q = 1;  // we completely factored x
     }
     return iter;
-}
+  }
+}; // end struct factorize_trialdivision
 
 
 }}  // end namespace

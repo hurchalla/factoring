@@ -50,7 +50,7 @@ public:
                                             6218, 51695, 6637, 43774, 14137 };
         static_assert(sizeof(table)/sizeof(table[0]) == 10, "");
         uint32_t mask = (static_cast<uint32_t>(1) << 17) - 1u;
-        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 5) >> 16;
+        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 5u) >> 16;
         bases[5] = table[hash_bucket];
         return bases;
     }

@@ -51,7 +51,7 @@ struct PollardRhoBrentMontgomeryTrialParallel {
 
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
-    HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
+    HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     // If we used INITIAL_VALUE>2, we'd need to mod it by num (or we'd need to
     // require num > INITIAL_VALUE)
@@ -245,7 +245,7 @@ struct PollardRhoBrentMontgomeryTrialParallel {
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
             T p = mf.gcd_with_modulus(result3, [](auto x, auto y)
-                                    { return greatest_common_divisor(x, y); } );
+                       { return ::hurchalla::greatest_common_divisor(x, y); } );
 
             // Since product is in the range [1,num) and num is required to
             // be > 1, GCD will never return num or 0.  So we know the GCD will

@@ -154,12 +154,12 @@ struct ImplIsPrimeIntensive<std::uint64_t, false, DUMMY> {
         // Using trial division on average boosts our performance (so long as x
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
-        bool isPrime = is_prime_trialdivision<
+        bool isPrime = is_prime_trialdivision::call<
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
             return isPrime;
-        // is_prime_trialdivision() should have successfully handled any even x,
+        // is_prime_trialdivision should have successfully handled any even x,
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);
         HPBC_ASSERT2(x >= 2);
@@ -239,16 +239,16 @@ public:
         // is not especially likely to be prime), because it avoids miller-rabin
         // for composites that have a small enough factor.
         bool success;
-        bool isPrime = is_prime_trialdivision<
+        bool isPrime = is_prime_trialdivision::call<
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_TYPE,
                          HURCHALLA_ISPRIME_INTENSIVE_TRIALDIV_SIZE>(x, success);
         if (success)
             return isPrime;
-        // is_prime_trialdivision() should have successfully handled any even x,
+        // is_prime_trialdivision should have successfully handled any even x,
         // and any x < 2.
         HPBC_ASSERT2(x % 2 != 0);
         HPBC_ASSERT2(x >= 2);
-        return detail::is_prime_miller_rabin_integral(x);
+        return is_prime_miller_rabin::call(x);
     }
 };
 

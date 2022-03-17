@@ -67,19 +67,19 @@ TEST(HurchallaFactoringIsPrimeIntensive, exhaustive_uint16_t) {
         IsPrimeIntensive<T, true> isprime;
         for (T x = 0; x < ut_numeric_limits<T>::max(); ++x) {
             SCOPED_TRACE(testing::Message() << "x == " << x);
-            EXPECT_TRUE(isprime(x) == is_prime_bruteforce(x));
+            EXPECT_TRUE(isprime(x) == is_prime_bruteforce::call(x));
         }
         T x = ut_numeric_limits<T>::max();
-        EXPECT_TRUE(isprime(x) == is_prime_bruteforce(x));
+        EXPECT_TRUE(isprime(x) == is_prime_bruteforce::call(x));
     }
     {
         IsPrimeIntensive<T, false> isprime;
         for (T x = 0; x < ut_numeric_limits<T>::max(); ++x) {
             SCOPED_TRACE(testing::Message() << "x == " << x);
-            EXPECT_TRUE(isprime(x) == is_prime_bruteforce(x));
+            EXPECT_TRUE(isprime(x) == is_prime_bruteforce::call(x));
         }
         T x = ut_numeric_limits<T>::max();
-        EXPECT_TRUE(isprime(x) == is_prime_bruteforce(x));
+        EXPECT_TRUE(isprime(x) == is_prime_bruteforce::call(x));
     }
 }
 

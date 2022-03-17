@@ -42,7 +42,7 @@ public:
         bases[0] = 2;
         bases[1] = 15;
         uint32_t mask = (static_cast<uint32_t>(1) << 24) - 1u;
-        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 11) >> 18;
+        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 11u) >>18;
         bases[2] = table[hash_bucket][0];
         bases[3] = table[hash_bucket][1];
         return bases;

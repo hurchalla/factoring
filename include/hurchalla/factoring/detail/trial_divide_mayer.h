@@ -96,54 +96,61 @@ namespace hurchalla { namespace detail {
 //        return true;
 
 
-// trial_divide_mayer():  returns true if n divides x, otherwise returns false.
+// trial_divide_mayer::call()
+// Returns true if n divides x, otherwise returns false.
 // If n divides x, then the quotient is placed in div_result.  If n
 // does not divide x, then the value of div_result is unspecified.
 //
 // Precondition: n must be odd.
 
-template <typename T>
-HURCHALLA_FLATTEN
-typename std::enable_if<(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
+// Note: we use a struct and static functions in order to disallow ADL
+struct trial_divide_mayer {
+
+  template <typename T>
+  static HURCHALLA_FLATTEN
+  typename std::enable_if<(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
                      ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH),
                  bool>::type
-// Use the special algorithm described above.
-// Note 'x' is the dividend and 'n' is the divisor.
-trial_divide_mayer(T& div_result, T x, T n)
-{
+  // Use the special algorithm described above.
+  // Note 'x' is the dividend and 'n' is the divisor.
+  call(T& div_result, T x, T n)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(n%2 == 1);  // required for calling inverse_mod_R
 
     using P = typename safely_promote_unsigned<T>::type;
 
-    T inv_n = inverse_mod_R(n);
+    T inv_n = ::hurchalla::inverse_mod_R(n);
     T m = static_cast<T>(static_cast<P>(x) * inv_n);
     T mn_lo;
-    T mn_hi = unsigned_multiply_to_hilo_product(mn_lo, m, n);
+    T mn_hi = ::hurchalla::unsigned_multiply_to_hilo_product(mn_lo, m, n);
     div_result = m;
     return (mn_hi == 0);
-}
+  }
 
-template <typename T>
-typename std::enable_if<!(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
+  template <typename T>
+  static typename std::enable_if<!(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE ||
                      ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH),
                  bool>::type
-// Don't use the algorithm described above.  Instead, just use plain standard
-// integer division.
-// Note 'x' is the dividend and 'n' is the divisor.
-trial_divide_mayer(T& div_result, T x, T n)
-{
+  // Don't use the algorithm described above.  Instead, just use plain standard
+  // integer division.
+  // Note 'x' is the dividend and 'n' is the divisor.
+  call(T& div_result, T x, T n)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(n > 0);  // disallow division by 0
-    HPBC_PRECONDITION2(n%2 == 1); // for consistency with trial_divide_mayer
+    HPBC_PRECONDITION2(n%2 == 1); // for consistency with call()
                                  // above, though this version doesn't need odds
     using P = typename safely_promote_unsigned<T>::type;
     div_result = static_cast<T>(static_cast<P>(x) / n);
     // test whether the remainder (x - n*div_result) equals 0
     return (x == n*div_result);
-}
+  }
+
+}; // end struct trial_divide_mayer
+
 
 #undef HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE
 

@@ -33,7 +33,7 @@ typename std::enable_if<
    (ut_numeric_limits<typename MontType::IntegerType>::digits==128), bool>::type
 operator()(const MontType& mf) const
 {
-    return is_prime_miller_rabin(mf);
+    return is_prime_miller_rabin::call(mf);
 }
 
 // We could have made this file much simpler if we had just called
@@ -76,7 +76,8 @@ operator()(const MontType& mf) const
 #endif
     if (mf.getModulus() < UINT64_C(350269456337)) {
         constexpr std::size_t TRIAL_SIZE = 3;
-        return is_prime_miller_rabin64_3_350269456337<TRIAL_SIZE>(mf);
+        return is_prime_miller_rabin_special::
+                                         case_350269456337_64_3<TRIAL_SIZE>(mf);
     }
     constexpr std::size_t TOTAL_BASES = 5;
     constexpr std::size_t TRIAL_SIZE = 3;

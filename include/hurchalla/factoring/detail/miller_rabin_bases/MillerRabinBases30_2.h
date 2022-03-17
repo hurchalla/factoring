@@ -45,7 +45,7 @@ public:
         bases[0] = 30;
         const std::array<std::uint16_t, 4> table =
                          { 4418, 54365, 18, 52797 };
-        std::uint32_t hash_bucket = (num ^ (num >> 1)) & 3;
+        std::uint32_t hash_bucket = (num ^ (num >> 1)) & 3u;
 #else
         // This section uses a simpler hash function, and is correct for all odd
         // numbers.  However it fails for the number 4 (it's correct for all
@@ -55,7 +55,7 @@ public:
         bases[0] = 42685;
         const std::array<std::uint16_t, 4> table =
                          { 38165, 50768, 59722, 23646 };
-        std::uint32_t hash_bucket = (num >> 7) & 3;
+        std::uint32_t hash_bucket = (num >> 7) & 3u;
 #endif
         bases[1] = table[hash_bucket];
         return bases;

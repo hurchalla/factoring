@@ -48,7 +48,8 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         std::vector<T> answer = factorize_bruteforce(x);
         std::sort(answer.begin(), answer.end());
         std::vector<T> vec;
-        factorize_pollard_rho(std::back_inserter(vec), x, PollardRhoIsPrime());
+        factorize_pollard_rho::call(std::back_inserter(vec), x,
+                                                           PollardRhoIsPrime());
         std::sort(vec.begin(), vec.end());
         SCOPED_TRACE(testing::Message() << "x == " << x);
         EXPECT_TRUE(vec.size() == answer.size());
@@ -75,7 +76,7 @@ void test_factorize(const std::vector<T>& answer)
         *iter++ = 2;
         x = x/2;
     }
-    factorize_pollard_rho(iter, x, PollardRhoIsPrime());
+    factorize_pollard_rho::call(iter, x, PollardRhoIsPrime());
     EXPECT_TRUE(vec.size() == answer.size());
     // at this time, I haven't made a guarantee for factorize()
     // that the destination range will be sorted, so we'll sort it here.

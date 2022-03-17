@@ -39,25 +39,26 @@ namespace hurchalla { namespace detail {
 #endif
 
 
-template <typename T>
-bool impl_is_prime(T x)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct impl_is_prime {
+  template <typename T>
+  static bool call(T x)
+  {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     HPBC_PRECONDITION2(x >= 0);
 
     if constexpr (HURCHALLA_TARGET_BIT_WIDTH < ut_numeric_limits<T>::digits) {
-        static_assert(ut_numeric_limits<T>::digits % 2 == 0);
-        using U = typename sized_uint<ut_numeric_limits<T>::digits/2>::type;
+        using U = typename sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
         static_assert(ut_numeric_limits<U>::is_integer);
         if (x <= ut_numeric_limits<U>::max())
-            return impl_is_prime(static_cast<U>(x));
+            return impl_is_prime::call(static_cast<U>(x));
     }
 
     // First try small trial divisions to find easy factors.
     // If primality still unknown, use miller-rabin to prove prime or not prime.
     bool success;
-    bool isPrime = is_prime_trialdivision<PrimeTrialDivisionMayer,
+    bool isPrime = is_prime_trialdivision::call<PrimeTrialDivisionMayer,
                                    HURCHALLA_ISPRIME_TRIALDIV_SIZE>(x, success);
     if (success)
         return isPrime;
@@ -67,8 +68,9 @@ bool impl_is_prime(T x)
     // is_prime_trialdivision should have handled evens and 0 and 1.
     HPBC_ASSERT2(x % 2 == 1);
     HPBC_ASSERT2(x > 1);
-    return is_prime_miller_rabin_integral(x);
-}
+    return is_prime_miller_rabin::call(x);
+  }
+};
 
 
 }}  // end namespace

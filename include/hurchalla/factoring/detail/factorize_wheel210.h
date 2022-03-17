@@ -52,9 +52,11 @@ namespace hurchalla { namespace detail {
 // R == 1 << ut_numeric_limits<T>::digits.  For example, for a type T that is
 // uint16_t, R would equal 65536 and sqrtR would equal 256.
 
-template <class OutputIt, typename T>
-OutputIt factorize_wheel210(OutputIt iter, T x)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct factorize_wheel210 {
+  template <class OutputIt, typename T>
+  static OutputIt call(OutputIt iter, T x)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
@@ -167,7 +169,7 @@ OutputIt factorize_wheel210(OutputIt iter, T x)
             P div_result;
             HPBC_ASSERT2(q > 1);
             // test whether  maybe_factor divides q  without any remainder.
-            while (trial_divide_mayer(div_result, q, maybe_factor)) {
+            while (trial_divide_mayer::call(div_result, q, maybe_factor)) {
                 *iter++ = static_cast<T>(maybe_factor);
                 q = div_result;
                 if (q == 1)  // we completely factored x
@@ -175,7 +177,8 @@ OutputIt factorize_wheel210(OutputIt iter, T x)
             }
         }
     }
-}
+  }
+}; // end struct factorize_wheel210
 
 
 }}  // end namespace

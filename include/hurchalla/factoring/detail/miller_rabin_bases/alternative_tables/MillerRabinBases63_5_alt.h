@@ -52,8 +52,8 @@ public:
         constexpr std::uint16_t table1[] = { 9767, 8690, 54574, 824,
                                              37691, 2714, 16397, 35794 };
         uint32_t mask = (static_cast<uint32_t>(1) << 28) - 1u;
-        uint32_t hash_bucket2 = ((static_cast<uint32_t>(num) & mask) * 13) >>25;
-        std::uint32_t hash_bucket1 = hash_bucket2 & 7;
+        uint32_t hash_bucket2 = ((static_cast<uint32_t>(num) & mask)*13u) >> 25;
+        std::uint32_t hash_bucket1 = hash_bucket2 & 7u;
         bases[3] = table1[hash_bucket1];
         bases[4] = table2[hash_bucket2];
         return bases;

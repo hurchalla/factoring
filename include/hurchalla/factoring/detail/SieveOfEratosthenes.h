@@ -127,93 +127,96 @@ public:
 };
 
 
-// Returns a bit vector with indices that represent odd numbers.  Every true
-// entry in the bit vector means that the odd number represented by the index is
-// prime, and every false entry means that the odd number represented by the
-// index is not prime.
-//
-// *Note that the bit vector this function creates and returns will use
-// size_odds/8 bytes of memory.  E.g. if size_odds == 1<<31, the vector will
-// take up 256 MB.
-//
-// we use DUMMY because we want the function to be inline to avoid ODR errors,
-// but gcc warns (-Winline) that it can't inline the function if we explicitly
-// make it inline.  Using a template implicitly makes it inline, without any
-// warning.
-template <typename DUMMY=void>
-SieveBitVector init_sieve_odd_primes(std::uint32_t size_odds,
-                                       std::uint64_t cache_blocking_size)
-{
-    using std::uint64_t;
-    using std::uint32_t;
-    uint64_t size = static_cast<uint64_t>(size_odds)*2;
-    HPBC_PRECONDITION(cache_blocking_size > 0);
-    HPBC_PRECONDITION(2 <= size);
 
-    SieveBitVector primes_bitvec(size_odds, true);
-    primes_bitvec.clear(1/2);  // the value 1 is not a prime
+class SieveOfEratosthenes {
+    const SieveBitVector oddprimes;
+    const std::uint64_t length;
 
-    std::vector<uint64_t> prime_multiple_vec;
-    std::vector<uint32_t> prime_doubled_vec;
+    // init_sieve_odd_primes():
+    // Returns a bit vector with indices that represent odd numbers.  Every true
+    // entry in the bit vector means that the odd number represented by the
+    // index is prime, and every false entry means that the odd number
+    // represented by the index is not prime.
+    //
+    // *Note that the bit vector this function creates and returns will use
+    // size_odds/8 bytes of memory.  E.g. if size_odds == 1<<31, the vector will
+    // take up 256 MB.
+    //
+    // we use DUMMY because we want the function to be inline to avoid ODR
+    // errors, but gcc warns (-Winline) that it can't inline the function if we
+    // explicitly make it inline.  Using a template implicitly makes it inline,
+    // without any warning.
+    template <typename DUMMY=void>
+    static SieveBitVector init_sieve_odd_primes(std::uint32_t size_odds,
+                                         std::uint64_t cache_blocking_size)
+    {
+        using std::uint64_t;
+        using std::uint32_t;
+        uint64_t size = static_cast<uint64_t>(size_odds)*2;
+        HPBC_PRECONDITION(cache_blocking_size > 0);
+        HPBC_PRECONDITION(2 <= size);
 
-    // the primes < sqrt(size) are special, in that they are all that we need to
-    // filter out all composites >= sqrt(size).  We store info related to them
-    // in prime_multiple_vec and prime_doubled_vec, and use that info later to
-    // mark the composites in the bit vector.
-    // Later, for each block of memory we will process, prime_multiple_vec[i]
-    // will tell us the value of the first odd multiple of its associated prime
-    // (the associated prime == prime_doubled_vec[i]/2).  prime_multiple_vec[i]
-    // gets updated every block.  prime_doubled_vec[i] remains unchanged.
-    uint64_t i=3;
-    // find all primes and composites < sqrt(size)
-    for (; i*i<size; i+=2) {
-        HPBC_ASSERT2(i/2 < size_odds);
-        if (primes_bitvec.get(static_cast<uint32_t>(i/2))) {
-            uint64_t j=i*i;
-            for (; j*j<size; j+=(2*i)) {
-                HPBC_ASSERT2(j/2 < size_odds);
-                primes_bitvec.clear(static_cast<uint32_t>(j/2));
+        SieveBitVector primes_bitvec(size_odds, true);
+        primes_bitvec.clear(1/2);  // the value 1 is not a prime
+
+        std::vector<uint64_t> prime_multiple_vec;
+        std::vector<uint32_t> prime_doubled_vec;
+
+        // the primes < sqrt(size) are special, in that they are all that we
+        // need to filter out all composites >= sqrt(size).  We store info
+        // related to them in prime_multiple_vec and prime_doubled_vec, and use
+        // that info later to mark the composites in the bit vector.
+        // Later for each block of memory we will process, prime_multiple_vec[i]
+        // will tell us the value of the first odd multiple of its associated
+        // prime (the associated prime == prime_doubled_vec[i]/2).
+        // prime_multiple_vec[i] gets updated every block.  prime_doubled_vec[i]
+        // remains unchanged.
+        uint64_t i=3;
+        // find all primes and composites < sqrt(size)
+        for (; i*i<size; i+=2) {
+            HPBC_ASSERT2(i/2 < size_odds);
+            if (primes_bitvec.get(static_cast<uint32_t>(i/2))) {
+                uint64_t j=i*i;
+                for (; j*j<size; j+=(2*i)) {
+                    HPBC_ASSERT2(j/2 < size_odds);
+                    primes_bitvec.clear(static_cast<uint32_t>(j/2));
+                }
+                HPBC_ASSERT2(2*i <= ut_numeric_limits<uint32_t>::max());
+                prime_doubled_vec.push_back(static_cast<uint32_t>(2*i));
+                prime_multiple_vec.push_back(j);
             }
-            HPBC_ASSERT2(2*i <= ut_numeric_limits<uint32_t>::max());
-            prime_doubled_vec.push_back(static_cast<uint32_t>(2*i));
-            prime_multiple_vec.push_back(j);
         }
-    }
-    HPBC_ASSERT2(prime_doubled_vec.size() == prime_multiple_vec.size());
+        HPBC_ASSERT2(prime_doubled_vec.size() == prime_multiple_vec.size());
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 #endif
-    // mark all the composites that are >= sqrt(size).  After loop exit, any
-    // entries in primes_bitvec that are still unmarked (i.e. that are still
-    // left as true) represent prime numbers.
-    for (; i<size; i+=cache_blocking_size) {
-        uint64_t next = i+cache_blocking_size;
-        if (next > size)
-            next = size;
-        using pd_size_type = decltype(prime_doubled_vec)::size_type;
-        for (pd_size_type j=0; j<prime_doubled_vec.size(); ++j) {
-            uint64_t multiple = prime_multiple_vec[j];
-            HPBC_ASSERT2(multiple >= i);
-            uint64_t prime_doubled = prime_doubled_vec[j];
-            for (; multiple<next; multiple+=prime_doubled) {
-                HPBC_ASSERT2(multiple/2 < size_odds);
-                primes_bitvec.clear(static_cast<uint32_t>(multiple/2));
+        // mark all the composites that are >= sqrt(size).  After loop exit, any
+        // entries in primes_bitvec that are still unmarked (i.e. that are still
+        // left as true) represent prime numbers.
+        for (; i<size; i+=cache_blocking_size) {
+            uint64_t next = i+cache_blocking_size;
+            if (next > size)
+                next = size;
+            using pd_size_type = decltype(prime_doubled_vec)::size_type;
+            for (pd_size_type j=0; j<prime_doubled_vec.size(); ++j) {
+                uint64_t multiple = prime_multiple_vec[j];
+                HPBC_ASSERT2(multiple >= i);
+                uint64_t prime_doubled = prime_doubled_vec[j];
+                for (; multiple<next; multiple+=prime_doubled) {
+                    HPBC_ASSERT2(multiple/2 < size_odds);
+                    primes_bitvec.clear(static_cast<uint32_t>(multiple/2));
+                }
+                prime_multiple_vec[j] = multiple;
             }
-            prime_multiple_vec[j] = multiple;
         }
-    }
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic pop
 #endif
-    return primes_bitvec;
-}
+        return primes_bitvec;
+    }
 
-
-class SieveOfEratosthenes {
-    const SieveBitVector oddprimes;
-    const std::uint64_t length;
 
 public:
     SieveOfEratosthenes(std::uint64_t size,

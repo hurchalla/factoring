@@ -106,7 +106,7 @@ bool is_prime_wheel210(T x)
             maybe_factor = start + wheel[i];
             P div_result;
             // test whether  maybe_factor divides q  without any remainder.
-            if (trial_divide_mayer(div_result, q, maybe_factor))
+            if (trial_divide_mayer::call(div_result, q, maybe_factor))
                 return false;
         }
     }

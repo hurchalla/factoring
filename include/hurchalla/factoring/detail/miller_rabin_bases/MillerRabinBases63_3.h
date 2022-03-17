@@ -43,8 +43,8 @@ public:
         std::uint64_t masked_num = static_cast<std::uint64_t>(
                                                static_cast<std::uint32_t>(num));
         std::uint32_t hash_bucket2 = static_cast<std::uint32_t>(
-                                                        (masked_num * 9) >> 22);
-        std::uint32_t hash_bucket1 = hash_bucket2 & 511;
+                                                       (masked_num * 9u) >> 22);
+        std::uint32_t hash_bucket1 = hash_bucket2 & 511u;
         bases[1] = table1[hash_bucket1];
         bases[2] = table2[hash_bucket2];
         return bases;

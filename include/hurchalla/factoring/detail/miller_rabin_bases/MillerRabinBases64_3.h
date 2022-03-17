@@ -55,7 +55,7 @@ public:
         std::array<std::uint16_t, 3> bases;
         bases[0] = 2;
         std::uint32_t mask = (static_cast<std::uint32_t>(1) << 30) - 1u;
-        std::uint32_t tmp = (static_cast<std::uint32_t>(num) & mask) * 3;
+        std::uint32_t tmp = (static_cast<std::uint32_t>(num) & mask) * 3u;
         std::uint32_t hash_bucket1 = tmp >> 22;
         std::uint32_t hash_bucket2 = tmp >> 18;
         bases[1] = table1[hash_bucket1];

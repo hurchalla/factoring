@@ -44,7 +44,7 @@ factorize_intensive_uint32(std::uint32_t x, int& num_factors,
     using namespace hurchalla::detail;
     // The max possible number of factors occurs when all factors equal 2,
     // so 32 is sufficient to hold all factors of a uint32_t number.
-    std::array<T, 32> arr = impl_factorize_to_array(x, num_factors,
+    std::array<T, 32> arr = impl_factorize::factorize_to_array(x, num_factors,
                       [&ipi](const auto& mf) { return ipi(mf.getModulus()); } );
     // After calling this function, a client should not index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set

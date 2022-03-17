@@ -15,9 +15,11 @@
 namespace hurchalla {
 
 
-template <typename T>
-constexpr bool is_prime_bruteforce(T x)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct is_prime_bruteforce {
+  template <typename T>
+  static constexpr bool call(T x)
+  {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!ut_numeric_limits<T>::is_signed, "");
 
@@ -36,7 +38,8 @@ constexpr bool is_prime_bruteforce(T x)
         }
     }
     return true;
-}
+  }
+};
 
 
 }  // end namespace

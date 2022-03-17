@@ -49,7 +49,7 @@ public:
         // with different multipliers to get one that worked for all 192 bins.
         std::uint16_t hashednum = static_cast<std::uint16_t>(num *
                                              static_cast<std::uint16_t>(46073));
-        uint32_t hash_bucket = (static_cast<uint32_t>(hashednum) * 3) >> 10;
+        uint32_t hash_bucket = (static_cast<uint32_t>(hashednum) * 3u) >> 10;
         bases[0] = table[hash_bucket];
         return bases;
     }

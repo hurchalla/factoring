@@ -32,7 +32,7 @@ bool get_primality(T x)
         return false;
     if (x % 2 == 0)
         return x == 2;
-    return is_prime_miller_rabin_integral(x);
+    return is_prime_miller_rabin::call(x);
 }
 
 
@@ -53,7 +53,8 @@ void iptd_test(T x, const std::vector<std::uint64_t>& primevec)
     EXPECT_TRUE(nextprime < static_cast<std::uint64_t>(1)<<32);
 
     bool success, isprime;
-    isprime = is_prime_trialdivision<PrimeTrialDivisionMayer, SIZE>(x, success);
+    isprime = is_prime_trialdivision::
+                                call<PrimeTrialDivisionMayer, SIZE>(x, success);
     if (x < nextprime*nextprime) {
         EXPECT_TRUE(success);
     }
@@ -61,7 +62,8 @@ void iptd_test(T x, const std::vector<std::uint64_t>& primevec)
         EXPECT_TRUE(isprime == get_primality(x));
     }
 
-    isprime = is_prime_trialdivision<PrimeTrialDivisionWarren,SIZE>(x, success);
+    isprime = is_prime_trialdivision::
+                                call<PrimeTrialDivisionWarren,SIZE>(x, success);
     if (x < nextprime*nextprime) {
         EXPECT_TRUE(success);
     }

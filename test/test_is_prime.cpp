@@ -28,10 +28,10 @@ TEST(HurchallaFactoringIsPrime, exhaustive_uint16_t) {
     using T = std::uint16_t;
     for (T x = 0; x < ut_numeric_limits<T>::max(); ++x) {
         SCOPED_TRACE(testing::Message() << "x == " << x);
-        EXPECT_TRUE(is_prime(x) == is_prime_bruteforce(x));
+        EXPECT_TRUE(is_prime(x) == is_prime_bruteforce::call(x));
     }
     T x = ut_numeric_limits<T>::max();
-    EXPECT_TRUE(is_prime(x) == is_prime_bruteforce(x));
+    EXPECT_TRUE(is_prime(x) == is_prime_bruteforce::call(x));
 }
 
 #if 0
@@ -40,10 +40,10 @@ TEST(HurchallaFactoringIsPrime, exhaustive_uint16_t) {
     TEST(HurchallaFactoringIsPrime, exhaustive_uint32_t) {
         using T = std::uint32_t;
         for (T x = 0; x < ut_numeric_limits<T>::max(); ++x) {
-            EXPECT_TRUE(is_prime(x) == is_prime_bruteforce(x));
+            EXPECT_TRUE(is_prime(x) == is_prime_bruteforce::call(x));
         }
         T x = ut_numeric_limits<T>::max();
-        EXPECT_TRUE(is_prime(x) == is_prime_bruteforce(x));
+        EXPECT_TRUE(is_prime(x) == is_prime_bruteforce::call(x));
     }
 #endif
 

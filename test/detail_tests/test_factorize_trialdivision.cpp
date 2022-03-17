@@ -46,7 +46,8 @@ void ftd_test(std::vector<T>& sorted_answer)
 
     T q, nextprime;
     std::vector<T> vec;
-    factorize_trialdivision<TTD,SIZE>(std::back_inserter(vec), q, nextprime, x);
+    factorize_trialdivision::call<TTD,SIZE>(std::back_inserter(vec), q,
+                                                                  nextprime, x);
     std::sort(vec.begin(), vec.end());
     for (size_t i=0; i<sorted_answer.size(); ++i) {
         auto n = sorted_answer[i];

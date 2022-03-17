@@ -22,10 +22,10 @@
 namespace hurchalla {
 
 
-// Factorize() uses the Pollar-Rho factorization algorithm, with Brent's
+// factorize() uses the Pollar-Rho factorization algorithm, with Brent's
 // improvements.  See https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm
-// I have also made additional small novel improvements to the algorithm.
-// The code itself is highly optimized.
+// I have also made some novel improvements to the algorithm.  The code and
+// algorithms are both well-optimized.
 // Prior to Pollard-Rho there is a small prime trial division stage.  Upon
 // beginning Pollard-Rho, we test for primality before trying to extract each
 // factor, by using the the deterministic Miller-Rabin algorithm - we usually
@@ -60,11 +60,12 @@ factorize(T x, int& num_factors)
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
-    using namespace hurchalla::detail;
+    namespace hd = ::hurchalla::detail;
     // The max possible number of factors occurs when all factors equal 2,
     // so ut_numeric_limits<T>::digits is sufficient to hold all factors.
     std::array<T, ut_numeric_limits<T>::digits> arr =
-                   impl_factorize_to_array(x, num_factors, PollardRhoIsPrime());
+                hd::impl_factorize::factorize_to_array(
+                                       x, num_factors, hd::PollardRhoIsPrime());
     // After calling this function, a client should not index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set
     // all array entries at or beyond num_factors to 0 - this may help to make
@@ -98,11 +99,11 @@ std::vector<T> factorize_to_vector(T x)
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
-    using namespace hurchalla::detail;
+    namespace hd = ::hurchalla::detail;
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;
-    std::vector<T> vec =
-              impl_factorize_to_vector(x, max_num_factors, PollardRhoIsPrime());
+    std::vector<T> vec = hd::impl_factorize::factorize_to_vector(
+                                   x, max_num_factors, hd::PollardRhoIsPrime());
 
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);

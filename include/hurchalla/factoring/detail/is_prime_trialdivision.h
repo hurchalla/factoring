@@ -16,10 +16,10 @@
 namespace hurchalla { namespace detail {
 
 
-// is_prime_trialdivision(): attempts to determine primality for the number x,
-// by trial dividing x by the first SIZE prime numbers.
+// is_prime_trialdivision::call()  attempts to determine primality for the
+// number x, by trial dividing x by the first SIZE prime numbers.
 //
-// Preconditions for is_prime_trialdivision():
+// Preconditions for is_prime_trialdivision:
 //   Requires SIZE >= 2
 //
 // Postconditions:
@@ -46,10 +46,12 @@ namespace hurchalla { namespace detail {
 
 // (The implementations in ths file are adapted from factorize_trialdivision())
 
-// overload for uint8_t (not a partial specialization, which is impossible)
-template <template<class,int> class TTD, int SIZE=54>
-bool is_prime_trialdivision(std::uint8_t x, bool& is_successful)
-{
+// Note: we use a struct with static functions in order to disallow ADL
+struct is_prime_trialdivision {
+  // overload for uint8_t (not a partial specialization)
+  template <template<class,int> class TTD, int SIZE=54>
+  static bool call(std::uint8_t x, bool& is_successful)
+  {
     using std::uint8_t;
     is_successful = true;  // this function overload will always succeed
     if (x < 2)
@@ -71,11 +73,11 @@ bool is_prime_trialdivision(std::uint8_t x, bool& is_successful)
     // x must be prime, because we know x < 256 (due to uint8_t) and x was
     // not divisible by any primes < 16 == sqrt(256)
     return true;
-}
+  }
 
-template <template<class,int> class TTD, int SIZE=54, typename T>
-bool is_prime_trialdivision(T x, bool& is_successful)
-{
+  template <template<class,int> class TTD, int SIZE=54, typename T>
+  static bool call(T x, bool& is_successful)
+  {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
     static_assert(SIZE > 1);
@@ -115,7 +117,8 @@ bool is_prime_trialdivision(T x, bool& is_successful)
         is_successful = false;
         return false;  // it doesn't matter what bool value we return.
     }
-}
+  }
+}; // end struct is_prime_trialdivision
 
 
 }}  // end namespace

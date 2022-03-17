@@ -33,10 +33,19 @@ namespace hurchalla { namespace detail {
 #endif
 
 
-// The following functor is an adaptation of the function above, using a
-// Montgomery Form type M, and Montgomery domain values and arithmetic.
-// For type M, ordinarily you'll use a template class instantiation of
-// hurchalla/montgomery_arithmetic/MontgomeryForm.h
+// The following functor is a parallel (instruction level, not thread) variation
+// on Pollard-Rho-Brent that advances two separate sequences, and switches
+// between which sequence is checked for primes before beginning every
+// advancement period.  The instruction level parallelism allows most CPUs to
+// advance two sequences for nearly the same cost as one sequence.  The prime
+// checking is a trade-off in which checks happen more often than the normal
+// Pollard-Rho algorithm (this tends toward greater cost), but two different
+// sequences are checked (this tends toward lesser cost due to needing fewer
+// checks to find a prime).  On the tested CPUs, the trade-off has been
+// favorable, resulting in improved performance over normal Pollard-Rho-Brent.
+
+// M must be a Montgomery Form type; ordinarily you'd use a template class
+// instantiation of hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentSwitchingTrial {
   using T = typename M::IntegerType;
@@ -49,7 +58,7 @@ struct PollardRhoBrentSwitchingTrial {
 
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
-    HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
+    HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr T gcd_threshold = HURCHALLA_PRBST_GCD_THRESHOLD;
     constexpr T pre_length = HURCHALLA_PRBST_STARTING_LENGTH
@@ -145,7 +154,7 @@ struct PollardRhoBrentSwitchingTrial {
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
             T p = mf.gcd_with_modulus(product, [](auto x, auto y)
-                                    { return greatest_common_divisor(x, y); } );
+                       { return ::hurchalla::greatest_common_divisor(x, y); } );
             // Since product is in the range [1,num) and num is required to
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
@@ -166,7 +175,7 @@ private:
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
 //    return static_cast<T>(x + x/2 - x/16 - x/64 - x/128);
-    return static_cast<T>(x + x/2 - x/16 - x/64);
+    return static_cast<T>(x + (x>>1) - (x>>4) - (x>>6));
   }
 };
 

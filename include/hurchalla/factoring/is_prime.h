@@ -30,7 +30,7 @@ bool is_prime(T x)
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
 
-    return detail::impl_is_prime(x);
+    return ::hurchalla::detail::impl_is_prime::call(x);
 }
 
 

@@ -25,7 +25,7 @@ T greatest_common_divisor(T a, T b)
     static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(a > 0 || b > 0);
 
-    T gcd = hurchalla::detail::impl_greatest_common_divisor(a, b);
+    T gcd = ::hurchalla::detail::impl_greatest_common_divisor::call(a, b);
 
     HPBC_POSTCONDITION2(gcd > 0);
     return gcd;

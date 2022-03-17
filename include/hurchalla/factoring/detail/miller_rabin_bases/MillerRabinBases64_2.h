@@ -42,7 +42,7 @@ public:
         std::uint32_t lower32 = static_cast<std::uint32_t>(num);
         std::uint32_t tmp = lower32 ^ (lower32 << 2);
         std::uint32_t hash_bucket = static_cast<std::uint32_t>(
-                                   (static_cast<std::uint64_t>(tmp) * 7) >> 17);
+                                  (static_cast<std::uint64_t>(tmp) * 7u) >> 17);
         bases[1] = table[hash_bucket];
         return bases;
     }

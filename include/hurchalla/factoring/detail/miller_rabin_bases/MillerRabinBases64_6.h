@@ -62,7 +62,7 @@ public:
                                             22234, 19658,  5829, 37303, 41046 };
         static_assert(sizeof(table)/sizeof(table[0]) == 20, "");
         uint32_t mask = (static_cast<uint32_t>(1) << 22) - 1u;
-        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 5) >> 20;
+        uint32_t hash_bucket = ((static_cast<uint32_t>(num) & mask) * 5u) >> 20;
         bases[5] = table[hash_bucket];
 #endif
         return bases;

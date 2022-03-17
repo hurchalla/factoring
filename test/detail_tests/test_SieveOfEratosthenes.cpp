@@ -24,14 +24,14 @@ void exhaustive_sieve_test(const SieveOfEratosthenes& sieve)
     EXPECT_FALSE(sieve[1]);
     EXPECT_TRUE(sieve[2]);
     for (uint64_t i=3; i<sieve.size()-1; i+=2) {
-        EXPECT_TRUE(sieve[i] == is_prime_miller_rabin_integral(i));
+        EXPECT_TRUE(sieve[i] == is_prime_miller_rabin::call(i));
         EXPECT_FALSE(sieve[i+1]);
     }
     uint64_t i = sieve.size() - 1;
     if (i % 2 == 0)
         EXPECT_FALSE(sieve[i]);
     else
-        EXPECT_TRUE(sieve[i] == is_prime_miller_rabin_integral(i));
+        EXPECT_TRUE(sieve[i] == is_prime_miller_rabin::call(i));
 }
 
 TEST(HurchallaFactoringSieve, sieve_uint8_t) {

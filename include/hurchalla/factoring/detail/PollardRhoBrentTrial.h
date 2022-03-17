@@ -74,12 +74,13 @@ T pollard_rho_brent_trial(T num, T c)
     T product = 1;
     HPBC_ASSERT2(product < num);
 
+    namespace hc = ::hurchalla;
     while (true) {
         T a_fixed = b;
         for (T i = 0; i < distance; ++i) {
             // set b := (b*b + c) % num, while ensuring overflow doesn't happen.
-            b = modular_multiplication_prereduced_inputs(b, b, num);
-            b = modular_addition_prereduced_inputs(b, c, num);
+            b = hc::modular_multiplication_prereduced_inputs(b, b, num);
+            b = hc::modular_addition_prereduced_inputs(b, c, num);
         }
         for (T i = 0; i < distance; i += gcd_threshold) {
             T gcd_loop_length = (gcd_threshold < distance - i) ? gcd_threshold
@@ -88,10 +89,10 @@ T pollard_rho_brent_trial(T num, T c)
             for (T j = 0; j < gcd_loop_length; ++j) {
                 HPBC_INVARIANT2(1 <= product && product < num);
                 // set b := (b*b + c) % num, while ensuring no overflow
-                b = modular_multiplication_prereduced_inputs(b, b, num);
-                b = modular_addition_prereduced_inputs(b, c, num);
+                b = hc::modular_multiplication_prereduced_inputs(b, b, num);
+                b = hc::modular_addition_prereduced_inputs(b, c, num);
                 absValDiff = (a_fixed > b) ? a_fixed - b : b - a_fixed;
-                T result = modular_multiplication_prereduced_inputs(product,
+                T result = hc::modular_multiplication_prereduced_inputs(product,
                                                                absValDiff, num);
                 if (result == 0) {
                     // Since result == 0, we know that absValDiff == 0 -or-
@@ -108,7 +109,7 @@ T pollard_rho_brent_trial(T num, T c)
                 }
                 product = result;
             }
-            T p = greatest_common_divisor(product, num);
+            T p = hc::greatest_common_divisor(product, num);
             // Since product is in the range [1,num) and num is required to
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).
@@ -140,14 +141,21 @@ struct PollardRhoBrentTrial {
 
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
-    HPBC_PRECONDITION2(!is_prime_miller_rabin_integral(num));
+    HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
     T advancement_len = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
-    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH + 2;
 
+//#define TEST_JUMP_START 1
+
+#ifdef TEST_JUMP_START
+    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH - 2;
+    V b = mf.convertIn(static_cast<T>(458330));
+#else
+    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH + 2;
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
+#endif
 
     // negate c so that we can use fusedSquareSub inside the loop instead of
     // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
@@ -221,7 +229,7 @@ struct PollardRhoBrentTrial {
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
             T p = mf.gcd_with_modulus(product, [](auto x, auto y)
-                                    { return greatest_common_divisor(x, y); } );
+                       { return ::hurchalla::greatest_common_divisor(x, y); } );
             // Since product is in the range [1,num) and num is required to
             // be > 1, GCD will never return num or 0.  So we know the GCD will
             // be in the range [1, num).

@@ -6,16 +6,17 @@
  */
 
 
-// This example is intended for the case that you are using CMake.
+// This example is intended for the case that you are not using CMake.
 // If you haven't already, you need to follow the steps in the README.md
-// for "How to use the library" | "With CMake"
+// for "How to use the library" | "Without CMake"
 #include "hurchalla/factoring/factorize.h"
 #include <iostream>
 
 #ifndef NDEBUG
 // remove this if you want to allow asserts
-// (they're very good for testing and debugging, but slow).
-#error "Performance warning: asserts are enabled"
+// (they're very good for testing and debugging but may drastically slow down
+// the library).
+#error "Performance warning: asserts are enabled and will slow performance"
 #endif
 
 int main()

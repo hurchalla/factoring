@@ -99,6 +99,9 @@ public:
 private:
     // get the first N=SIZE odd primes
     static constexpr auto oddprimes = OddPrimes::get_array<SIZE>();
+    // sanity check oddprimes is compile time initialized
+    static_assert(SIZE > 0);
+    static_assert(oddprimes[0] != 0);
 
     using U = typename decltype(oddprimes)::value_type;
     static_assert(ut_numeric_limits<U>::is_integer);
@@ -138,6 +141,9 @@ private:
 #  pragma warning(disable : 4307)
 #endif
     static constexpr auto oddprimesinfo = get_odd_primes_info(oddprimes);
+    // sanity check oddprimesinfo is compile time initialized
+    static_assert(SIZE > 0);
+    static_assert(oddprimesinfo[0].inverse != 0);
 #if defined(_MSC_VER)
 #  pragma warning(pop)
 #endif

@@ -10,23 +10,29 @@ For good performance you *must* ensure that the standard macro NDEBUG (see &lt;c
 
 * **Jeffrey Hurchalla**
 
+## License
+
+This project is licensed under the MPL 2.0 License - see the [LICENSE.TXT](LICENSE.TXT) file for details
+
+<br/>
+
 ## How to use the library
 
 ### With CMake
 
 If you're using CMake for your project and you wish to add this factoring library to it, then clone this git repository onto your system.  In your project's CMakeLists.txt file, add the following two lines with appropriate changes to their italic portions to match your project and paths ( an easy replacement for *your_binary_dir* is ${CMAKE_CURRENT_BINARY_DIR} ):  
-add_subdirectory(*path_to_the_cloned_factoring_repository* &nbsp; *your_binary_dir*/factoring)  
+add_subdirectory(*path_of_the_cloned_factoring_repository* &nbsp; *your_binary_dir*/factoring)  
 target_link_libraries(*your_project_target_name* &nbsp; hurchalla_factoring)  
 
 For best performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can do this by calling CMake with -DCMAKE_BUILD_TYPE=Release.  
 
-It may help to see a simple [example project with CMake](example_with_cmake).
+It may help to see a simple [example project with CMake](examples/example_with_cmake).
 
 ### Without CMake
 
 If you're not using CMake for your project, you'll need to install/copy these factoring headers and dependencies to some directory in order to use them.  To do this, first clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
 
->cd *path_to_the_cloned_factoring_repository*  
+>cd *path_of_the_cloned_factoring_repository*  
 >mkdir tmp  
 >cd tmp  
 >cmake -S.. -B.  
@@ -38,7 +44,7 @@ When compiling your project, you'll of course need to ensure that you have that 
 
 For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can generally do this by adding the option flag -DNDEBUG to your compile command.  
 
-It may help to see a simple [example](example_without_cmake).
+It may help to see a simple [example](examples/example_without_cmake).
 
 ## The API
 

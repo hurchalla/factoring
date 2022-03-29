@@ -17,6 +17,8 @@
 mkdir -p tmp
 cmake -S. -B./tmp -DCMAKE_BUILD_TYPE=Release
 cmake --build ./tmp --config Release
-echo
 
+echo
+echo Running example...
+echo
 ./tmp/factoring_example

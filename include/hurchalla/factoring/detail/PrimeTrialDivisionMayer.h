@@ -83,6 +83,9 @@ public:
 private:
     // get the first N=SIZE odd primes
     static constexpr auto oddprimes = OddPrimes::get_array<SIZE>();
+    // sanity check oddprimes is compile time initialized
+    static_assert(SIZE > 0);
+    static_assert(oddprimes[0] != 0);
     using U = typename decltype(oddprimes)::value_type;
     static_assert(ut_numeric_limits<U>::is_integer);
     static_assert(!ut_numeric_limits<U>::is_signed);

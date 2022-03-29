@@ -447,9 +447,9 @@ struct MillerRabinMontgomery {
 };
 
 // Partial specialization for 128 bit numbers.
-// This version requires input < (1<<128), and uses 128 bases (no hash tables).
+// This version requires input < (1<<128), and uses 127 bases (no hash tables).
 template <typename MontType, std::size_t TRIAL_SIZE>
-struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
+struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
   static bool is_prime(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
@@ -463,7 +463,7 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
     // This particular test is unique amongst all others in this file, because
     // it is a probabilistic test.  By nature, the test can be designed for an
     // arbitrarily small chance of failure, and so this test has been tailored
-    // (using a huge number of bases: 128) to have an almost inconceivably small
+    // (using a huge number of bases: 127) to have an almost inconceivably small
     // chance of ever returning a wrong result.  For details, see
     // MillerRabinProbabilisticBases128.h.
     // The huge number of bases makes it a very slow test when a number is
@@ -752,21 +752,21 @@ struct is_prime_miller_rabin {
     constexpr T limit13 =
                  (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
     if (mf.getModulus() < limit13) {
-        constexpr std::size_t TRIAL_SIZE = 4;
+        constexpr std::size_t TRIAL_SIZE = 3;
         return is_prime_miller_rabin_special::
                           case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
     }
 
-    // 128 bit miller-rabin with 128 bases is going to be slow no matter what,
-    // but a trial size of 4 will usually significantly improve performance
-    // over trial size 1, due to more efficient use of the CPU's pipelined
-    // and/or superscalar execution units.
+    // 128 bit miller-rabin with 127 bases is going to be slow no matter what,
+    // but a trial size of 3 will usually improve performance over trial size 1,
+    // due to more efficient use of the CPU's pipelined and/or superscalar
+    // execution units.
     // We typically avoid a TRIAL_SIZE > 2 due to the machine code size increase
     // it causes, but this function processes so many bases that any negative
     // effect on instruction cache should be more than made up for by the
     // repeated speed gain from processing more bases per trial.
-    constexpr std::size_t TOTAL_BASES = 128;
-    constexpr std::size_t TRIAL_SIZE = 4;
+    constexpr std::size_t TOTAL_BASES = 127;
+    constexpr std::size_t TRIAL_SIZE = 3;
     return MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, TOTAL_BASES>::
                                                                    is_prime(mf);
   }

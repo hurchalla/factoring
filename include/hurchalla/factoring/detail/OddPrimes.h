@@ -72,6 +72,8 @@ public:
     constexpr std::array<std::uint64_t, static_cast<std::size_t>(SIZE)>
                                               oddprimes64 = get_array64<SIZE>();
     constexpr std::uint64_t lastprime = oddprimes64[SIZE - 1];
+    // sanity check to be sure oddprimes64 is compile time initialized
+    static_assert(oddprimes64[0] != 0);
 
     // get the smallest type that we can use to store all the primes
 #if defined(__GNUC__)
@@ -133,7 +135,8 @@ public:
              typename sized_uint<ut_numeric_limits<T>::digits * 2>::type
           >::type;
     using P2 = typename safely_promote_unsigned<T2>::type;
-    return static_cast<T2>(static_cast<P2>(number) * static_cast<P2>(number));
+    constexpr P2 result = static_cast<P2>(number) * static_cast<P2>(number);
+    return static_cast<T2>(result);
   }
 };
 

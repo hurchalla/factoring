@@ -13,6 +13,7 @@
 #include "hurchalla/util/programming_by_contract.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <cstdint>
+#include <type_traits>
 
 namespace hurchalla { namespace detail {
 
@@ -137,8 +138,16 @@ struct factorize_trialdivision {
     constexpr auto tmp = TD::nextPrimePastEnd();
     // assert the next prime fits in type T
     static_assert(0 <= tmp && tmp <= ut_numeric_limits<T>::max());
-    next_prime = static_cast<T>(tmp);
-    constexpr auto next_prime_squared = TD::nextPrimePastEndSquared();
+    // (paranoia) use std::integral_constant to guarantee compile-time values.
+    // Constexpr guarantees only that a variable *can* be constant evaluated (at
+    // compile-time), but technically, doesn't guarantee that it *will* be, when
+    // there's nothing to prevent run-time eval.
+    next_prime = static_cast<T>(
+                             std::integral_constant<decltype(tmp), tmp>::value);
+    constexpr auto tmp2 = TD::nextPrimePastEndSquared();
+    // (paranoia) use std::integral_constant to guarantee a compile-time value.
+    constexpr auto next_prime_squared =
+                            std::integral_constant<decltype(tmp2), tmp2>::value;
 
     // try the only even prime, 2, as a special case potential factor
     q = x;

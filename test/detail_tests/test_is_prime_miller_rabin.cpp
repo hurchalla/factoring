@@ -31,6 +31,32 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, super_simple_test) {
     EXPECT_TRUE(is_prime_miller_rabin::call(mf));
 }
 
+TEST(HurchallaFactoringIsPrimeMillerRabin, integer_tests) {
+    using is_prime_mr = is_prime_miller_rabin;
+    std::int16_t primenum = 59;
+    std::int16_t composite = 63;
+    EXPECT_TRUE(is_prime_mr::call(primenum));
+    EXPECT_FALSE(is_prime_mr::call(composite));
+    EXPECT_TRUE(is_prime_mr::call(static_cast<std::uint16_t>(primenum)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<std::uint16_t>(composite)));
+    EXPECT_TRUE(is_prime_mr::call(static_cast<std::int32_t>(primenum)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<std::int32_t>(composite)));
+    EXPECT_TRUE(is_prime_mr::call(static_cast<std::uint32_t>(primenum)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<std::uint32_t>(composite)));
+    EXPECT_TRUE(is_prime_mr::call(static_cast<std::int64_t>(primenum)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<std::int64_t>(composite)));
+    EXPECT_TRUE(is_prime_mr::call(static_cast<std::uint64_t>(primenum)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<std::uint64_t>(composite)));
+#if HURCHALLA_COMPILER_HAS_UINT128_T()
+    __uint128_t prime_u127 = (static_cast<__uint128_t>(1) << 127) - 1;
+    __uint128_t composite_u127 = prime_u127 - 2;
+    EXPECT_TRUE(is_prime_mr::call(static_cast<__int128_t>(prime_u127)));
+    EXPECT_FALSE(is_prime_mr::call(static_cast<__int128_t>(composite_u127)));
+    EXPECT_TRUE(is_prime_mr::call(prime_u127));
+    EXPECT_FALSE(is_prime_mr::call(composite_u127));
+#endif
+}
+
 TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
     using T = std::uint16_t;
     for (T m = ut_numeric_limits<T>::max(); m >= 3; m = static_cast<T>(m-2)) {

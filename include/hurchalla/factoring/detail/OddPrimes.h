@@ -114,6 +114,8 @@ public:
     static_assert(oddprime % 2 == 1);
     using T2 = typename sized_uint<ut_numeric_limits<T>::digits * 2>::type;
     constexpr T2 next = get_next_prime_internal<T2,static_cast<T2>(oddprime)>();
+    // sanity check: ensure 'next' is compile time initialized
+    static_assert(next != 0);
     using U = typename std::conditional<
                             (next <= ut_numeric_limits<T>::max()),
                              T, T2>::type;
@@ -136,6 +138,8 @@ public:
           >::type;
     using P2 = typename safely_promote_unsigned<T2>::type;
     constexpr P2 result = static_cast<P2>(number) * static_cast<P2>(number);
+    // sanity check: ensure result is compile time initialized
+    static_assert(result != 0 || number == 0);
     return static_cast<T2>(result);
   }
 };

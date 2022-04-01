@@ -30,6 +30,8 @@
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_5.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases62_6.h"
 
+#include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases44_3.h"
+
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_1.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_2.h"
 #include "hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases32_3.h"
@@ -73,13 +75,13 @@ struct IPMR_internal {
   // parallelism: the executing instructions can more efficiently use the CPU's
   // pipelined and superscalar execution units.  For example on Intel Haswell,
   // using TRIAL_SIZE 3 doubles performance compared to 3 trials using
-  // TRIAL_SIZE 1.  You could see performance increases up through TRIAL_SIZE 5
+  // TRIAL_SIZE 1.  You might see performance increases up through TRIAL_SIZE 5
   // and beyond (though it may be hard to find an application that needs very
   // large trial sizes).  As always, you will need to measure to know the
   // performance impact it will have on your machine.  The downside of
   // increasing the TRIAL_SIZE is that it will increase the code size and
-  // instruction cache usage (to some degree it may decrease temporal and
-  // spatial code locality in the i-cache).
+  // instruction cache usage (this will likely cause evictions from i-cache and
+  // later cache misses).
 
   // FYI: For GCC and TRIAL_SIZE of 3 and 4, this function is faster if we make
   // an (enable_if) overload of the function with all the TRIAL_SIZE loops
@@ -87,7 +89,6 @@ struct IPMR_internal {
   // slower for clang - I haven't measured icc or msvc.
   template <std::size_t TRIAL_SIZE, typename MontType>
   static HURCHALLA_FLATTEN
-  //typename std::enable_if<(TRIAL_SIZE != 1), bool>::type
   bool mr_trial(const MontType& mf,
             const std::array<typename MontType::IntegerType, TRIAL_SIZE>& bases,
             typename MontType::IntegerType d,
@@ -160,63 +161,6 @@ struct IPMR_internal {
   }
 
 
-  // This function overload is a very slight win when testing numbers that are
-  // all composite, but loses by a larger margin when testing primes or a
-  // mixture of composites and primes.  I measured with gcc and clang (no icc or
-  // msvc).  I don't expect there to normally be a reason to strongly favor
-  // composites, and so this function is disabled by default via #if 0.  If you
-  // enable this function, you'll need to also uncomment the enable_if line for
-  // the first mr_trial() function overload above.
-#if 0
-  template <std::size_t TRIAL_SIZE, typename MontType>
-  static HURCHALLA_FLATTEN
-  typename std::enable_if<(TRIAL_SIZE == 1), bool>::type
-  mr_trial(const MontType& mf,
-         const std::array<typename MontType::IntegerType, TRIAL_SIZE>& bases,
-         typename MontType::IntegerType d,
-         int r)
-  {
-    static_assert(TRIAL_SIZE == 1, "");
-    using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-
-    auto zero = mf.getZeroValue();
-    auto unity = mf.getUnityValue();
-    auto negativeOne = mf.getNegativeOneValue();
-
-    // note: mf.convertIn(bases[0]) effectively behaves as if it performs
-    // bases[0] % num, prior to converting to montgomery form.
-    auto mv_base = mf.convertIn(bases[0]);
-    if (mf.getCanonicalValue(mv_base) == zero)
-        return true;
-// **
-    auto result = mf.pow(mv_base, d);
-// **
-    auto canonicalResult = mf.getCanonicalValue(result);
-
-#  ifdef HURCHALLA_MILLER_RABIN_ALLOW_EVEN_NUMBERS
-    if (canonicalResult == unity)
-        return true;
-    if (r == 0)
-        return false;
-    if (canonicalResult == negativeOne)
-        return true;
-#  else
-    HPBC_PRECONDITION2(r > 0);
-    if (canonicalResult == unity || canonicalResult == negativeOne)
-        return true;
-#  endif
-
-    for (int j=1; j<r; ++j) {
-        result = mf.square(result);
-        if (mf.getCanonicalValue(result) == negativeOne)
-            return true;
-    }
-    return false;
-  }
-#endif
-
-
   // Miller-Rabin first step:
   // write num-1 as pow(2,r)*d by factoring powers of 2 from num-1
   template <typename T>
@@ -267,7 +211,10 @@ struct IPMR_internal {
     static_assert(TRIAL_SIZE > 0, "");
     static_assert(TOTAL_BASES > 0, "");
 
-    static constexpr std::size_t REMAINDER = TOTAL_BASES % TRIAL_SIZE;
+    static constexpr std::size_t tmp = TOTAL_BASES % TRIAL_SIZE;
+    // (paranoia) use std::integral_constant to guarantee compile-time init.
+    static constexpr std::size_t REMAINDER =
+                              std::integral_constant<decltype(tmp), tmp>::value;
     static_assert(REMAINDER > 0, "");
 
     // convertIn() inside mr_trial() effectively performs bases[i] % num, prior
@@ -422,26 +369,18 @@ struct MillerRabinMontgomery {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // We restrict the allowed types of T to only those types for which this
-    // function would be an efficient choice.  Relaxing these restrictions
-    // should be ok so long as you always ensure that
-    // mf.getModulus() < (1 << LOG2_MODULUS_LIMIT).
-    static_assert((ut_numeric_limits<T>::digits/2 < LOG2_MODULUS_LIMIT &&
-                   LOG2_MODULUS_LIMIT <= ut_numeric_limits<T>::digits) ||
-              (LOG2_MODULUS_LIMIT < ut_numeric_limits<T>::digits &&
-               ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
+    static_assert(LOG2_MODULUS_LIMIT <= ut_numeric_limits<T>::digits, "");
+    T modulus = mf.getModulus();
 
     constexpr int POW2_LIMIT = get_pow2_limit(LOG2_MODULUS_LIMIT);
     static_assert(POW2_LIMIT >= LOG2_MODULUS_LIMIT, "");
     using U = typename sized_uint<POW2_LIMIT>::type;
-    // Ensure that 1 < num < (1 << LOG2_MODULUS_LIMIT)
-    HPBC_PRECONDITION2(1 < num &&
-                    num <= (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)) - 1 +
-                           (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)));
+    // Ensure that 1 < modulus < (1 << LOG2_MODULUS_LIMIT)
+    HPBC_PRECONDITION2(1 < modulus && modulus <=
+                             (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)) - 1 +
+                             (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)));
     const auto bases = MillerRabinBases<LOG2_MODULUS_LIMIT, TOTAL_BASES>::
-                                                       get(static_cast<U>(num));
+                                                   get(static_cast<U>(modulus));
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 };
@@ -454,7 +393,6 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
 
     // Other algorithms for primality testing are likely to be far more
     // suitable for large 128 bit numbers than Miller-Rabin, but we can still
@@ -471,13 +409,15 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
     // miller-rabin tests, when given a composite number, it is on average very
     // fast since it usually can detect compositeness on the first trial.]
 
-    static_assert(ut_numeric_limits<T>::digits == 128, "");
+    static_assert(ut_numeric_limits<T>::digits == 128 ||
+      (ut_numeric_limits<T>::is_signed && ut_numeric_limits<T>::digits == 127));
     // I believe it is *only* a good idea to use this specialization for 128 bit
-    // types T.  Any smaller type T would be forced to use far more bases than
-    // necessary (given the smaller range of possible moduli), and any larger
-    // type would require a slower MontyType than 128 bit T would.  [For what
-    // it's worth, I expect this specialization should work fine for non-128
-    // bit types.]
+    // types T (note that a 128 bit signed integer would almost certainly report
+    // 127 binary digits, plus a sign bit).  Any smaller type T would be forced
+    // to use far more bases than necessary (given the smaller range of possible
+    // moduli), and any larger type would require a slower MontyType than 128
+    // bit T would.  [For what it's worth, I expect this specialization should
+    // work fine for non-128 bit types.]
     //   If for some reason you need this function specialization but your
     // MontyType T is larger than 128 bit, then construct a different MontyType
     // with 128 bit T, and use it to call this function.  Of course your modulus
@@ -489,8 +429,8 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
     // MillerRabinMontgomery structs that is smaller than this enclosing struct,
     // since it will provide far better performance.
 
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num);
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus);
     const auto& bases = MillerRabinProbabilisticBases128<>::bases;
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
@@ -509,23 +449,29 @@ struct is_prime_miller_rabin_special {
   // tests work for both even and odd moduli (though only the
   // MontyWrappedStandardMath MontyType supports an even modulus).
 
-  // This function requires modulus < 360018361; uses 2 bases (no hash  table).
+  // This function requires modulus < 360018361; uses 2 bases (no hash table).
+  // Requires  ut_numeric_limits<MontType::IntegerType>::digits >= 32
   template <std::size_t TRIAL_SIZE, typename MontType>
   static bool case_360018361_32_2(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 32 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // We must require (ut_numeric_limits<T>::digits >= 32): the base
+    // 2350307676 is too large for int32_t(which has 31 digits), and so we use
+    // uint32_t for the bases' type.  When we call miller_rabin_trials, the
+    // number of digits of T must be greater than or equal to the number of
+    // digits of the bases' type, and so T's digits must be >= 32.
+    static_assert(ut_numeric_limits<T>::digits >= 32, "");
+
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 32 ||
               (ut_numeric_limits<T>::digits > 32 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT32_C(360018361));
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT32_C(360018361));
     // Dana Jacobsen, Wojciech Izykowski, and Marcin Panasiuk discovered these
     // bases; see https://miller-rabin.appspot.com/
-    // I verified they are correct for all num < 360018361.
+    // I verified they are correct for all modulus < 360018361.
     const std::array<std::uint32_t, 2> bases =
                                     { UINT32_C(1143370), UINT32_C(2350307676) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
@@ -537,63 +483,128 @@ struct is_prime_miller_rabin_special {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 64 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 64 ||
-              (ut_numeric_limits<T>::digits > 64 &&
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 63) ||
+            (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT32_C(1050535501));
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT32_C(1050535501));
     // Wojciech Izykowski and Marcin Panasiuk discovered these bases; see
     // https://miller-rabin.appspot.com/
-    // I verified they are correct for all num < 1050535501.
-    const std::array<std::uint64_t, 2> bases =
-                         { UINT64_C(336781006125), UINT64_C(9639812373923155) };
+    // I verified they are correct for all modulus < 1050535501.
+    const std::array<std::int64_t, 2> bases =
+                           { INT64_C(336781006125), INT64_C(9639812373923155) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 
   // This function requires modulus<350269456337; uses 3 bases (no hash table).
+  // The requirement of ut_numeric_limits<T>::digits >= 64 usually means that
+  // MontType::IntegerType is uint64_t.
   template <std::size_t TRIAL_SIZE, typename MontType>
   static bool case_350269456337_64_3(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 64 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // We must require (ut_numeric_limits<T>::digits >= 64): the bases
+    // 14694767155120705706 and 16641139526367750375 are too large for int64_t
+    // (note int64_t has 63 digits), and so we use uint64_t for the bases' type.
+    // When we call miller_rabin_trials, the number of digits of T must be
+    // greater than or equal to the number of digits of the bases' type, and so
+    // T's digits must be >= 64.
+    static_assert(ut_numeric_limits<T>::digits >= 64, "");
+
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 64 ||
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT64_C(350269456337));
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(350269456337));
     // Steve Worley discovered these bases; see https://miller-rabin.appspot.com
-    // I verified they are correct for all num < 350269456337.
+    // I verified they are correct for all modulus < 350269456337.
     const std::array<std::uint64_t, 3> bases = { UINT64_C(4230279247111683200),
                UINT64_C(14694767155120705706), UINT64_C(16641139526367750375) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 
+  // This function requires modulus<273919523041; uses 3 bases (no hash table).
+  // Note that  case_350269456337_64_3() covers a larger range with the same
+  // number of bases, but doesn't allow int64_t for MontType::IntegerType.
+  template <std::size_t TRIAL_SIZE, typename MontType>
+  static bool case_273919523041_64_3(const MontType& mf)
+  {
+    using T = typename MontType::IntegerType;
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    // allow only types for which this function would be an efficient choice
+    static_assert(ut_numeric_limits<T>::digits == 64 ||
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 63) ||
+            (ut_numeric_limits<T>::digits > 64 &&
+               ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(273919523041));
+    // Dana Jacobsen, Wojciech Izykowski, and Marcin Panasiuk discovered these
+    // bases; see https://miller-rabin.appspot.com
+    // I verified they are correct for all modulus < 273919523041.
+    const std::array<std::int64_t, 3> bases = { INT64_C(15),
+               INT64_C(7363882082), INT64_C(992620450144556) };
+    return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
+  }
+
   // This function requires modulus < 55245642489451; 4 bases (no hash table)
+  // The requirement of ut_numeric_limits<T>::digits >= 64 usually means that
+  // MontType::IntegerType is uint64_t.
   template <std::size_t TRIAL_SIZE, typename MontType>
   static bool case_55245642489451_64_4(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 64 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // We must require (ut_numeric_limits<T>::digits >= 64): the base
+    // 11096072698276303650 is too large for int64_t (note int64_t has 63
+    // digits), and so we use uint64_t for the bases' type.  When we call
+    // miller_rabin_trials, the number of digits of T must be greater than or
+    // equal to the number of digits of the bases' type, and so T's digits must
+    // be >= 64.
+    static_assert(ut_numeric_limits<T>::digits >= 64, "");
+
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 64 ||
               (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT64_C(55245642489451));
-    // I verified these bases are correct for all num < 55245642489451, assuming
-    // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
-    // discovered the bases - see https://miller-rabin.appspot.com/
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(55245642489451));
+    // I verified these bases are correct for all modulus < 55245642489451,
+    // assuming Feitsma's database of Fermat pseudoprimes base 2 is valid.
+    // Steve Worley discovered the bases - see https://miller-rabin.appspot.com/
     const std::array<std::uint64_t, 4> bases =
               { UINT64_C(2), UINT64_C(141889084524735),
                 UINT64_C(1199124725622454117), UINT64_C(11096072698276303650) };
+    return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
+  }
+
+  // This function requires modulus < 47636622961201; 4 bases (no hash table)
+  // Note that  case_55245642489451_64_4() covers a larger range with the same
+  // number of bases, but doesn't allow int64_t for MontType::IntegerType.
+  template <std::size_t TRIAL_SIZE, typename MontType>
+  static bool case_47636622961201_64_4(const MontType& mf)
+  {
+    using T = typename MontType::IntegerType;
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    // allow only types for which this function would be an efficient choice
+    static_assert(ut_numeric_limits<T>::digits == 64 ||
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 63) ||
+            (ut_numeric_limits<T>::digits > 64 &&
+               ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(47636622961201));
+    // I verified these bases are correct for all modulus < 47636622961201,
+    // assuming Feitsma's database of Fermat pseudoprimes base 2 is valid.
+    // Steve Worley discovered the bases - see https://miller-rabin.appspot.com/
+    const std::array<std::int64_t, 4> bases =
+              { INT64_C(2), INT64_C(2570940),
+                INT64_C(211991001), INT64_C(3749873356) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 
@@ -603,20 +614,20 @@ struct is_prime_miller_rabin_special {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 64 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 64 ||
-              (ut_numeric_limits<T>::digits > 64 &&
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 63) ||
+            (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT64_C(7999252175582851));
-    // I verified these bases are correct for all num < 7999252175582851, if
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(7999252175582851));
+    // I verified these bases are correct for all modulus < 7999252175582851, if
     // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
     // discovered the bases - see https://miller-rabin.appspot.com/
-    const std::array<std::uint64_t, 5> bases =
-           { UINT64_C(2), UINT64_C(4130806001517), UINT64_C(149795463772692060),
-             UINT64_C(186635894390467037), UINT64_C(3967304179347715805) };
+    const std::array<std::int64_t, 5> bases =
+           { INT64_C(2), INT64_C(4130806001517), INT64_C(149795463772692060),
+             INT64_C(186635894390467037), INT64_C(3967304179347715805) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 
@@ -626,21 +637,21 @@ struct is_prime_miller_rabin_special {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 64 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 64 ||
-              (ut_numeric_limits<T>::digits > 64 &&
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 63) ||
+            (ut_numeric_limits<T>::digits > 64 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num && num < UINT64_C(585226005592931977));
-    // I verified these bases are correct for all num < 585226005592931977, if
-    // Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve Worley
-    // discovered the bases - see https://miller-rabin.appspot.com/
-    const std::array<std::uint64_t, 6> bases =
-                { UINT64_C(2), UINT64_C(123635709730000),
-                  UINT64_C(9233062284813009), UINT64_C(43835965440333360),
-                  UINT64_C(761179012939631437), UINT64_C(1263739024124850375) };
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus && modulus < UINT64_C(585226005592931977));
+    // I verified these bases are correct for all modulus < 585226005592931977,
+    // if Feitsma's database of Fermat pseudoprimes base 2 is valid.  Steve
+    // Worley discovered the bases - see https://miller-rabin.appspot.com/
+    const std::array<std::int64_t, 6> bases =
+                { INT64_C(2), INT64_C(123635709730000),
+                  INT64_C(9233062284813009), INT64_C(43835965440333360),
+                  INT64_C(761179012939631437), INT64_C(1263739024124850375) };
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
   }
 
@@ -650,19 +661,19 @@ struct is_prime_miller_rabin_special {
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    // Technically any 128 bit or larger type should work, but we allow only the
-    // types for which this function would be an efficient choice.
+    // allow only types for which this function would be an efficient choice
     static_assert(ut_numeric_limits<T>::digits == 128 ||
-              (ut_numeric_limits<T>::digits > 128 &&
+            (ut_numeric_limits<T>::is_signed &&
+               ut_numeric_limits<T>::digits == 127) ||
+            (ut_numeric_limits<T>::digits > 128 &&
                ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH), "");
-    T num = mf.getModulus();
-    HPBC_PRECONDITION2(1 < num);
-    //HPBC_PRECONDITION2(num < UINT128_C(3317044064679887385961981));
+    T modulus = mf.getModulus();
+    HPBC_PRECONDITION2(1 < modulus);
+    //HPBC_PRECONDITION2(modulus < UINT128_C(3317044064679887385961981));
     // Note: 3317044064679887385961981 == (179817 << 64) + 5885577656943027709
     constexpr T limit = (static_cast<T>(179817) << 64) +
                         UINT64_C(5885577656943027709);
-    HPBC_PRECONDITION2(num < limit);
+    HPBC_PRECONDITION2(modulus < limit);
     // Jonathan Sorenson and Jonathan Webster proved that no numbers exist below
     // 3317044064679887385961981 that are pseudoprimes to all of these bases.
     // See https://arxiv.org/abs/1509.00864
@@ -714,8 +725,8 @@ struct is_prime_miller_rabin_special {
 // generally avoid a TRIAL_SIZE of 3 or 4 in the defaults, despite the fact that
 // when testing primes, we might perhaps expect a doubling in performance
 // compared to TRIAL_SIZE 1, due to better instruction level parallelism.  The
-// downside of a 3-4x increase in code size (for the involved functions) seems
-// too great a cost for defaults.
+// downside of a 3-4x increase in code size (for the involved functions) is
+// difficult to justify for defaults.
 // Third, in order to minimize the compiled machine code size, we try to avoid
 // causing additional function template instantiations when it's reasonable.
 // For example, the 64bit is_prime_miller_rabin template function below has an
@@ -739,153 +750,147 @@ struct is_prime_miller_rabin_special {
 // Note: we use a struct and static functions in order to disallow ADL
 struct is_prime_miller_rabin {
 
-  template <typename MontType>
-  static typename std::enable_if<
-   (ut_numeric_limits<typename MontType::IntegerType>::digits==128), bool>::type
-  call(const MontType& mf)
+  template <typename MontType, int LOG2_MODULUS_LIMIT =
+                      ut_numeric_limits<typename MontType::IntegerType>::digits>
+  static bool call(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
     HPBC_PRECONDITION2(mf.getModulus() > 1);
-    // Note: 3317044064679887385961981 == (179817 << 64) + 5885577656943027709
-    constexpr T limit13 =
-                 (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
-    if (mf.getModulus() < limit13) {
-        constexpr std::size_t TRIAL_SIZE = 3;
-        return is_prime_miller_rabin_special::
-                          case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
+
+    if constexpr(LOG2_MODULUS_LIMIT <= 16) {
+        // It's questionable whether using miller-rabin is a good idea for
+        // primality testing values under 2^16.  For any intensive repeated
+        // primality testing, the sieve of eratosthenes (see
+        // SieveOfEratosthenes.h) will provide a small lookup table that should
+        // be faster.  For a one time primality test you could just trial divide
+        // by all primes < 256, and have trivial CPU cost.
+
+        // Don't allow  ut_numeric_limits<T>::digits < 16.  The bases we will
+        // use will be type uint16_t (they will have 16 binary digits) and the
+        // bases need to fit in type T.  Thus, T with < 16 digits won't work.
+        static_assert(ut_numeric_limits<T>::digits >= 16);
+        // 1 base (hashed) miller-rabin with a trial size 1 should be a good 16
+        // bit default, since it's faster than 2 base (non-hashed) miller-rabin
+        // yet keeps essentially the same code size and static memory usage.
+        // Some compilers may use 8 bytes of static memory for the hash table
+        // rather than loading the values on the fly (which uses no static
+        // memory).  If this occurs and it is unacceptable for you, you can
+        // switch the default to 2 base miller-rabin by pre-defining the macro
+        // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+        constexpr std::size_t TOTAL_BASES = 2;
+#else
+        constexpr std::size_t TOTAL_BASES = 1;
+#endif
+        constexpr std::size_t TRIAL_SIZE = 1;
+        return MillerRabinMontgomery<MontType, 16, TRIAL_SIZE,
+                                     TOTAL_BASES>::is_prime(mf);
     }
-
-    // 128 bit miller-rabin with 127 bases is going to be slow no matter what,
-    // but a trial size of 3 will usually improve performance over trial size 1,
-    // due to more efficient use of the CPU's pipelined and/or superscalar
-    // execution units.
-    // We typically avoid a TRIAL_SIZE > 2 due to the machine code size increase
-    // it causes, but this function processes so many bases that any negative
-    // effect on instruction cache should be more than made up for by the
-    // repeated speed gain from processing more bases per trial.
-    constexpr std::size_t TOTAL_BASES = 127;
-    constexpr std::size_t TRIAL_SIZE = 3;
-    return MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, TOTAL_BASES>::
-                                                                   is_prime(mf);
-  }
-
-  template <typename MontType>
-  static typename std::enable_if<
-    (ut_numeric_limits<typename MontType::IntegerType>::digits==64), bool>::type
-  call(const MontType& mf)
-  {
-    using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(mf.getModulus() > 1);
-    if (mf.getModulus() < UINT64_C(350269456337)) {
-        // We can use a 3 base test when the modulus is small for a uint64_t.
+    else if constexpr(16 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 32) {
+        // 2 base (hashed) miller-rabin with a trial size 1 should be a good 32
+        // bit default, since it's faster than 3 base (non-hashed) miller-rabin
+        // yet keeps essentially the same code size and static memory usage.
+        // Some compilers may use 16 bytes of static memory for the hash table
+        // rather than loading the values on the fly (which uses no static
+        // memory).  If this occurs and it is unacceptable for you, you can
+        // switch the default to 3 base miller-rabin by pre-defining the macro
+        // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+        constexpr std::size_t TOTAL_BASES = 3;
+#else
+        constexpr std::size_t TOTAL_BASES = 2;
+#endif
+        constexpr std::size_t TRIAL_SIZE = 1;
+        return MillerRabinMontgomery<MontType, LOG2_MODULUS_LIMIT, TRIAL_SIZE,
+                                     TOTAL_BASES>::is_prime(mf);
+    }
+    else if constexpr(32 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 64) {
+        // Try to use a 3 base test if the modulus is small enough.
         // It's faster than the 5 base test below, and needs no extra static
         // memory (it's not hashed) and has essentially no effect on code size.
-        constexpr std::size_t TRIAL_SIZE = 2;
-        return is_prime_miller_rabin_special::
+        if constexpr (ut_numeric_limits<T>::digits == 63) {
+            // we can't use the  case_350269456337_64_3  test, because its
+            // bases require at least 64 binary digits.  So we use a test with
+            // smaller range that works with a 63 digit type T (like int64_t).
+            if (mf.getModulus() < UINT64_C(273919523041)) {
+                constexpr std::size_t TRIAL_SIZE = 2;
+                return is_prime_miller_rabin_special::
+                                         case_273919523041_64_3<TRIAL_SIZE>(mf);
+            }
+        }
+        else {
+            if (mf.getModulus() < UINT64_C(350269456337)) {
+                constexpr std::size_t TRIAL_SIZE = 2;
+                return is_prime_miller_rabin_special::
                                          case_350269456337_64_3<TRIAL_SIZE>(mf);
+            }
+        }
+        // 5 base (hashed) miller-rabin with a trial size 2 should be a good 64
+        // bit default.  It will start with a trial size of 1 (because 5%2 == 1)
+        // which achieves max speed for composite numbers unless they are
+        // pseudoprimes to the first base.  If testing the first base doesn't
+        // prove a number is composite, then the tests will switch to trial size
+        // 2 for the remaining 4 bases, which should be a significant speed-up
+        // over trial size 1 (I measure 1.67x speed-up on Intel Haswell) due to
+        // more efficient use of CPU pipelined/superscalar execution units.
+        // The obvious 64 bit alternative default is 7 base non-hashed miller-
+        // rabin.  We choose hashed 5 base because it is faster for primes to be
+        // able to avoid testing 2 extra bases, and the hashed version's
+        // downside of needing up to 320 bytes for a hash table in static memory
+        // (and accessing it) should usually be a worthwhile trade-off for the
+        // speed improvement.  You can switch the default to 7 base miller-rabin
+        // by pre-defining the macro HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN.
+#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+        constexpr std::size_t TOTAL_BASES = 7;
+#else
+        constexpr std::size_t TOTAL_BASES = 5;
+#endif
+        constexpr std::size_t TRIAL_SIZE = 2;
+        return MillerRabinMontgomery<MontType, LOG2_MODULUS_LIMIT, TRIAL_SIZE,
+                                     TOTAL_BASES>::is_prime(mf);
     }
-    // 5 base (hashed) miller-rabin with a trial size 2 should be a good 64 bit
-    // default.  It will start with a trial size of 1 (because 5%2 == 1), which
-    // achieves max speed for composite numbers unless they are pseudoprimes to
-    // the first base.  If testing the first base doesn't prove a number is
-    // composite, then the tests will switch to trial size 2 for the remaining 4
-    // bases, which should be a significant speed-up over trial size 1 (I
-    // measure 1.67x speed-up on Intel Haswell) due to more efficient use of CPU
-    // pipelined/superscalar execution units.
-    // The obvious 64 bit alternative default is 7 base non-hashed miller-rabin.
-    // We choose to use hashed 5 base because it is faster for primes to be able
-    // to avoid testing 2 extra bases, and the hashed version's downside of
-    // needing a 320 byte hash table in static memory (and accessing it) should
-    // usually be a worthwhile trade-off for the speed improvement.
-    // You can switch the default to 7 base miller-rabin by pre-defining the
-    // macro HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-    constexpr std::size_t TOTAL_BASES = 7;
-#else
-    constexpr std::size_t TOTAL_BASES = 5;
-#endif
-    constexpr std::size_t TRIAL_SIZE = 2;
-    return MillerRabinMontgomery
-                          <MontType, 64, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
-  }
-
-  template <typename MontType>
-  static typename std::enable_if<
-    (ut_numeric_limits<typename MontType::IntegerType>::digits==32), bool>::type
-  call(const MontType& mf)
-  {
-    using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(mf.getModulus() > 1);
-    // 2 base (hashed) miller-rabin with a trial size 1 should be a good 32 bit
-    // default, since it's faster than 3 base (non-hashed) miller-rabin yet
-    // keeps essentially the same code size and static memory usage.
-    // Some compilers may use 16 bytes of static memory for the hash table
-    // rather than loading the values on the fly (which uses no static memory).
-    // If this occurs and it is unacceptable for you, you can switch the default
-    // to 3 base miller-rabin by pre-defining the macro
-    // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-    constexpr std::size_t TOTAL_BASES = 3;
-    constexpr std::size_t TRIAL_SIZE = 1;
-#else
-    constexpr std::size_t TOTAL_BASES = 2;
-    constexpr std::size_t TRIAL_SIZE = 1;
-#endif
-    return MillerRabinMontgomery
-                          <MontType, 32, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
-  }
-
-  // It's questionable whether using miller-rabin is a good idea for primality
-  // testing uint16_t values.  For any intensive repeated primality testing,
-  // the sieve of eratosthenes (see SieveOfEratosthenes.h) will provide a small
-  // lookup table that should be faster at determining primality.  For a one
-  // time primality test you could just trial divide by all primes < 256, and
-  // even if it's not quite as fast as this function, the computational load
-  // will be tiny.  On the plus side, this function may be the most convenient
-  // option if you are already using the miller-rabin tests in this file.
-  template <typename MontType>
-  static typename std::enable_if<
-    (ut_numeric_limits<typename MontType::IntegerType>::digits==16), bool>::type
-  call(const MontType& mf)
-  {
-    using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    HPBC_PRECONDITION2(mf.getModulus() > 1);
-    // 1 base (hashed) miller-rabin with a trial size 1 should be a good 16 bit
-    // default, since it's faster than 2 base (non-hashed) miller-rabin yet
-    // keeps essentially the same code size and static memory usage.
-    // Some compilers may use 8 bytes of static memory for the hash table rather
-    // than loading the values on the fly (which uses no static memory).
-    // If this occurs and it is unacceptable for you, you can switch the default
-    // to 2 base miller-rabin by pre-defining the macro
-    // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-#ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-    constexpr std::size_t TOTAL_BASES = 2;
-#else
-    constexpr std::size_t TOTAL_BASES = 1;
-#endif
-    constexpr std::size_t TRIAL_SIZE = 1;
-    return MillerRabinMontgomery
-                          <MontType, 16, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
+    else if constexpr(64 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 128) {
+        // Use a 13 base test if the modulus is small enough.  It's a lot faster
+        // than the 127 base test below.
+        // Note: 3317044064679887385961981 == (179817<<64) + 5885577656943027709
+        constexpr T limit13 =
+                 (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
+        if (mf.getModulus() < limit13) {
+            constexpr std::size_t TRIAL_SIZE = 3;
+            return is_prime_miller_rabin_special::
+                          case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
+        }
+        // 128 bit miller-rabin with 127 bases is going to be slow no matter
+        // what, but a trial size of 3 will usually improve performance over
+        // trial size 1, due to more efficient use of the CPU's pipelined and/or
+        // superscalar execution units.
+        // We typically avoid a TRIAL_SIZE > 2 due to the machine code size
+        // increase it causes, but the test below processes so many bases that
+        // any negative effect on instruction cache should be more than made up
+        // for by the speed gain from processing more bases per trial.
+        constexpr std::size_t TOTAL_BASES = 127;
+        constexpr std::size_t TRIAL_SIZE = 3;
+        return MillerRabinMontgomery<MontType, 128, TRIAL_SIZE,
+                                     TOTAL_BASES>::is_prime(mf);
+    }
+    else {
+        // C++ treats static_assert in constexpr-if as ill-formed if it is
+        // always false and does not depend on a template param.  So we use
+        // sizeof(T)==0 here instead of plain 'false'.
+        static_assert(sizeof(T) == 0, "LOG2_MODULUS_LIMIT<=128 required");
+    }
   }
 
 
   // ---------------------
-  // Integral argument versions:
+  // Integer argument versions:
 
   // I'm assuming a caller would usually have already used trial division to
   // find any factors<256 for a number x.  Thus a caller would (usually) have no
   // need to determine primality for any x < 65536.  By this reasoning there is
   // probably little benefit in a function for uint16_t.  We start instead by
-  // enable_if'ing for types T <= 32 bit, and casting T to uint32_t to minimize
-  // further function instantations.
+  // enable_if'ing for types T <= 32 bit.
 
   template <typename T>
   static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
@@ -898,15 +903,33 @@ struct is_prime_miller_rabin {
 #   error "HURCHALLA_TARGET_BIT_WIDTH must be defined"
 #endif
 #if HURCHALLA_TARGET_BIT_WIDTH >= 64
+    static_assert(ut_numeric_limits<T>::digits <= 32);
+    constexpr int digits = (ut_numeric_limits<T>::digits < 31) ? 30 :
+                                                   ut_numeric_limits<T>::digits;
     using U = std::uint64_t;
-    return call(MontgomeryQuarter<U>(static_cast<U>(x)));
+    MontgomeryQuarter<U> mf(static_cast<U>(x));
+    return call<decltype(mf),digits>(mf);
 #else
     using U = std::uint32_t;
-    constexpr U Rdiv4 = static_cast<U>(1) << 30;
-    return (x < Rdiv4) ? call(MontgomeryQuarter<U>(static_cast<U>(x))) :
-                                     call(MontgomeryForm<U>(static_cast<U>(x)));
+    if constexpr (ut_numeric_limits<T>::digits < 31) {
+        MontgomeryQuarter<U> mf(static_cast<U>(x));
+        return call<decltype(mf),30>(mf);
+    }
+    else if constexpr (ut_numeric_limits<T>::digits == 31) {
+        MontgomeryHalf<U> mf(static_cast<U>(x));
+        return call<decltype(mf),31>(mf);
+    }
+    else {
+        static_assert(ut_numeric_limits<T>::digits == 32);
+        constexpr U Rdiv4 = static_cast<U>(1) << 30;
+        if (x < Rdiv4)
+            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
+        else
+            return call(MontgomeryForm<U>(static_cast<U>(x)));
+    }
 #endif
   }
+
 
   template <typename T>
   static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
@@ -916,15 +939,25 @@ struct is_prime_miller_rabin {
   {
     HPBC_PRECONDITION2(x % 2 == 1);
     HPBC_PRECONDITION2(x > 1);
-    if (x > ut_numeric_limits<std::uint32_t>::max()) {
-        using U = std::uint64_t;
-        constexpr U Rdiv4 = static_cast<U>(1) << 62;
-        return (x < Rdiv4) ? call(MontgomeryQuarter<U>(static_cast<U>(x))) :
-                                     call(MontgomeryForm<U>(static_cast<U>(x)));
+    using U = std::uint64_t;
+    if constexpr (ut_numeric_limits<T>::digits < 63) {
+        MontgomeryQuarter<U> mf(static_cast<U>(x));
+        return call<decltype(mf),62>(mf);
     }
-    else
-        return call(static_cast<std::uint32_t>(x));
+    else if constexpr (ut_numeric_limits<T>::digits == 63) {
+        MontgomeryHalf<U> mf(static_cast<U>(x));
+        return call<decltype(mf),63>(mf);
+    }
+    else {
+        static_assert(ut_numeric_limits<T>::digits == 64);
+        constexpr U Rdiv4 = static_cast<U>(1) << 62;
+        if (x < Rdiv4)
+            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
+        else
+            return call(MontgomeryForm<U>(static_cast<U>(x)));
+    }
   }
+
 
   template <typename T>
   static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
@@ -935,10 +968,14 @@ struct is_prime_miller_rabin {
     HPBC_PRECONDITION2(x > 1);
     if (x > ut_numeric_limits<std::uint64_t>::max()) {
         using U = typename extensible_make_unsigned<T>::type;
+        // this file doesn't have any set of bases to handle > 128 bit types
+        static_assert(ut_numeric_limits<U>::digits == 128);
         constexpr U Rdiv4 =
                         static_cast<U>(1) << (ut_numeric_limits<U>::digits - 2);
-        return (x < Rdiv4) ? call(MontgomeryQuarter<U>(static_cast<U>(x))) :
-                                     call(MontgomeryForm<U>(static_cast<U>(x)));
+        if (static_cast<U>(x) < Rdiv4)
+            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
+        else
+            return call(MontgomeryForm<U>(static_cast<U>(x)));
     }
     else
         return call(static_cast<std::uint64_t>(x));

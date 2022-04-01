@@ -12,6 +12,7 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <cstdint>
+#include <type_traits>
 
 namespace hurchalla { namespace detail {
 
@@ -96,7 +97,11 @@ struct is_prime_trialdivision {
     if (x % 2 == 0)
         return (x == 2);
 
-    constexpr auto next_prime_squared = TD::nextPrimePastEndSquared();
+    constexpr auto tmp = TD::nextPrimePastEndSquared();
+    // (paranoia) use std::integral_constant to guarantee compile-time init.
+    constexpr auto next_prime_squared =
+                              std::integral_constant<decltype(tmp), tmp>::value;
+
     for (int i=0; i<TD_SIZE; ++i) {
         if (TD::oddPrimeSquared(i) > x) {
             // Since no primes <= sqrt(x) were factors of x, x must be a prime

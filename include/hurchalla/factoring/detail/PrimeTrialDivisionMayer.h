@@ -55,6 +55,8 @@ public:
     static constexpr auto nextPrimePastEnd()
     {
         constexpr auto next = OddPrimes::get_next_prime<U, oddprimes[SIZE-1]>();
+        // sanity check: ensure 'next' is compile time initialized
+        static_assert(next != 0);
         return next;
     }
 
@@ -65,6 +67,8 @@ public:
         // square the constant without overflow.
         constexpr auto square =
                       OddPrimes::get_constant_squared<decltype(prime), prime>();
+        // sanity check: ensure square is compile time initialized
+        static_assert(square != 0);
         return square;
     }
 
@@ -86,6 +90,7 @@ private:
     // sanity check oddprimes is compile time initialized
     static_assert(SIZE > 0);
     static_assert(oddprimes[0] != 0);
+
     using U = typename decltype(oddprimes)::value_type;
     static_assert(ut_numeric_limits<U>::is_integer);
     static_assert(!ut_numeric_limits<U>::is_signed);

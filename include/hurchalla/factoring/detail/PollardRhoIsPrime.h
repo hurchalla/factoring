@@ -59,7 +59,7 @@ operator()(const MontType& mf) const
     // template function will always use a native type when possible (e.g. on a
     // 32 bit system it will switch from using a 64 bit type to instead use a 32
     // bit type if the modulus fits in the 32 bit type).  Thus the following
-    // conditional would always be false for a 64 bit target system, but the
+    // conditional would always be false for a 32 bit target system, but the
     // compiler won't know this and would still generate code for the clause. 
     // We use the preprocessor ifdef above to to avoid generating code for a
     // conditional that we know would always be false.  Even if we are wrong
@@ -74,10 +74,10 @@ operator()(const MontType& mf) const
                           <MontType, 32, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
     }
 #endif
-    if (mf.getModulus() < UINT64_C(350269456337)) {
+    if (mf.getModulus() < UINT64_C(273919523041)) {
         constexpr std::size_t TRIAL_SIZE = 3;
         return is_prime_miller_rabin_special::
-                                         case_350269456337_64_3<TRIAL_SIZE>(mf);
+                                         case_273919523041_64_3<TRIAL_SIZE>(mf);
     }
     constexpr std::size_t TOTAL_BASES = 5;
     constexpr std::size_t TRIAL_SIZE = 3;

@@ -40,10 +40,11 @@ public:
     {
         HPBC_PRECONDITION2(num < (static_cast<std::uint64_t>(1) << 44));
         // I generated/verified the hash table and bases.  See README.TXT
-        using std::uint32_t;
+        using std::uint16_t;
         std::array<std::uint16_t, 3> bases;
         bases[0] = 2;
-        uint16_t hash_bucket = static_cast<uint16_t>(num) >> 12;
+        uint16_t hash_bucket = static_cast<uint16_t>(
+                                              static_cast<uint16_t>(num) >> 12);
         bases[1] = table[hash_bucket][0];
         bases[2] = table[hash_bucket][1];
         return bases;

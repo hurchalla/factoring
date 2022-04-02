@@ -56,7 +56,6 @@ std::array<T, ut_numeric_limits<T>::digits>
 factorize(T x, int& num_factors)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
@@ -82,11 +81,11 @@ factorize(T x, int& num_factors)
 }
 
 
-// As a general recommendation, use factorize().  You may wish to use this
-// function if your stack size is limited, since it uses (the heap allocated)
-// std::vector.  Note that if you used factorize(), the returned std::array for
-// type T of uint32_t would take 128 bytes, uint64_t would take 512 bytes, and
-// __uint128_t would take 2kb.
+// This version of factorize returns a std::vector (rather than a std::array).
+// It may be preferable if you wish to save stack space, since vector is heap
+// allocated.  Note that if you used factorize(), the returned std::array for
+// type T of uint32_t would take 128 bytes on the stack, uint64_t would take 512
+// bytes, and __uint128_t would take 2kb.
 //
 // Returns a vector that contains all factors of x.  The size of the vector is
 // the number of factors.
@@ -95,17 +94,15 @@ template <typename T>
 std::vector<T> factorize_to_vector(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
 
     namespace hd = ::hurchalla::detail;
+    std::vector<T> vec = hd::impl_factorize::factorize_to_vector(
+                                                    x, hd::PollardRhoIsPrime());
+    HPBC_POSTCONDITION(vec.size() > 0);
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;
-    std::vector<T> vec = hd::impl_factorize::factorize_to_vector(
-                                   x, max_num_factors, hd::PollardRhoIsPrime());
-
-    HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
     // all the factors multiplied together should == x
     HPBC_POSTCONDITION(x == std::accumulate(vec.begin(), vec.end(),

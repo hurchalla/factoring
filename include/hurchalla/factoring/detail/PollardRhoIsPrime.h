@@ -74,10 +74,11 @@ operator()(const MontType& mf) const
                           <MontType, 32, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
     }
 #endif
-    if (mf.getModulus() < UINT64_C(273919523041)) {
+    if (mf.getModulus() < (static_cast<std::uint64_t>(1) << 44)) {
+        constexpr std::size_t TOTAL_BASES = 3;
         constexpr std::size_t TRIAL_SIZE = 3;
-        return is_prime_miller_rabin_special::
-                                         case_273919523041_64_3<TRIAL_SIZE>(mf);
+        return MillerRabinMontgomery
+                          <MontType, 44, TRIAL_SIZE, TOTAL_BASES>::is_prime(mf);
     }
     constexpr std::size_t TOTAL_BASES = 5;
     constexpr std::size_t TRIAL_SIZE = 3;

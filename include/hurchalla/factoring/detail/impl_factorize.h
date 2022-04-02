@@ -13,6 +13,7 @@
 #include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/factorize_pollard_rho.h"
+#include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <cstddef>
@@ -37,7 +38,8 @@ namespace hurchalla { namespace detail {
 // Note: we use a struct with static functions in order to disallow ADL
 struct impl_factorize {
 private:
-  template <class OutputIt, typename T, class PrimalityFunctor>
+  template <int LOG2_MODULUS_LIMIT, class OutputIt,
+            typename T, class PrimalityFunctor>
   static OutputIt
   dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
   {
@@ -64,7 +66,7 @@ private:
     T threshold_always_prime = (next_prime < sqrtR) ?
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 
-    iter = factorize_pollard_rho::call(iter, q, is_prime_mf,
+    iter = factorize_pollard_rho::call<LOG2_MODULUS_LIMIT>(iter, q, is_prime_mf,
                                                         threshold_always_prime);
     return iter;
   }
@@ -76,20 +78,22 @@ public:
   factorize_to_array(T x, int& num_factors, const PrimalityFunctor& is_prime_mf)
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
+
+    using U = typename extensible_make_unsigned<T>::type;
 
     // The max possible number of factors occurs when all factors equal 2
     constexpr std::size_t array_size = ut_numeric_limits<T>::digits;
     std::array<T, array_size> arr;
 
     struct FactorArrayAdapter {
-        using value_type = T;
+        using value_type = U;
         explicit FactorArrayAdapter(std::array<T, array_size>& a) :
                                                        ar(a), factor_count(0) {}
         void push_back(const value_type& val)
         {
             HPBC_ASSERT2(factor_count < array_size);
-            ar[factor_count] = val;
+            HPBC_ASSERT2(val <= static_cast<U>(ut_numeric_limits<T>::max()));
+            ar[factor_count] = static_cast<T>(val);
             ++factor_count;
         }
         std::size_t size() { return factor_count; }
@@ -98,7 +102,11 @@ public:
         std::size_t factor_count;
     };
     FactorArrayAdapter faa(arr);
-    dispatch(std::back_inserter(faa), x, is_prime_mf);
+    // LOG2_MODULUS_LIMIT lets the called function know the compile-time limit
+    // to the modulus range, so that it can use an efficient Monty type.
+    constexpr int LOG2_MODULUS_LIMIT = ut_numeric_limits<T>::digits;
+    dispatch<LOG2_MODULUS_LIMIT>(
+                       std::back_inserter(faa), static_cast<U>(x), is_prime_mf);
     num_factors = static_cast<int>(faa.size());
 
     HPBC_POSTCONDITION(num_factors > 0);
@@ -108,16 +116,35 @@ public:
 
 
   template <typename T, class PrimalityFunctor>
-  static std::vector<T> factorize_to_vector(T x, int max_num_factors,
+  static std::vector<T> factorize_to_vector(T x,
                                             const PrimalityFunctor& is_prime_mf)
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
+    using U = typename extensible_make_unsigned<T>::type;
 
     std::vector<T> vec;
+    // The max possible vector size needed for factors is when all of them are 2
+    constexpr int max_num_factors = ut_numeric_limits<T>::digits;
     vec.reserve(max_num_factors);
-    dispatch(std::back_inserter(vec), x, is_prime_mf);
 
+    // convenient adapter to correctly cast from unsigned to (possibly)signed T
+    struct FactorVectorAdapter {
+        using value_type = U;
+        explicit FactorVectorAdapter(std::vector<T>& a) : v(a) {}
+        void push_back(const value_type& val)
+        {
+            HPBC_ASSERT2(val <= static_cast<U>(ut_numeric_limits<T>::max()));
+            v.push_back(static_cast<T>(val));
+        }
+    private:
+        std::vector<T>& v;
+    };
+    FactorVectorAdapter fva(vec);
+    // LOG2_MODULUS_LIMIT lets the called function know the compile-time limit
+    // to the modulus range, so that it can use an efficient Monty type.
+    constexpr int LOG2_MODULUS_LIMIT = ut_numeric_limits<T>::digits;
+    dispatch<LOG2_MODULUS_LIMIT>(
+                       std::back_inserter(fva), static_cast<U>(x), is_prime_mf);
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
     return vec;

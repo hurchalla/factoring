@@ -20,6 +20,7 @@
 #include "../factorize_bruteforce.h"
 #include "hurchalla/factoring/detail/factorize_pollard_rho.h"
 #include "hurchalla/factoring/detail/PollardRhoIsPrime.h"
+#include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 
@@ -48,7 +49,8 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         std::vector<T> answer = factorize_bruteforce(x);
         std::sort(answer.begin(), answer.end());
         std::vector<T> vec;
-        factorize_pollard_rho::call(std::back_inserter(vec), x,
+        constexpr bool allowHalfRange = false;
+        factorize_pollard_rho::call<allowHalfRange>(std::back_inserter(vec), x,
                                                            PollardRhoIsPrime());
         std::sort(vec.begin(), vec.end());
         SCOPED_TRACE(testing::Message() << "x == " << x);
@@ -71,12 +73,31 @@ void test_factorize(const std::vector<T>& answer)
     T x = calculate_x(answer);
     EXPECT_TRUE(x > 0);  // the test is bad if this fails
     std::vector<T> vec;
-    auto iter = std::back_inserter(vec);
+
+    constexpr bool allowHalfRange = ut_numeric_limits<T>::is_signed;
+    using U = typename extensible_make_unsigned<T>::type;
+
+    //convenient adapter to correctly cast between (possible)signed and unsigned
+    struct FactorVectorAdapter {
+        using value_type = U;
+        explicit FactorVectorAdapter(std::vector<T>& a) : v(a) {}
+        void push_back(const value_type& val)
+        {
+            HPBC_ASSERT2(val <= static_cast<U>(ut_numeric_limits<T>::max()));
+            v.push_back(static_cast<T>(val));
+        }
+    private:
+        std::vector<T>& v;
+    };
+    FactorVectorAdapter fva(vec);
+
+    auto iter = std::back_inserter(fva);
     while (x % 2 == 0) {
         *iter++ = 2;
         x = x/2;
     }
-    factorize_pollard_rho::call(iter, x, PollardRhoIsPrime());
+    factorize_pollard_rho::call<allowHalfRange>(iter, static_cast<U>(x),
+                                                           PollardRhoIsPrime());
     EXPECT_TRUE(vec.size() == answer.size());
     // at this time, I haven't made a guarantee for factorize()
     // that the destination range will be sorted, so we'll sort it here.
@@ -94,6 +115,34 @@ TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes) {
     test_factorize(answer);
 }
 
+TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes32) {
+    using T = std::int32_t;
+    T twoPow15 = static_cast<T>(1) << 15;
+    // use largest primes < (1<<15):
+    // (1<<15) minus { 19, 49, 51, 55, 61, 75, 81, 115, 121, 135 }
+    std::vector<T> answer = { twoPow15 - 49, twoPow15 - 19 };
+    SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
+    test_factorize(answer);
+}
+TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes64) {
+    using T = std::int64_t;
+    T twoPow31 = static_cast<T>(1) << 31;
+    // use largest primes < (1<<31):
+    // (1<<31) minus { 1, 19, 61, 69, 85, 99, 105, 151, 159, 171 }
+    std::vector<T> answer = { twoPow31 - 19, twoPow31 - 1 };
+    SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
+    test_factorize(answer);
+}
+#if HURCHALLA_COMPILER_HAS_UINT128_T()
+TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes128) {
+    using T = __int128_t;
+    T twoPow33 = static_cast<T>(1) << 33;
+    // use largest primes < (1<<33):
+    // (1<<33) minus { 9, 25, 49, 79, 105, 285, 301, 303, 321, 355 }
+    std::vector<T> answer = { twoPow33 - 25, twoPow33 - 9 };
+    test_factorize(answer);
+}
+#endif
 
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
 TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes128_32) {

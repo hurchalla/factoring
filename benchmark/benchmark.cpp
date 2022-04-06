@@ -51,42 +51,56 @@ std::string displayCPU()
 #endif
 
 
+// this function benchmarks factoring of numbers just under
+// 1 << (bit_width_T - 1).  For example, if T is int64_t, T has a bit
+// width of 64 and this function would benchmark numbers just under
+// 1 << 63.
+template <typename T>
+void bench_halfrange()
+{
+   using namespace std::chrono;
+   using dsec = duration<double>;
+   bool impossible_happened = false;
+   auto t0 = steady_clock::now();
+
+   using U = typename hurchalla::extensible_make_unsigned<T>::type;
+   T start = static_cast<T>((static_cast<U>(1) << 63) - 1);
+   for (T x = start; x > start - 400000; x = x-2) {
+      int num_factors;
+      auto arr = hurchalla::factorize(x, num_factors);
+      // We need to prevent the compiler from completely removing
+      // the factorize calls due to arr never being used.
+      // So we'll check arr[0] (which is never 0) just so it's used.
+      if (arr[0] == 0) {
+         impossible_happened = true;
+         break;
+      }
+//         std::cout << "the factors of " << x << " are:" << "\n";
+//         for (int j = 0; j < num_factors; ++j)
+//            std::cout << arr[j] << "\n";
+   }
+   if (impossible_happened)
+      std::cout << "impossible\n";
+
+   auto t1 = steady_clock::now();
+   std::cout << dsec(t1-t0).count() << "\n";
+}
+
+
 int main()
 {
 #if defined(__GNUC__)
    std::cout << displayCPU() << "\n";
 #endif
 
-   using T = std::int64_t;
-
-   using namespace std::chrono;
-   using dsec = duration<double>;
-
-   bool impossible_happened = false;
-
    std::cout << "---started---\n";
 
+   std::cout << "(using type int64_t)\n";
    for (int i=0; i<5; ++i) {
-      auto t0 = steady_clock::now();
-      using U = typename hurchalla::extensible_make_unsigned<T>::type;
-      T start = static_cast<T>((static_cast<U>(1) << 63) - 1);
-      for (T x = start; x > start - 400000; x = x-2) {
-         int num_factors;
-         auto arr = hurchalla::factorize(x, num_factors);
-         // We need to prevent the compiler from completely removing
-         // the factorize calls due to arr never being used.
-         // So we'll check arr[0] (which is never 0) just so it's used.
-         if (arr[0] == 0) {
-            impossible_happened = true;
-            break;
-         }
-//         std::cout << "the factors of " << x << " are:" << "\n";
-//         for (int j = 0; j < num_factors; ++j)
-//            std::cout << arr[j] << "\n";
-      }
-      if (impossible_happened)
-         std::cout << "impossible\n";
-      auto t1 = steady_clock::now();
-      std::cout << dsec(t1-t0).count() << "\n";
+      bench_halfrange<std::int64_t>();
+   }
+   std::cout << "(using type uint64_t)\n";
+   for (int i=0; i<5; ++i) {
+      bench_halfrange<std::uint64_t>();
    }
 }

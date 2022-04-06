@@ -34,6 +34,11 @@ namespace hurchalla { namespace detail {
 // https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866113-7/S0025-5718-1987-0866113-7.pdf
 
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4701)
+#endif
+
 // The following functor is an adaptation of the function above, using a
 // Montgomery Form type M, and Montgomery domain values and arithmetic.
 // For type M, ordinarily you'll use a template class instantiation of
@@ -60,7 +65,7 @@ struct PollardRhoBrentMontgomeryTrial {
     constexpr T PRE_CYCLE_SIZE = 48;
 
     constexpr T ONE_THIRD_INITIAL_CYCLE_SIZE = 8;
-    T one_third_gcd_threshold = HURCHALLA_PRBM_ONE_THIRD_GCD_THRESHOLD;
+    constexpr T one_third_gcd_threshold= HURCHALLA_PRBM_ONE_THIRD_GCD_THRESHOLD;
 
     T one_third_cycle_size = ONE_THIRD_INITIAL_CYCLE_SIZE;
     V b = mf.getUnityValue();
@@ -193,6 +198,10 @@ struct PollardRhoBrentMontgomeryTrial {
     }
   }
 };
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 
 }}  // end namespace

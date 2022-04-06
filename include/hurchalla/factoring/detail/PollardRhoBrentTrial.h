@@ -125,6 +125,11 @@ T pollard_rho_brent_trial(T num, T c)
 */
 
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4701)
+#endif
+
 // The following functor is an adaptation of the function above, using a
 // Montgomery Form type M, and Montgomery domain values and arithmetic.
 // For type M, ordinarily you'll use a template class instantiation of
@@ -243,6 +248,10 @@ struct PollardRhoBrentTrial {
     }
   }
 };
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 
 }}  // end namespace

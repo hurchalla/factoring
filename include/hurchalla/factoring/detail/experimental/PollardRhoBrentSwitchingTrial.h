@@ -33,6 +33,11 @@ namespace hurchalla { namespace detail {
 #endif
 
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4701)
+#endif
+
 // The following functor is a parallel (instruction level, not thread) variation
 // on Pollard-Rho-Brent that advances two separate sequences, and switches
 // between which sequence is checked for primes before beginning every
@@ -178,6 +183,10 @@ private:
     return static_cast<T>(x + (x>>1) - (x>>4) - (x>>6));
   }
 };
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 
 }}  // end namespace

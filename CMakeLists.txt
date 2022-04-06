@@ -29,7 +29,7 @@ option(TEST_HURCHALLA_LIBS
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     option(TEST_HURCHALLA_FACTORING
         "Build the tests for the Hurchalla modular arithmetic library project."
-        OFF)
+        ON)
     if(TEST_HURCHALLA_FACTORING OR TEST_HURCHALLA_LIBS)
         enable_testing()
         # include(CTest)

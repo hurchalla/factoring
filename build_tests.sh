@@ -491,6 +491,7 @@ if [ "${mode,,}" = "release" ]; then
     build_dir=build/release_$compiler_name$compiler_version
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
+            -DBENCH_HURCHALLA_FACTORING=ON \
             $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="$cpp_standard  \

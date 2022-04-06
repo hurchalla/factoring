@@ -45,6 +45,12 @@ elseif(TEST_HURCHALLA_LIBS)
 endif()
 
 
+# an option to facilitate benchmarking from github actions
+option(BENCH_HURCHALLA_FACTORING
+       "Build a benchmarking app for the factoring project."
+       OFF)
+
+
 
 if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -163,4 +169,10 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     endif()
 elseif(TEST_HURCHALLA_LIBS)
     add_subdirectory(test)
+endif()
+
+
+# ***Benchmarking***
+if(BENCH_HURCHALLA_FACTORING)
+    add_subdirectory(benchmark)
 endif()

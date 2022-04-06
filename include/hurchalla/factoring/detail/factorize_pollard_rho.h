@@ -37,7 +37,7 @@ namespace hurchalla { namespace detail {
 
 
 // defined lower in this file
-template <int LOG2_MODULUS_LIMIT, class MF, class PrimalityFunctor,
+template <int log2ModulusLimit, class MF, class PrimalityFunctor,
           class OutputIt, typename T>
 OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
         const PrimalityFunctor& is_prime_pr, T threshold_always_prime, T base_c);
@@ -55,7 +55,7 @@ OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
 
 // Note: we use a struct with static functions in order to disallow ADL
 struct factorize_pollard_rho {
-  template <int LOG2_MODULUS_LIMIT, class PrimalityFunctor,
+  template <int log2ModulusLimit, class PrimalityFunctor,
             class OutputIt, typename T>
   static OutputIt call(OutputIt iter, T x, const PrimalityFunctor& is_prime_pr,
                                     T threshold_always_prime = 0, T base_c = 1)
@@ -75,7 +75,7 @@ struct factorize_pollard_rho {
                   T, S>::type;
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<U>;
-        return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+        return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
 #else
         static_assert(ut_numeric_limits<U>::digits >= 2);
@@ -83,11 +83,11 @@ struct factorize_pollard_rho {
                                             (ut_numeric_limits<U>::digits - 2));
         if (x < Udiv4) {
             using MF = MontgomeryQuarter<U>;
-            return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+            return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
         } else {
             constexpr bool allowHalfRange =
-                       (LOG2_MODULUS_LIMIT == ut_numeric_limits<T>::digits - 1);
+                       (log2ModulusLimit == ut_numeric_limits<T>::digits - 1);
             // allowHalfRange applies to T, so we can only use MontgomeryHalf on
             // U if T and U are the same size.  Note that if U is smaller than
             // the native bit width, then MontgomeryForm<U> can sometimes map to
@@ -101,7 +101,7 @@ struct factorize_pollard_rho {
                  ut_numeric_limits<U>::digits == ut_numeric_limits<T>::digits &&
                  ut_numeric_limits<U>::digits == HURCHALLA_TARGET_BIT_WIDTH),
                  MontgomeryHalf<U>, MontgomeryForm<U>>::type;
-            return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+            return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
         }
 #endif
@@ -112,7 +112,7 @@ struct factorize_pollard_rho {
     if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_POLLARD_RHO_NEVER_USE_MONTGOMERY_MATH)
         using MF = MontgomeryStandardMathWrapper<T>;
-        return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+        return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
 #else
         static_assert(ut_numeric_limits<T>::digits >= 2);
@@ -120,11 +120,11 @@ struct factorize_pollard_rho {
                                             (ut_numeric_limits<T>::digits - 2));
         if (x < Rdiv4) {
             using MF = MontgomeryQuarter<T>;
-            return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+            return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
         } else {
             using MF = MontgomeryForm<T>;
-            return hurchalla_factorize_pr_internal<LOG2_MODULUS_LIMIT, MF>(
+            return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                           iter, x, is_prime_pr, threshold_always_prime, base_c);
         }
 #endif
@@ -147,7 +147,7 @@ struct factorize_pollard_rho {
 
 
 
-template <int LOG2_MODULUS_LIMIT, class MF, class PrimalityFunctor,
+template <int log2ModulusLimit, class MF, class PrimalityFunctor,
           class OutputIt, typename T>
 OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
         const PrimalityFunctor& is_prime_pr, T threshold_always_prime, T base_c)
@@ -196,12 +196,12 @@ OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
             // efficiency that it didn't, but any T value would be valid.
             T next_c = static_cast<T>(base_c + static_cast<P>(i) + 1);
             // Try to factor the factor (it may or may not be prime)
-            iter = factorize_pollard_rho::call<LOG2_MODULUS_LIMIT>(
+            iter = factorize_pollard_rho::call<log2ModulusLimit>(
                  iter, tmp_factor, is_prime_pr, threshold_always_prime, next_c);
             // Next try to factor the quotient.
             // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
             T quotient = static_cast<T>(x/tmp_factor);  
-            iter = factorize_pollard_rho::call<LOG2_MODULUS_LIMIT>(
+            iter = factorize_pollard_rho::call<log2ModulusLimit>(
                  iter, quotient, is_prime_pr, threshold_always_prime, next_c);
             return iter;
         }

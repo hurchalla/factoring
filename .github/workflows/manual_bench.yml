@@ -12,8 +12,8 @@ env:
   BUILD_TYPE: Release
   #other potential flags for CXX_FLAGS are  -DHURCHALLA_AVOID_CSELECT=1 -DHURCHALLA_ALLOW_INLINE_ASM_ALL=1
   #"-std=c++17"
-  #"-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentSwitchingTrial"
-  CXX_FLAGS: "-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentTrialParallel"
+  #"-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentTrialParallel"
+  CXX_FLAGS: "-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentSwitchingTrial"
 
 jobs:
   build:

@@ -20,6 +20,10 @@
 #endif
 
 
+#define STRINGIFY(x) #x
+#define STRINGIFYMACRO(y) STRINGIFY(y)
+
+
 #if defined(__GNUC__)
 std::string displayCPU()
 {
@@ -92,6 +96,9 @@ int main()
 #if defined(__GNUC__)
    std::cout << displayCPU() << "\n";
 #endif
+    
+   std::cout << "HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME is ";
+   std::cout << STRINGIFYMACRO(HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME) << "\n";
 
    std::cout << "---started---\n";
 

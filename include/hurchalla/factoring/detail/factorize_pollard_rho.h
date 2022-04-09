@@ -9,18 +9,15 @@
 #define HURCHALLA_FACTORING_FACTORIZE_POLLARD_RHO_H_INCLUDED
 
 
-//#define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentSwitchingTrial
-
-
-#include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
-#ifdef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
+#include "hurchalla/factoring/detail/PollardRhoBrentSwitchingTrial.h"
+#ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
+#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentSwitchingTrial
+#else
+#  include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
+#  include "hurchalla/factoring/detail/PollardRhoBrentTrialParallel.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoTrial.h"
-#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentTrialParallel.h"
-#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentSwitchingTrial.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrial.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrialParallel.h"
-#else
-#  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentTrial
 #endif
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"

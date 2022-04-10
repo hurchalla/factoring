@@ -24,8 +24,8 @@ namespace hurchalla {
 
 // factorize() uses the Pollar-Rho factorization algorithm, with Brent's
 // improvements.  See https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm
-// I have also made some novel improvements to the algorithm.  The code and
-// algorithms are both well-optimized.
+// I have made novel improvements to the algorithm; both the code and
+// algorithms are well-optimized.
 // Prior to Pollard-Rho there is a small prime trial division stage.  Upon
 // beginning Pollard-Rho, we test for primality before trying to extract each
 // factor, by using the the deterministic Miller-Rabin algorithm - we usually
@@ -50,7 +50,7 @@ namespace hurchalla {
 // is uint32_t, then this function returns std::array<uint32_t, 32>.  (The bit
 // width has significance because it is impossible to have more factors than
 // type T's bit width.)
-// T can be any unsigned integral type <= 128 bits.
+// T can be any integral type <= 128 bits.
 template <typename T>
 std::array<T, ut_numeric_limits<T>::digits>
 factorize(T x, int& num_factors)
@@ -89,7 +89,7 @@ factorize(T x, int& num_factors)
 //
 // Returns a vector that contains all factors of x.  The size of the vector is
 // the number of factors.
-// T can be any unsigned integral type <= 128 bits.
+// T can be any integral type <= 128 bits.
 template <typename T>
 std::vector<T> factorize_to_vector(T x)
 {

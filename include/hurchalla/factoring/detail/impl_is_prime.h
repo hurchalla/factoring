@@ -22,7 +22,7 @@ namespace hurchalla { namespace detail {
 
 
 #ifndef HURCHALLA_ISPRIME_TRIALDIV_SIZE
-// Some short perf testing on Haswell suggests 15 would be a good value for
+// Some short perf testing on Haswell suggests 21 would be a good value for
 // PrimeTrialDivisionMayer, and 54 a good value for PrimeTrialDivisionWarren.
 // We use Mayer instead of Warren, since it's lower overhead on static memory
 // and it works with the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE, unlike
@@ -32,11 +32,11 @@ namespace hurchalla { namespace detail {
 // Note that this impl_is_prime() function (and the associated is_prime) is
 // intended to be relatively lightweight, while in contrast IsPrimeIntensive is
 // intended to be a more heavyweight option for repeated intensive primality
-// testing.  That is why this function to uses the lightweight functor
+// testing.  That is why this function uses the lightweight functor
 // PrimeTrialDivisionMayer.
 
 // FYI, size 54 would trial all prime factors < 256
-#  define HURCHALLA_ISPRIME_TRIALDIV_SIZE (15)
+#  define HURCHALLA_ISPRIME_TRIALDIV_SIZE (21)
 #endif
 
 

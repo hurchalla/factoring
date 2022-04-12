@@ -8,7 +8,7 @@ P-Rho is an easy to use, high performance library (header-only) for C++ for fact
 
 The main goal of P-Rho was to create correct routines with the best possible performance when factoring and primality checking native integer types. Though the library accepts types up to 128 bit, you should be aware that other algorithms (e.g. [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) are more suitable for values high above (1<<64).
 
-A secondary goal was to exercise the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library, which is a dependency for P-Rho.
+A secondary goal was to exercise the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library, which is a dependency of P-Rho.
 
 ## Requirements
 

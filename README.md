@@ -8,7 +8,7 @@ P-Rho is an easy to use, high performance library (header-only) for C++ for fact
 
 The main goal of P-Rho was to create correct routines for factoring and primality checking native C and C++ integer types (i.e. 16/32/64 bit signed and unsigned int types) and compiler-extension types (e.g. __int128_t and __uint128_t).
 
-A close second was the goal to achieve the best performance possible when factoring 64 bit input values, given no advance knowledge about potential factors.  This involved improvements to the Pollard-Rho, Miller-Rabin, Montgomery, and trial division [algorithms](#algorithms).
+A close second was the goal to achieve the best performance possible for factoring 64 bit input values, given no advance knowledge about potential factors.  This involved improvements to the Pollard-Rho, Miller-Rabin, Montgomery, and trial division [algorithms](#algorithms).
 
 A final goal was to exercise the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library (a dependency of P-Rho).
 

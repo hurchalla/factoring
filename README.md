@@ -6,9 +6,11 @@ P-Rho is an easy to use, high performance library (header-only) for C++ for fact
 
 ## Design Goals
 
-The main goal of P-Rho was to create correct routines with the ideal performance when factoring and primality checking native integer types. Though the library accepts types up to 128 bit, you should be aware that other algorithms (e.g. [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) are more suitable for values high above (1<<64).
+The main goal of P-Rho was to create correct routines with the best possible performance for factoring and primality checking native C and C++ integer types (i.e. 16/32/64 bit signed and unsigned int types). For flexibility the library also accepts types up to 128 bit (e.g. __int128_t and __uint128_t extensions).
 
-A secondary goal was to exercise the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library (a dependency of P-Rho).
+A secondary goal was to find improvements to the [algorithms](#algorithms).
+
+A final goal was to exercise the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library (a dependency of P-Rho).
 
 ## Requirements
 
@@ -84,7 +86,7 @@ Special attention was paid to instruction level parallelism, to take advantage o
 
 Near-optimal hash tables are used for fast deterministic Miller-Rabin primality testing.  For information on the tables and how they were generated, you can view the [README.md](https://github.com/hurchalla/factoring/blob/master/include/hurchalla/factoring/detail/miller_rabin_bases/README.TXT), and see the [header files with the tables](include/hurchalla/factoring/detail/miller_rabin_bases).  The general purpose functions *hurchalla::is_prime* and *hurchalla::factoring* use some of the smallest of these hash tables (8 to 320 byte), to minimize memory footprint and cache impact while still receiving a performance boost.  The resource_intensive_api functions use the largest of the hash tables for best possible performance.
 
-The Pollard-Rho-Brent algorithm uses an easy extra step that seems to be unmentioned in the literature.  The step is a "pre-loop" that advances as quickly as possible through a portion of the initial pseduo-random sequence before beginning the otherwise normal Pollard-Rho Brent algorithm.  The rationale for this is that every Pollard-Rho pseudo-random sequence begins with a non-periodic segment, and trying to extract factors from that segment is mostly wasted work since the algorithm logic relies on a periodic sequence.  Using a "pre-loop" that does nothing except iterate for a set number of times through the sequence thus improves performance on average, since it quickly gets past some of that unwanted non-periodic segment.  In particular, the "pre-loop" avoids calling the greatest common divisor, since it would rarely find a factor during the non-periodic segment.  This optimization would likely help any form/variant of the basic Pollard-Rho algorithm.
+The Pollard-Rho-Brent algorithm uses an easy extra step that seems to be unmentioned in the literature.  The step is a "pre-loop" that advances as quickly as possible through a portion of the initial pseduo-random sequence before beginning the otherwise normal Pollard-Rho Brent algorithm.  The rationale for this is that every Pollard-Rho pseudo-random sequence begins with a non-periodic segment, and trying to extract factors from that segment is mostly wasted work since the algorithm logic relies on a periodic sequence.  Using a "pre-loop" that does nothing except iterate for a set number of times through the sequence thus improves performance on average, since it quickly gets past some of that unwanted non-periodic segment.  In particular, the "pre-loop" avoids calling the greatest common divisor, which would rarely find a factor during the non-periodic segment.  This optimization would likely help any form/variant of the basic Pollard-Rho algorithm.
 
 ## Performance Notes
 If you're interested in experimenting, predefining certain macros when compiling can improve performance - see [macros_for_performance.md](macros_for_performance.md).

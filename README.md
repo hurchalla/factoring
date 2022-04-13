@@ -2,7 +2,7 @@
 
 ![Alt text](images/greek_cropped_border.jpg?raw=true "Greek rho symbol")
 
-P-Rho is an easy to use, high performance library (header-only) for C++ for factoring and for primality checking, optimized for arbitrary 64 bit input values; it supports all integer types up to 128 bit.  At the time of this writing, it should provide you with the fastest factoring routine available for arbitrary 64 bit values.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, as described [further below](#algorithms).
+P-Rho is an easy to use, high performance library (header-only) for C++ for factoring and for primality checking, optimized for arbitrary 64 bit input values; it supports all integer types up to 128 bit.  At the time of this writing, it should provide you with the fastest factoring routine available for arbitrary 64 bit values.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, as described [below](#algorithms).
 
 ## Design Goals
 

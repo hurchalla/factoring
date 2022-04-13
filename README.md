@@ -6,7 +6,7 @@ P-Rho is an easy to use, high performance library (header-only) for C++ for fact
 
 ## Design Goals
 
-The main goal of P-Rho is to provide correct routines to factor and primality check native C and C++ integer types (i.e. 16/32/64 bit signed and unsigned int types) and compiler-extension types (e.g. __int128_t and __uint128_t).
+The main goal of P-Rho is to provide correct routines to factor and primality check values that are native C and C++ integer types (i.e. 16/32/64 bit signed and unsigned int types) and compiler-extension types (e.g. __int128_t and __uint128_t).
 
 A second goal is to provide best possible performance for 64 bit types (assuming we have no advance knowledge about factors), achieved via improvements to the Pollard-Rho, Miller-Rabin, Montgomery, and trial division [algorithms](#algorithms).
 

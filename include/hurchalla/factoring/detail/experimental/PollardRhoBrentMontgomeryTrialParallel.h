@@ -49,10 +49,16 @@ struct PollardRhoBrentMontgomeryTrialParallel {
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
   using FV = typename M::FusingValue;
-  T operator()(const M& mf, C c) const
+  T operator()(const M& mf, T& expected_iterations, C c) const
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
+
+    // given that this PollardRhoBrentMontgomeryTrialParallel has not performed
+    // as well as other trials, for now we're not taking the time to optimize 
+    // with expected_iterations.  See PollardRhoBrentTrial for an example of
+    // using it to improve perf (very slightly)
+    (void)expected_iterations;  // silence unused variable warning
 
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);

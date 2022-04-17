@@ -179,7 +179,7 @@ struct PollardRhoTrial {
   using T = typename M::IntegerType;
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
-  T operator()(const M& mf, C c) const
+  T operator()(const M& mf, T& expected_iterations, C c) const
   {
     T num = mf.getModulus();
     HPBC_PRECONDITION2(num > 2);
@@ -193,6 +193,7 @@ struct PollardRhoTrial {
 
     V a = mf.getUnityValue();
     a = mf.add(a, a);   // sets a = mf.convertIn(2).
+
 #if 0
 // Using a pre-cycle doesn't seem to improve runtimes for this plain Pollard-Rho
 // Trial (although it does help Pollard-Rho Brent Trials).
@@ -200,6 +201,7 @@ struct PollardRhoTrial {
     for (int i = 0; i < PRE_CYCLE_SIZE; ++i)
         a = mf.fusedSquareSub(a, negative_c);
 #endif
+    (void)expected_iterations;   // silence unused variable warning
 
     V b = a;
     V product = mf.getUnityValue();

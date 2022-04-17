@@ -139,7 +139,7 @@ struct PollardRhoBrentTrial {
   using T = typename M::IntegerType;
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
-  T operator()(const M& mf, C c) const
+  T operator()(const M& mf, T& expected_iterations, C c) const
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
@@ -149,18 +149,15 @@ struct PollardRhoBrentTrial {
     HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
+
     T advancement_len = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
+    T best_advancement = (expected_iterations >> 4);
+    if (advancement_len < best_advancement)
+        advancement_len = best_advancement;
+    T pre_length = 2*advancement_len + 2;
 
-//#define TEST_JUMP_START 1
-
-#ifdef TEST_JUMP_START
-    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH - 2;
-    V b = mf.convertIn(static_cast<T>(458330));
-#else
-    constexpr T pre_length = 2*HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH + 2;
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
-#endif
 
     // negate c so that we can use fusedSquareSub inside the loop instead of
     // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
@@ -169,12 +166,15 @@ struct PollardRhoBrentTrial {
     for (T i = 0; i < pre_length; ++i)
         b = mf.fusedSquareSub(b, negative_c);
 
+    expected_iterations = pre_length;
+
     V product = mf.getUnityValue();
     while (true) {
         V a_fixed = b;
         for (T i = 0; i < advancement_len; ++i) {
             b = mf.fusedSquareSub(b, negative_c);
         }
+        expected_iterations += advancement_len;
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
@@ -206,6 +206,7 @@ struct PollardRhoBrentTrial {
             T gcd_loop_len = (gcd_threshold < static_cast<T>(advancement_len-i))
                            ? gcd_threshold : static_cast<T>(advancement_len-i);
             V absValDiff;
+            T expected_iterations_tmp = expected_iterations;
             for (T j = 0; j < gcd_loop_len; ++j) {
                 b = mf.fusedSquareSub(b, negative_c);
 
@@ -230,7 +231,9 @@ struct PollardRhoBrentTrial {
                     break;
                 }
                 product = result;
+                ++expected_iterations_tmp;
             }
+            expected_iterations = expected_iterations_tmp;
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
             T p = mf.gcd_with_modulus(product, [](auto x, auto y)

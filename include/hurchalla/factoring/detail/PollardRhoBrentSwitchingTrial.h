@@ -26,7 +26,7 @@ namespace hurchalla { namespace detail {
 
 
 #ifndef HURCHALLA_PRBST_GCD_THRESHOLD
-#  define HURCHALLA_PRBST_GCD_THRESHOLD 608
+#  define HURCHALLA_PRBST_GCD_THRESHOLD 711
 #endif
 #ifndef HURCHALLA_PRBST_STARTING_LENGTH
 #  define HURCHALLA_PRBST_STARTING_LENGTH 19
@@ -56,7 +56,7 @@ struct PollardRhoBrentSwitchingTrial {
   using T = typename M::IntegerType;
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
-  T operator()(const M& mf, C c) const
+  T operator()(const M& mf, T& expected_iterations, C c) const
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
@@ -66,10 +66,12 @@ struct PollardRhoBrentSwitchingTrial {
     HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr T gcd_threshold = HURCHALLA_PRBST_GCD_THRESHOLD;
-    constexpr T pre_length = HURCHALLA_PRBST_STARTING_LENGTH
-                  + uinteger_multiply_by_sqrt2(HURCHALLA_PRBST_STARTING_LENGTH);
 
     T advancement_len = HURCHALLA_PRBST_STARTING_LENGTH;
+    T best_advancement = (expected_iterations >> 4);
+    if (advancement_len < best_advancement)
+        advancement_len = best_advancement;
+    T pre_length= advancement_len + uinteger_multiply_by_sqrt2(advancement_len);
 
     V b1 = mf.getUnityValue();
     b1 = mf.add(b1, b1);                     // sets b1 = mf.convertIn(2)
@@ -91,6 +93,8 @@ struct PollardRhoBrentSwitchingTrial {
         b2 = mf.fusedSquareSub(b2, negative_c);
     }
     V product = mf.getUnityValue();
+
+    expected_iterations = pre_length + advancement_len;
 
     while (true) {
         advancement_len = uinteger_multiply_by_sqrt2(advancement_len);
@@ -130,6 +134,7 @@ struct PollardRhoBrentSwitchingTrial {
                            ? gcd_threshold : static_cast<T>(advancement_len-i);
 
             V absValDiff;
+            T expected_iterations_tmp = expected_iterations;
             for (T j = 0; j < gcd_loop_len; ++j) {
                 b1 = mf.fusedSquareSub(b1, negative_c);
                 b2 = mf.fusedSquareSub(b2, negative_c);
@@ -155,7 +160,10 @@ struct PollardRhoBrentSwitchingTrial {
                     break;
                 }
                 product = result;
+                ++expected_iterations_tmp;
             }
+            expected_iterations = expected_iterations_tmp;
+
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)
             T p = mf.gcd_with_modulus(product, [](auto x, auto y)
@@ -180,7 +188,11 @@ private:
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
 //    return static_cast<T>(x + x/2 - x/16 - x/64 - x/128);
-    return static_cast<T>(x + (x>>1) - (x>>4) - (x>>6));
+//    return static_cast<T>(x + (x>>1) - (x>>4) - (x>>6));
+
+    // empirically, multiplying x by 1.5 seems to perform slightly better than
+    // multiplying by a close approximation of sqrt(2).
+    return static_cast<T>(x + (x>>1));
   }
 };
 

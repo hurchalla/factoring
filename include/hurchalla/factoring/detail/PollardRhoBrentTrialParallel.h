@@ -45,7 +45,7 @@ struct PollardRhoBrentTrialParallel {
   using T = typename M::IntegerType;
   using V = typename M::MontgomeryValue;
   using C = typename M::CanonicalValue;
-  T operator()(const M& mf, C c) const
+  T operator()(const M& mf, T& expected_iterations, C c) const
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
@@ -55,9 +55,12 @@ struct PollardRhoBrentTrialParallel {
     HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
     constexpr T gcd_threshold = HURCHALLA_PRB_PARALELL2_GCD_THRESHOLD;
-    constexpr T pre_length = 2*HURCHALLA_PRB_PARALLEL2_STARTING_LENGTH + 2;
 
     T advancement_len = HURCHALLA_PRB_PARALLEL2_STARTING_LENGTH;
+    T best_advancement = (expected_iterations >> 4);
+    if (advancement_len < best_advancement)
+        advancement_len = best_advancement;
+    T pre_length = 2*advancement_len + 2;
 
     V b1 = mf.getUnityValue();
     b1 = mf.add(b1, b1);                     // sets b1 = mf.convertIn(2)
@@ -72,6 +75,8 @@ struct PollardRhoBrentTrialParallel {
         b2 = mf.fusedSquareSub(b2, negative_c);
     }
 
+    expected_iterations = pre_length;
+
     V product1 = mf.getUnityValue();
     V product2 = mf.getUnityValue();
     while (true) {
@@ -81,6 +86,7 @@ struct PollardRhoBrentTrialParallel {
             b1 = mf.fusedSquareSub(b1, negative_c);
             b2 = mf.fusedSquareSub(b2, negative_c);
         }
+        expected_iterations += advancement_len;
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
@@ -113,6 +119,7 @@ struct PollardRhoBrentTrialParallel {
                            ? gcd_threshold : static_cast<T>(advancement_len-i);
 
             V absValDiff1, absValDiff2;
+            T expected_iterations_tmp = expected_iterations;
             for (T j = 0; j < gcd_loop_len; ++j) {
                 b1 = mf.fusedSquareSub(b1, negative_c);
                 b2 = mf.fusedSquareSub(b2, negative_c);
@@ -162,7 +169,9 @@ struct PollardRhoBrentTrialParallel {
                 product1 = result1;
 #endif
                 product2 = result2;
+                ++expected_iterations_tmp;
             }
+            expected_iterations = expected_iterations_tmp;
             bool isZero;
             V product_combined = mf.multiply(product1, product2, isZero);
             if (isZero)   // product1 and product2 together had all the factors

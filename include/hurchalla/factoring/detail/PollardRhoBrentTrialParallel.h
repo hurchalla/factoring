@@ -57,10 +57,10 @@ struct PollardRhoBrentTrialParallel {
     constexpr T gcd_threshold = HURCHALLA_PRB_PARALELL2_GCD_THRESHOLD;
 
     T advancement_len = HURCHALLA_PRB_PARALLEL2_STARTING_LENGTH;
-    T best_advancement = (expected_iterations >> 4);
+    T best_advancement = static_cast<T>(expected_iterations >> 4);
     if (advancement_len < best_advancement)
         advancement_len = best_advancement;
-    T pre_length = 2*advancement_len + 2;
+    T pre_length = static_cast<T>(2*advancement_len + 2);
 
     V b1 = mf.getUnityValue();
     b1 = mf.add(b1, b1);                     // sets b1 = mf.convertIn(2)
@@ -86,8 +86,8 @@ struct PollardRhoBrentTrialParallel {
             b1 = mf.fusedSquareSub(b1, negative_c);
             b2 = mf.fusedSquareSub(b2, negative_c);
         }
-        expected_iterations += advancement_len;
-
+        expected_iterations = static_cast<T>(expected_iterations +
+                                             advancement_len);
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"

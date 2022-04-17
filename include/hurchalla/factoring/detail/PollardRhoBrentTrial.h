@@ -151,10 +151,10 @@ struct PollardRhoBrentTrial {
     constexpr T gcd_threshold = HURCHALLA_POLLARD_RHO_BRENT_GCD_THRESHOLD;
 
     T advancement_len = HURCHALLA_POLLARD_RHO_BRENT_STARTING_LENGTH;
-    T best_advancement = (expected_iterations >> 4);
+    T best_advancement = static_cast<T>(expected_iterations >> 4);
     if (advancement_len < best_advancement)
         advancement_len = best_advancement;
-    T pre_length = 2*advancement_len + 2;
+    T pre_length = static_cast<T>(2*advancement_len + 2);
 
     V b = mf.getUnityValue();
     b = mf.add(b, b);   // sets b = mf.convertIn(2)
@@ -174,8 +174,8 @@ struct PollardRhoBrentTrial {
         for (T i = 0; i < advancement_len; ++i) {
             b = mf.fusedSquareSub(b, negative_c);
         }
-        expected_iterations += advancement_len;
-
+        expected_iterations = static_cast<T>(expected_iterations +
+                                             advancement_len);
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"

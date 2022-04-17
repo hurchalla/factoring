@@ -195,7 +195,11 @@ OutputIt hurchalla_factorize_pr_internal(OutputIt iter, T x,
 
     C cc = mf.getCanonicalValue(mf.convertIn(static_cast<S>(base_c)));
     for (T i = 0; i < x; ++i) {
-        T tmp_factor = static_cast<T>(pr_trial_func(mf,expected_iterations,cc));
+        HPBC_ASSERT2(expected_iterations <= ut_numeric_limits<S>::max());
+        S tmp_expected = static_cast<S>(expected_iterations);
+        T tmp_factor = static_cast<T>(pr_trial_func(mf, tmp_expected, cc));
+        HPBC_ASSERT2(tmp_expected <= ut_numeric_limits<T>::max());
+        expected_iterations = static_cast<T>(tmp_expected);
         if (tmp_factor >= 2) {    // we found a good factor (maybe prime).
             // Next_c could overflow, but that's okay.  We'd prefer for
             // efficiency that it didn't, but any T value would be valid.

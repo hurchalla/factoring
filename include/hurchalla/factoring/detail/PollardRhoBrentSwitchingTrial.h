@@ -68,10 +68,11 @@ struct PollardRhoBrentSwitchingTrial {
     constexpr T gcd_threshold = HURCHALLA_PRBST_GCD_THRESHOLD;
 
     T advancement_len = HURCHALLA_PRBST_STARTING_LENGTH;
-    T best_advancement = (expected_iterations >> 4);
+    T best_advancement = static_cast<T>(expected_iterations >> 4);
     if (advancement_len < best_advancement)
         advancement_len = best_advancement;
-    T pre_length= advancement_len + uinteger_multiply_by_sqrt2(advancement_len);
+    T pre_length = static_cast<T>(advancement_len +
+                                  uinteger_multiply_by_sqrt2(advancement_len));
 
     V b1 = mf.getUnityValue();
     b1 = mf.add(b1, b1);                     // sets b1 = mf.convertIn(2)
@@ -94,7 +95,7 @@ struct PollardRhoBrentSwitchingTrial {
     }
     V product = mf.getUnityValue();
 
-    expected_iterations = pre_length + advancement_len;
+    expected_iterations = static_cast<T>(pre_length + advancement_len);
 
     while (true) {
         advancement_len = uinteger_multiply_by_sqrt2(advancement_len);

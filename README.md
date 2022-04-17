@@ -2,11 +2,7 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-P-Rho is an easy to use, high performance library (header-only) for C++ for factoring and for primality checking, optimized for arbitrary 64 bit input values; it supports all integer types up to 128 bit.  At the time of this writing, it should provide you with the fastest factoring routine available for arbitrary 64 bit values.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, as described [below](#algorithms).
-
-## Design Goals
-
-The main goal of P-Rho is to provide correct routines to factor and primality check inputs of any native C++ integer type (i.e. 16/32/64 bit signed and unsigned int types) or compiler-extension type (e.g. __int128_t and __uint128_t).  A secondary goal is to provide the best possible performance specifically for 64 bit types (assuming we have no advance knowledge about factors).  This goal is met via improvements to the [algorithms](#algorithms) for Pollard-Rho, Miller-Rabin, Montgomery, and trial division; as well as by using the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library for Montgomery arithmetic.
+P-Rho is an extremely fast and easy to use C++ library (header-only) for factoring and for primality checking.  At the time of this writing, it almost certainly provides the fastest factoring routine you could use to factor 64 bit arbitrary values.  The primality checking should also be among the fastest available.  It is optimized for all the native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints), but for convenience also supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  Note that it is not designed for best performance with 128 bit types, and another library (look for [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) will do better if 128 bit performance is critical.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms).  It is designed for correctness first and foremost, and speed second.  We can note that a portion of the optimizations (such as Montgomery arithmetic) that P-Rho uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
 
 ## Requirements
 

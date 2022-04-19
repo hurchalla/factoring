@@ -81,33 +81,33 @@ factorize(T x, int& num_factors)
 }
 
 
-// This version of factorize returns a std::vector (rather than a std::array).
-// It may be preferable if you wish to save stack space, since vector is heap
-// allocated.  Note that if you used factorize(), the returned std::array for
-// type T of uint32_t would take 128 bytes on the stack, uint64_t would take 512
-// bytes, and __uint128_t would take 2kb.
+// This version of factorize takes a std::vector, which it clears of any
+// existing elements and then fills with the factors of x.  When this function
+// returns, the size of the vector is the number of factors.
+// Note that this version might be preferable to the array version of factorize
+// if you wish to save stack space; vector is heap allocated but the array
+// version needs memory on the stack for its returned array (for example with
+// type T of uint64_t, the array needs 512 bytes on stack).
 //
-// Returns a vector that contains all factors of x.  The size of the vector is
-// the number of factors.
 // T can be any integral type <= 128 bits.
 template <typename T>
-std::vector<T> factorize_to_vector(T x)
+void factorize(T x, std::vector<T>& factors)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
     HPBC_PRECONDITION(x >= 2);  // 0 and 1 do not have prime factorizations
+    factors.clear();
 
     namespace hd = ::hurchalla::detail;
-    std::vector<T> vec = hd::impl_factorize::factorize_to_vector(
-                                                    x, hd::PollardRhoIsPrime());
-    HPBC_POSTCONDITION(vec.size() > 0);
+    hd::impl_factorize::factorize_to_vector(
+                                           x, factors, hd::PollardRhoIsPrime());
+    HPBC_POSTCONDITION(factors.size() > 0);
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;
-    HPBC_POSTCONDITION(vec.size() <= max_num_factors);
+    HPBC_POSTCONDITION(factors.size() <= max_num_factors);
     // all the factors multiplied together should == x
-    HPBC_POSTCONDITION(x == std::accumulate(vec.begin(), vec.end(),
+    HPBC_POSTCONDITION(x == std::accumulate(factors.begin(), factors.end(),
                                       static_cast<T>(1), std::multiplies<T>()));
-    return vec;
 }
 
 

@@ -29,16 +29,14 @@ using namespace hurchalla;
 
 TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
     using T = std::uint16_t;
+    std::vector<T> factors;
     for (T x = ut_numeric_limits<T>::max(); x >= 2; --x) {
         std::vector<T> answer = factorize_bruteforce(x);
         std::sort(answer.begin(), answer.end());
-        int num_factors;
-        auto arr = factorize(x, num_factors);
-        std::sort(arr.begin(), arr.begin()+num_factors);
+        factorize(x, factors);
+        std::sort(factors.begin(), factors.end());
         SCOPED_TRACE(testing::Message() << "x == " << x);
-        EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
-        EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,
-                                                           answer.begin()));
+        EXPECT_TRUE(factors == answer);
     }
 }
 

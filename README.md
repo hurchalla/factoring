@@ -59,7 +59,7 @@ It may help to see a simple [example](examples/example_without_cmake).
 The API consists of five header files in total (all the headers that are not under the *detail* folder).  These files are the three general purpose files *factorize.h*, *is_prime.h*, *greatest_common_divisor.h*, and in the resource_intensive_api folder, the two special purpose files *factorize_intensive_uint32.h* and *IsPrimeIntensive.h*.  Please view these files for their documentation.  A quick summary of the functions is provided below; in all cases T is a template parameter of integral type.  
 
 *hurchalla::factorize(T x, int& num_factors)*.  Returns a std::array containing the factors of x.  
-*hurchalla::factorize_to_vector(T x)*.  Returns a std::vector containing the factors of x.  
+*hurchalla::factorize(T x, std::vector& factors)*.  Clears a std::vector and fills it with the factors of x.  
 *hurchalla::greatest_common_divisor(T a, T b)*.  Returns the greatest common divisor of a and b.  
 *hurchalla::is_prime(T x)*.  Returns true if x is prime.  Otherwise returns false.  
 

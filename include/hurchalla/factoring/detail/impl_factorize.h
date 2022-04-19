@@ -116,13 +116,12 @@ public:
 
 
   template <typename T, class PrimalityFunctor>
-  static std::vector<T> factorize_to_vector(T x,
+  static void factorize_to_vector(T x, std::vector<T>& vec,
                                             const PrimalityFunctor& is_prime_mf)
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     using U = typename extensible_make_unsigned<T>::type;
 
-    std::vector<T> vec;
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;
     vec.reserve(max_num_factors);
@@ -147,7 +146,6 @@ public:
                        std::back_inserter(fva), static_cast<U>(x), is_prime_mf);
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
-    return vec;
   }
 
 }; // end struct impl_factorize

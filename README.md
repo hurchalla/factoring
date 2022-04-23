@@ -2,7 +2,11 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-P-Rho is an extremely fast and easy to use C++ library (header-only) for factoring and for primality checking.  At the time of this writing, it should almost certainly provide the fastest factoring routine you could use to factor 64 bit arbitrary values.  The primality checking should also be among the fastest available.  It is optimized for all the native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints), but for convenience also supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  Note that it is not designed for best performance with 128 bit types, and another library (look for [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) will do better if 128 bit performance is critical.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms).  It is designed for correctness first and foremost, and speed second.  We can note that a portion of the optimizations (such as Montgomery arithmetic) that P-Rho uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
+P-Rho is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring routine available for arbitrary 64 bit integer values (for best performance just make sure you define the standard C++ macro NDEBUG).
+
+## Design goals
+
+The goal for P-Rho was to create a correct and easy to use library with extremely fast factoring (and primality checking) for native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints).  Though it was optimized for native C++ integer types, for convenience it supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  Note that it was not designed for best performance with 128 bit types, and another library (look for [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) will do better if 128 bit performance is critical.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms), and has proofs for the new variants and extensive unit tests.  A portion of the optimizations (such as Montgomery arithmetic) that P-Rho uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
 
 ## Requirements
 

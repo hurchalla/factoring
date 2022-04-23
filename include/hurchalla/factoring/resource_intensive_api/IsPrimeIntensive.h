@@ -18,11 +18,11 @@ namespace hurchalla {
 // T can be any unsigned integral type <= 128 bits.
 //
 // This functor is intended for use when you plan to repeatedly and intensively
-// perform primality testing.  For some values of T (only uint32_t at the
-// moment) the constructor will likely take a couple of seconds to complete.
-// Once the object has been constructed, the functor will provide the fastest
-// possible primality testing, at the cost of often using far more memory (and
-// CPU cache) than the alternative function is_prime() would have used.
+// perform primality testing.  For some values of T (for example uint32_t) the
+// constructor will likely take a couple of seconds to complete.  Once the
+// object has been constructed, the functor will provide the fastest possible
+// primality testing, at the cost of often using far more memory (and CPU cache)
+// than the alternative function is_prime() would have used.
 
 // At present, the memory usage of this functor is as follows for different
 // template types T -

@@ -2,7 +2,7 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-P-Rho is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring routine available for arbitrary 64 bit integer values (for best performance just make sure you define the standard C++ macro NDEBUG).
+P-Rho is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring routine available for 64 bit integer types like uint64_t or int64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
 
 ## Design goals
 

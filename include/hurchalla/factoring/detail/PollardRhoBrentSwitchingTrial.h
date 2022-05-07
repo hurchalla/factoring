@@ -136,7 +136,7 @@ struct PollardRhoBrentSwitchingTrial {
 
             V absValDiff;
             T expected_iterations_tmp = expected_iterations;
-            for (T j = 0; j < gcd_loop_len; ++j) {
+            { T j = 0; do {
                 b1 = mf.fusedSquareSub(b1, negative_c);
                 b2 = mf.fusedSquareSub(b2, negative_c);
 
@@ -162,7 +162,8 @@ struct PollardRhoBrentSwitchingTrial {
                 }
                 product = result;
                 ++expected_iterations_tmp;
-            }
+            } while(++j < gcd_loop_len); }
+
             expected_iterations = expected_iterations_tmp;
 
             // The following is a more efficient way to compute

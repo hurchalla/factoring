@@ -80,8 +80,15 @@ struct factorize_pollard_rho {
         static_assert(ut_numeric_limits<U>::digits >= 2);
         constexpr U Udiv4 = static_cast<U>(static_cast<U>(1) <<
                                             (ut_numeric_limits<U>::digits - 2));
+        constexpr U Udiv2 = static_cast<U>(static_cast<U>(1) <<
+                                            (ut_numeric_limits<U>::digits - 1));
         if (x < Udiv4) {
             using MF = MontgomeryQuarter<U>;
+            return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
+                                   iter, x, is_prime_pr, threshold_always_prime,
+                                   base_c, expected_iterations);
+        } else if (x < Udiv2) {
+            using MF = MontgomeryHalf<U>;
             return hurchalla_factorize_pr_internal<log2ModulusLimit, MF>(
                                    iter, x, is_prime_pr, threshold_always_prime,
                                    base_c, expected_iterations);

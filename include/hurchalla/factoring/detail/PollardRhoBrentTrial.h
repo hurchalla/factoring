@@ -171,9 +171,9 @@ struct PollardRhoBrentTrial {
     V product = mf.getUnityValue();
     while (true) {
         V a_fixed = b;
-        for (T i = 0; i < advancement_len; ++i) {
+        { T i = 0; do {
             b = mf.fusedSquareSub(b, negative_c);
-        }
+        } while (++i < advancement_len); }
         expected_iterations = static_cast<T>(expected_iterations +
                                              advancement_len);
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
@@ -207,7 +207,7 @@ struct PollardRhoBrentTrial {
                            ? gcd_threshold : static_cast<T>(advancement_len-i);
             V absValDiff;
             T expected_iterations_tmp = expected_iterations;
-            for (T j = 0; j < gcd_loop_len; ++j) {
+            { T j = 0; do {
                 b = mf.fusedSquareSub(b, negative_c);
 
                 HPBC_INVARIANT2(mf.convertOut(product) > 0);
@@ -232,7 +232,7 @@ struct PollardRhoBrentTrial {
                 }
                 product = result;
                 ++expected_iterations_tmp;
-            }
+            } while (++j < gcd_loop_len); }
             expected_iterations = expected_iterations_tmp;
             // The following is a more efficient way to compute
             // p = greatest_common_divisor(mf.convertOut(product), num)

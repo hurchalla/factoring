@@ -82,10 +82,10 @@ struct PollardRhoBrentTrialParallel {
     while (true) {
         V a_fixed1 = b1;
         V a_fixed2 = b2;
-        for (T i = 0; i < advancement_len; ++i) {
+        { T i = 0; do {
             b1 = mf.fusedSquareSub(b1, negative_c);
             b2 = mf.fusedSquareSub(b2, negative_c);
-        }
+        } while (++i < advancement_len); }
         expected_iterations = static_cast<T>(expected_iterations +
                                              advancement_len);
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
@@ -120,7 +120,7 @@ struct PollardRhoBrentTrialParallel {
 
             V absValDiff1, absValDiff2;
             T expected_iterations_tmp = expected_iterations;
-            for (T j = 0; j < gcd_loop_len; ++j) {
+            { T j = 0; do {
                 b1 = mf.fusedSquareSub(b1, negative_c);
                 b2 = mf.fusedSquareSub(b2, negative_c);
 
@@ -170,7 +170,8 @@ struct PollardRhoBrentTrialParallel {
 #endif
                 product2 = result2;
                 ++expected_iterations_tmp;
-            }
+            } while (++j < gcd_loop_len); }
+
             expected_iterations = expected_iterations_tmp;
             bool isZero;
             V product_combined = mf.multiply(product1, product2, isZero);

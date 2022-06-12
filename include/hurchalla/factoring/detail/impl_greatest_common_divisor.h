@@ -95,6 +95,7 @@ struct impl_greatest_common_divisor {
             T sub2 = static_cast<T>(tmp - v);
                // u = (tmp >= v) ? v : tmp;
             u = hc::conditional_select((tmp >= v), v, tmp);
+            // set v to the absolute value of (v - tmp)
                // v = (tmp >= v) ? sub2 : sub1;
             v = hc::conditional_select((tmp >= v), sub2, sub1);
             HPBC_ASSERT2(u % 2 == 1);
@@ -102,7 +103,17 @@ struct impl_greatest_common_divisor {
                 u = static_cast<T>(u << k);
                 break;
             }
-            v = static_cast<T>(v >> hc::count_trailing_zeros(v));
+            // In an earlier version of this function, the line below used
+            // count_trailing_zeros(v) instead of count_trailing_zeros(sub1),
+            // which had been more of a standard way to write the algorithm.
+            // But as pointed out by https://gmplib.org/manual/Binary-GCD, "in
+            // twos complement the number of low zero bits on u-v is the same
+            // as v-u, so counting or testing can begin on u-v without waiting
+            // for abs(u-v) to be determined."  Hence we are able to use sub1
+            // for the argument, which saves a few cycles because it lets the
+            // CPU exploit instruction level parallelism.
+            j = hc::count_trailing_zeros(sub1);
+            v = static_cast<T>(v >> j);
         }
     }
     HPBC_POSTCONDITION2(u > 0);

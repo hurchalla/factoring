@@ -295,8 +295,10 @@ struct IPMR_internal {
     // but unless TRIAL_SIZE is huge, it shouldn't matter much - we're using
     // probabilistic primality testing with a lot of leeway.
     static_assert(TRIAL_SIZE <= 8);      // ensure TRIAL_SIZE isn't "huge"
-    int limit = num_bases_desired - static_cast<int>(TRIAL_SIZE) + 1;
-    for (std::size_t i=1; static_cast<int>(i) < limit; i += TRIAL_SIZE) {
+    HPBC_ASSERT2(num_bases_desired >= static_cast<int>(TRIAL_SIZE));
+    std::size_t limit = static_cast<std::size_t>(num_bases_desired)
+                        - TRIAL_SIZE + 1;
+    for (std::size_t i=1; i < limit; i += TRIAL_SIZE) {
         std::array<T, TRIAL_SIZE> bases_chunk;
         HURCHALLA_REQUEST_UNROLL_LOOP
         for (std::size_t j=0; j < TRIAL_SIZE; ++j)

@@ -16,7 +16,7 @@
 namespace hurchalla { namespace detail {
 
 
-// These 127 bases let you conduct a probabilistic primality test for any 128
+// These 128 bases let you conduct a probabilistic primality test for any 128
 // bit unsigned int number, via miller-rabin primality testing.  A test using
 // these bases should work equally well for both even and odd numbers.  Note
 // however that montgomery arithmetic (which is one way to implement the miller-
@@ -33,9 +33,9 @@ namespace hurchalla { namespace detail {
 // trials will declare that a particular composite number is prime (it never
 // declares a prime is composite).  So with 64 bases, if we tested every number
 // from 1 to (1<<128), we might expect very roughly about 1 false declaration of
-// prime.  With an additional 63 bases (for a total of 127), the probability
+// prime.  With an additional 64 bases (for a total of 128), the probability
 // that this single expected false declaration would still remain would be very
-// roughly 1/(1<<126), or 1 chance in 85070591730234615865843651857942052864.
+// roughly 1/(1<<128), or 1 chance in 340282366920938463463374607431768211456.
 // See the Wikipedia link's discussion of the conditional probability and Bayes'
 // theorem for some info on why I wouldn't be surprised if the true probability
 // is 100x more likely.  Yet even assuming it's 100000 times more likely, it
@@ -49,7 +49,7 @@ struct MillerRabinProbabilisticBases128 {
     static_assert(std::is_same<DUMMY, void>::value, "");
     // We use all primes for the bases, simply following the example of
     // http://oeis.org/A014233 (I don't know why they use all primes).
-    static constexpr std::array<std::uint16_t, 127> bases = {
+    static constexpr std::array<std::uint16_t, 128> bases = {
                                              2, 3, 5, 7, 11, 13, 17, 19, 23,
         29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,
         103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
@@ -59,10 +59,10 @@ struct MillerRabinProbabilisticBases128 {
         431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
         509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601,
         607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683,
-        691, 701, 709 };
+        691, 701, 709, 719 };
 };
 template <typename DUMMY> constexpr
-std::array<std::uint16_t, 127> MillerRabinProbabilisticBases128<DUMMY>::bases;
+std::array<std::uint16_t, 128> MillerRabinProbabilisticBases128<DUMMY>::bases;
 
 
 }}  // end namespace

@@ -195,27 +195,21 @@ struct IPMR_internal {
 
 
   template <std::size_t TRIAL_SIZE, std::size_t TOTAL_BASES,
-          typename B, typename MontType>
-  static HURCHALLA_FORCE_INLINE
-  typename std::enable_if<(TOTAL_BASES % TRIAL_SIZE != 0), bool>::type
-  miller_rabin_trials(
-                const MontType& mf,
-                const std::array<B,TOTAL_BASES>& bases
-                )
+            typename B, typename MontType>
+  static HURCHALLA_FORCE_INLINE bool miller_rabin_trials(const MontType& mf,
+                                         const std::array<B,TOTAL_BASES>& bases)
   {
     using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(ut_numeric_limits<B>::is_integer, "");
-    static_assert(ut_numeric_limits<T>::max() >=
-                  ut_numeric_limits<B>::max(), "");
-    static_assert(TRIAL_SIZE > 0, "");
-    static_assert(TOTAL_BASES > 0, "");
+    static_assert(ut_numeric_limits<T>::is_integer);
+    static_assert(ut_numeric_limits<B>::is_integer);
+    static_assert(ut_numeric_limits<T>::max() >= ut_numeric_limits<B>::max());
+    static_assert(TRIAL_SIZE > 0);
+    static_assert(TOTAL_BASES > 0);
 
     static constexpr std::size_t tmp = TOTAL_BASES % TRIAL_SIZE;
     // (paranoia) use std::integral_constant to guarantee compile-time init.
     static constexpr std::size_t REMAINDER =
                               std::integral_constant<decltype(tmp), tmp>::value;
-    static_assert(REMAINDER > 0, "");
 
     // convertIn() inside mr_trial() effectively performs bases[i] % num, prior
     // to using any base.  While setting the bases % num is essential, it would
@@ -223,7 +217,7 @@ struct IPMR_internal {
     T num = mf.getModulus();
     T d;  int r;
     extract_powers_of_two_from_num_minus_one(num, d, r);
-    {
+    if constexpr (REMAINDER > 0) {
         std::array<T, REMAINDER> bases_chunk;
         HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t j=0; j < REMAINDER; ++j)
             bases_chunk[j] = bases[j];
@@ -234,41 +228,6 @@ struct IPMR_internal {
     for (std::size_t i=REMAINDER; i < TOTAL_BASES; i += TRIAL_SIZE) {
         std::array<T, TRIAL_SIZE> bases_chunk;
         HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t j=0; j < TRIAL_SIZE; ++j)
-            bases_chunk[j] = bases[i + j];
-        bool isProbablyPrime = mr_trial(mf, bases_chunk, d, r);
-        if (!isProbablyPrime)
-            return false;
-    }
-    return true;
-  }
-
-  template <std::size_t TRIAL_SIZE, std::size_t TOTAL_BASES,
-          typename B, typename MontType>
-  static HURCHALLA_FORCE_INLINE
-  typename std::enable_if<(TOTAL_BASES % TRIAL_SIZE == 0), bool>::type
-  miller_rabin_trials(
-                const MontType& mf,
-                const std::array<B,TOTAL_BASES>& bases
-                )
-  {
-    using T = typename MontType::IntegerType;
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(ut_numeric_limits<B>::is_integer, "");
-    static_assert(ut_numeric_limits<T>::max() >=
-                  ut_numeric_limits<B>::max(), "");
-    static_assert(TRIAL_SIZE > 0, "");
-    static_assert(TOTAL_BASES > 0, "");
-    static_assert(TOTAL_BASES % TRIAL_SIZE == 0, "");
-
-    // convertIn() inside mr_trial() effectively performs bases[i] % num, prior
-    // to using any base.  While setting the bases % num is essential, it would
-    // be redundant work if we did it here (or anywhere in addition to mr_trial)
-    T num = mf.getModulus();
-    T d;  int r;
-    extract_powers_of_two_from_num_minus_one(num, d, r);
-    for (std::size_t i=0; i < TOTAL_BASES; i += TRIAL_SIZE) {
-        std::array<T, TRIAL_SIZE> bases_chunk;
-        HURCHALLA_REQUEST_UNROLL_LOOP for (std::size_t j=0; j < TRIAL_SIZE; ++j)
             bases_chunk[j] = static_cast<T>(bases[i + j]);
         bool isProbablyPrime = mr_trial(mf, bases_chunk, d, r);
         if (!isProbablyPrime)
@@ -277,6 +236,77 @@ struct IPMR_internal {
     return true;
   }
 
+
+  template <std::size_t TRIAL_SIZE, std::size_t TOTAL_BASES,
+            typename B, typename MontType>
+  static HURCHALLA_FORCE_INLINE bool miller_rabin_trials128(const MontType& mf,
+                                         const std::array<B,TOTAL_BASES>& bases)
+  {
+    using T = typename MontType::IntegerType;
+    static_assert(ut_numeric_limits<T>::is_integer);
+    static_assert(ut_numeric_limits<B>::is_integer);
+    static_assert(ut_numeric_limits<T>::max() >= ut_numeric_limits<B>::max());
+    static_assert(TRIAL_SIZE > 0);
+    static_assert(TOTAL_BASES > 0);
+
+    // This is a probabilistic primality test, though for all practical purposes
+    // it should be as good as deterministic.
+    // For details see MillerRabinProbabilisticBases128.h
+
+    // get the number of bases that are sufficient for our modulus value, in
+    // order to improve performance
+    int num_bases_desired;
+    {
+        T tmp = mf.getModulus();
+        HPBC_PRECONDITION2(1 < tmp);
+        int bits = 0;
+        while (tmp != 0) {
+            tmp >>= 1;
+            bits++;
+        }
+        HPBC_ASSERT2(0 <= bits && bits <= 128);
+        // see comments in MillerRabinProbabilisticBases128.h for the rationale
+        // of the calculation on the next line.  We improve perf by doing this
+        // instead of just setting  num_bases_desired = TOTAL_BASES.
+        num_bases_desired = (bits >> 1) + 64;
+        static_assert(TOTAL_BASES >= 128);
+        HPBC_ASSERT2(num_bases_desired <= static_cast<int>(TOTAL_BASES));
+    }
+
+    T num = mf.getModulus();
+    T d;  int r;
+    extract_powers_of_two_from_num_minus_one(num, d, r);
+    // First we do a size 1 trial to (usually) detect if num is composite.  Then
+    // we follow it using TRIAL_SIZE to efficiently go through all the bases, as
+    // needed to be able to declare that num is prime with almost zero chance of
+    // ever being wrong for any value of num.
+
+    // convertIn() inside mr_trial() effectively performs bases[i] % num, prior
+    // to using any base.  While setting the bases % num is essential, it would
+    // be redundant work if we did it here (or anywhere in addition to mr_trial)
+    {
+        std::array<T, 1> bases_chunk;
+        bases_chunk[0] = bases[0];
+        bool isProbablyPrime = mr_trial(mf, bases_chunk, d, r);
+        if (!isProbablyPrime)
+            return false;
+    }
+    // the following loop generally will complete less than num_bases_desired,
+    // but unless TRIAL_SIZE is huge, it shouldn't matter much - we're using
+    // probabilistic primality testing with a lot of leeway.
+    static_assert(TRIAL_SIZE <= 8);      // ensure TRIAL_SIZE isn't "huge"
+    int limit = num_bases_desired - static_cast<int>(TRIAL_SIZE) + 1;
+    for (std::size_t i=1; static_cast<int>(i) < limit; i += TRIAL_SIZE) {
+        std::array<T, TRIAL_SIZE> bases_chunk;
+        HURCHALLA_REQUEST_UNROLL_LOOP
+        for (std::size_t j=0; j < TRIAL_SIZE; ++j)
+            bases_chunk[j] = static_cast<T>(bases[i + j]);
+        bool isProbablyPrime = mr_trial(mf, bases_chunk, d, r);
+        if (!isProbablyPrime)
+            return false;
+    }
+    return true;
+  }
 };  // end struct IPMR_internal
 
 
@@ -346,7 +376,7 @@ struct IPMR_internal {
 //   64 bit, 6 bases - 40 byte hash table
 //   64 bit, 7 bases - 0 bytes (no hash table used)
 //
-//   128 bit, 128 bases - 0 bytes (no hash table used, probabilistic testing)
+//   128 bit, up to 128 bases - 0 bytes (no hash table, probabilistic testing)
 
 // Note: when HURCHALLA_MILLER_RABIN_ALLOW_EVEN_NUMBERS is defined, this test
 // works for both even and odd moduli (though only the MontyWrappedStandardMath
@@ -386,28 +416,30 @@ struct MillerRabinMontgomery {
 };
 
 // Partial specialization for 128 bit numbers.
-// This version requires input < (1<<128), and uses 127 bases (no hash tables).
+// This version requires input < (1<<128), and uses up to 128 bases (no hash
+// tables).
 template <typename MontType, std::size_t TRIAL_SIZE>
-struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
+struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128> {
   static bool is_prime(const MontType& mf)
   {
+    static_assert(TRIAL_SIZE > 0);
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
 
-    // Other algorithms for primality testing are likely to be far more
-    // suitable for large 128 bit numbers than Miller-Rabin, but we can still
-    // use Miller-Rabin to do the job.
+    // Other algorithms for primality testing are likely to be more suitable for
+    // large 128 bit numbers than Miller-Rabin, but we can still use Miller-
+    // Rabin to do the job.
     //
     // This particular test is unique amongst all others in this file, because
     // it is a probabilistic test.  By nature, the test can be designed for an
     // arbitrarily small chance of failure, and so this test has been tailored
-    // (using a huge number of bases: 127) to have an almost inconceivably small
+    // (using a huge number of bases: 128) to have an almost inconceivably small
     // chance of ever returning a wrong result.  For details, see
     // MillerRabinProbabilisticBases128.h.
-    // The huge number of bases makes it a very slow test when a number is
-    // prime, compared to all the other tests in this file.  [But like all
-    // miller-rabin tests, when given a composite number, it is on average very
-    // fast since it usually can detect compositeness on the first trial.]
+    // The huge number of bases makes it a slow test when a number is prime,
+    // compared to all the other tests in this file.  [But like all miller-rabin
+    // tests, when given a composite number, it is on average very fast since it
+    // usually can detect compositeness on the first trial.]
 
     static_assert(ut_numeric_limits<T>::digits == 128 ||
       (ut_numeric_limits<T>::is_signed && ut_numeric_limits<T>::digits == 127));
@@ -425,14 +457,17 @@ struct MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 127> {
     // original T size.  I expect it would be much faster to construct the
     // MontyType object and then call this function, than it would be to use
     // this function with a non-128 bit T MontyType.
-    //   If your MontyType T is less than 128 bit, then use one of the
+    //   If your MontyType's T is less than 128 bit, then use one of the
     // MillerRabinMontgomery structs that is smaller than this enclosing struct,
     // since it will provide far better performance.
 
-    T modulus = mf.getModulus();
-    HPBC_PRECONDITION2(1 < modulus);
     const auto& bases = MillerRabinProbabilisticBases128<>::bases;
+#if 0
     return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
+#else
+    // using miller_rabin_trials128 improves perf by tuning to the modulus size
+   return IPMR_internal::miller_rabin_trials128<TRIAL_SIZE>(mf, bases);
+#endif
   }
 };
 
@@ -665,7 +700,7 @@ struct is_prime_miller_rabin {
     }
     else if constexpr(64 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 128) {
         // Use a 13 base test if the modulus is small enough.  It's a lot faster
-        // than the 127 base test below.
+        // than the 128 base test below.
         // Note: 3317044064679887385961981 == (179817<<64) + 5885577656943027709
         constexpr T limit13 =
                  (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
@@ -674,7 +709,7 @@ struct is_prime_miller_rabin {
             return is_prime_miller_rabin_special::
                           case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
         }
-        // 128 bit miller-rabin with 127 bases is going to be slow no matter
+        // 128 bit miller-rabin with 128 bases is going to be slow no matter
         // what, but a trial size of 3 will usually improve performance over
         // trial size 1, due to more efficient use of the CPU's pipelined and/or
         // superscalar execution units.
@@ -682,7 +717,7 @@ struct is_prime_miller_rabin {
         // increase it causes, but the test below processes so many bases that
         // any negative effect on instruction cache should be more than made up
         // for by the speed gain from processing more bases per trial.
-        constexpr std::size_t TOTAL_BASES = 127;
+        constexpr std::size_t TOTAL_BASES = 128;
         constexpr std::size_t TRIAL_SIZE = 3;
         return MillerRabinMontgomery<MontType, 128, TRIAL_SIZE,
                                      TOTAL_BASES>::is_prime(mf);

@@ -25,6 +25,20 @@ target_sources(bench_hurchalla_factoring PRIVATE
 set_target_properties(bench_hurchalla_factoring
                       PROPERTIES FOLDER "Benchmarks")
 
+
+if(NOT (TARGET hurchalla_factoring))
+  # this CMakeLists.txt is usually invoked via add_subdirectory by the
+  # factoring library's CMakeLists.txt.  In such a case, hurchalla_factoring
+  # should be defined, and we would not enter this section.  However we can also
+  # invoke this CMakeLists.txt through this directory's benchmark.sh.  In such a
+  # case, hurchalla_factoring will not be defined, and we must add it.
+  # In add_subdirectory below, we use ".." because (unless you moved it)
+  # this CMakeLists.txt file has a path that is within the factoring repo, and
+  # that path is one directory level below the repo's root.
+  add_subdirectory(..  ${CMAKE_CURRENT_BINARY_DIR}/factoring)
+endif()
+
+
 target_link_libraries(bench_hurchalla_factoring
                       hurchalla_factoring)
 

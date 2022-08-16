@@ -24,10 +24,10 @@ namespace hurchalla { namespace detail {
 #ifndef HURCHALLA_ISPRIME_TRIALDIV_SIZE
 // Some short perf testing on Haswell suggests 21 would be a good value for
 // PrimeTrialDivisionMayer, and 54 a good value for PrimeTrialDivisionWarren.
-// We use Mayer instead of Warren, since it's lower overhead on static memory
+// We use Mayer instead of Warren, since it has lower overhead on static memory
 // and it works with the macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE, unlike
 // Warren.  You can change the implementation to use PrimeTrialDivisionWarren
-// if you want, by simply subsistuting that name for PrimeTrialDivisionMayer in
+// if you want, by simply substituting that name for PrimeTrialDivisionMayer in
 // the template function call below and including its header file.
 // Note that this impl_is_prime() function (and the associated is_prime) is
 // intended to be relatively lightweight, while in contrast IsPrimeIntensive is

@@ -25,11 +25,15 @@ namespace hurchalla { namespace detail {
 // characteristics should be different from PollardRhoTrial.
 
 
-#ifndef HURCHALLA_PRBST_GCD_THRESHOLD
+#ifndef HURCHALLA_PRB_GCD_THRESHOLD
 #  define HURCHALLA_PRBST_GCD_THRESHOLD 711
+#else
+#  define HURCHALLA_PRBST_GCD_THRESHOLD HURCHALLA_PRB_GCD_THRESHOLD
 #endif
-#ifndef HURCHALLA_PRBST_STARTING_LENGTH
+#ifndef HURCHALLA_PRB_STARTING_LENGTH
 #  define HURCHALLA_PRBST_STARTING_LENGTH 19
+#else
+#  define HURCHALLA_PRBST_STARTING_LENGTH HURCHALLA_PRB_STARTING_LENGTH
 #endif
 
 
@@ -40,13 +44,13 @@ namespace hurchalla { namespace detail {
 
 // The following functor is a parallel (instruction level, not thread) variation
 // on Pollard-Rho-Brent that advances two separate sequences, and switches
-// between which sequence is checked for primes before beginning every
+// between which sequence is checked for factors before beginning every
 // advancement period.  The instruction level parallelism allows most CPUs to
-// advance two sequences for nearly the same cost as one sequence.  The prime
+// advance two sequences for nearly the same cost as one sequence.  The factor
 // checking is a trade-off in which checks happen more often than the normal
 // Pollard-Rho algorithm (this tends toward greater cost), but two different
 // sequences are checked (this tends toward lesser cost due to needing fewer
-// checks to find a prime).  On the tested CPUs, the trade-off has been
+// checks to find a factor).  On the tested CPUs, the trade-off has been
 // favorable, resulting in improved performance over normal Pollard-Rho-Brent.
 
 // M must be a Montgomery Form type; ordinarily you'd use a template class

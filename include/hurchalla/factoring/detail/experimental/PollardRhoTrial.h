@@ -17,8 +17,8 @@
 namespace hurchalla { namespace detail {
 
 
-#ifndef HURCHALLA_POLLARD_RHO_GCD_THRESHOLD
-#  define HURCHALLA_POLLARD_RHO_GCD_THRESHOLD 72
+#ifndef HURCHALLA_POLLARDRHO_GCD_THRESHOLD
+#  define HURCHALLA_POLLARDRHO_GCD_THRESHOLD 72
 #endif
 
 
@@ -114,7 +114,7 @@ T pollard_rho_trial(T num, T c)
     HPBC_ASSERT2(a < num);
     HPBC_ASSERT2(b < num);
 
-    int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
+    int gcd_threshold = HURCHALLA_POLLARDRHO_GCD_THRESHOLD;
 
     T product = 1;
     HPBC_ASSERT2(product < num);
@@ -185,7 +185,9 @@ struct PollardRhoTrial {
     HPBC_PRECONDITION2(num > 2);
     HPBC_PRECONDITION2(!is_prime_miller_rabin::call(num));
 
-    constexpr int gcd_threshold = HURCHALLA_POLLARD_RHO_GCD_THRESHOLD;
+    constexpr int gcd_threshold = HURCHALLA_POLLARDRHO_GCD_THRESHOLD;
+
+    (void)expected_iterations;   // silence unused variable warning
 
     // negate c so that we can use fusedSquareSub inside the loop instead of
     // fusedSquareAdd (fusedSquareSub may be slightly more efficient).
@@ -195,15 +197,20 @@ struct PollardRhoTrial {
     a = mf.add(a, a);   // sets a = mf.convertIn(2).
 
 #if 0
-// Using a pre-cycle doesn't seem to improve runtimes for this plain Pollard-Rho
-// Trial (although it does help Pollard-Rho Brent Trials).
-    constexpr int PRE_CYCLE_SIZE = 48;
+// Using a pre-cycle should improve runtimes for this plain Pollard-Rho Trial,
+// but I haven't performance tested it recently and therefore have it disabled.
+// You should be able to safely enable it if you wish.
+    constexpr int PRE_CYCLE_SIZE = 24;
     for (int i = 0; i < PRE_CYCLE_SIZE; ++i)
         a = mf.fusedSquareSub(a, negative_c);
-#endif
-    (void)expected_iterations;   // silence unused variable warning
-
     V b = a;
+    for (int i = 0; i < PRE_CYCLE_SIZE; ++i)
+        b = mf.fusedSquareSub(b, negative_c);
+#else
+    V b = a;
+#endif
+
+
     V product = mf.getUnityValue();
     while (true) {
         V absValDiff;

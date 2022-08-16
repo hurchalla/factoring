@@ -9,6 +9,8 @@
 #define HURCHALLA_FACTORING_FACTORIZE_TRIALDIVISION_H_INCLUDED
 
 
+#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include "hurchalla/util/compiler_macros.h"
@@ -18,8 +20,37 @@
 namespace hurchalla { namespace detail {
 
 
+// Do *NOT* change any values of the macros in the code immediately below.  If
+// you wish to use different values for one or more of the macros (which is
+// completely okay), please predefine the macro when compiling.
+//
+//
+// HURCHALLA_TRIAL_DIVISION_TEMPLATE can be either PrimeTrialDivisionWarren or
+// PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren is usually faster, but it
+// uses around 5-10x more memory (e.g. for T = uint64_t, 2.5KB vs. 0.25KB).
+#ifndef HURCHALLA_TRIAL_DIVISION_TEMPLATE
+#  define HURCHALLA_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
+#endif
+// FYI there are 54 primes <= 256.  Thus this function with SIZE 54 could be
+// used to guarantee complete factoring of any value x < 257*257, which includes
+// all values of type uint16_t.
+// On benchmarks on Haswell, SIZE 139 worked well for PrimeTrialDivisionWarren
+#ifndef HURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS
+#  define HURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS 45
+#endif
+#ifndef HURCHALLA_TRIAL_DIVISION_SIZE_SMALL
+#  define HURCHALLA_TRIAL_DIVISION_SIZE_SMALL 109
+#endif
+#ifndef HURCHALLA_TRIAL_DIVISION_SIZE_LARGE
+#  define HURCHALLA_TRIAL_DIVISION_SIZE_LARGE 139
+#endif
+
+
+// Let LIMIT = (x < (1<<HURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS))
+//            ? HURCHALLA_TRIAL_DIVISION_SIZE_SMALL
+//            : HURCHALLA_TRIAL_DIVISION_SIZE_LARGE
 // factorize_trialdivision() partially (and sometimes completely)
-// factorizes the number x using the first SIZE prime numbers as potential
+// factorizes the number x using the first LIMIT prime numbers as potential
 // divisors for divisibility testing.
 //
 // Preconditions for factorize_trialdivision():
@@ -43,33 +74,21 @@ namespace hurchalla { namespace detail {
 //   completely factorize x, and q represents the value still remaining to be
 //   factored.  q will never be set to zero (or a value < 0).
 
-// The function will trial a total of SIZE potential prime factors.  SIZE is a
-// compile-time parameter for fine tuning of performance, that helps us to
-// achieve the best possible overall performance of a factorization method in
-// which this function is called.  Ideally any/all compile-time choices for SIZE
-// would be guided by performance measurement tests.
+// The function will trial a total of LIMIT potential prime factors, unless it
+// finishes early by completely factoring 'x'.
 //
 // The function will set next_prime to the next prime larger than the last prime
 // factor that it will potentially trial.  The value of next_prime is the same
 // regardless of whether or not the function successfully finishes and returns
 // before trialing all its potential factors.
-//
-// The default SIZE 54 tries all primes < 256 as potential divisors.  Thus this
-// function with SIZE 54 could be used to guarantee complete factoring of any
-// value x < 257*257, which includes all values of type uint16_t.
-
-// The template-template param TTD should be either PrimeTrialDivisionWarren or
-// PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren is usually faster, but it
-// uses around 5-10x more memory (PrimeTrialDivisionMayer typically uses around
-// 2*SIZE bytes of memory).
 
 
 // Note: we use a struct with static functions in order to disallow ADL
 struct factorize_trialdivision {
   // overload for uint8_t (not a partial specialization)
-  template <template<class,int> class TTD, int SIZE=54, class OutputIt>
+  template <class OutputIt>
   static OutputIt call(OutputIt iter, std::uint8_t& HURCHALLA_RESTRICT q,
-                    std::uint8_t& HURCHALLA_RESTRICT next_prime, std::uint8_t x)
+           std::uint8_t& HURCHALLA_RESTRICT next_prime, std::uint8_t x, int = 0)
   {
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
     using std::uint8_t;
@@ -118,22 +137,36 @@ struct factorize_trialdivision {
   }
 
 
-  template <template<class,int>class TTD, int SIZE = 54, class OutputIt,
-            typename T>
+  template <class OutputIt, typename T>
   static OutputIt call(OutputIt iter, T& HURCHALLA_RESTRICT q,
-                                          T& HURCHALLA_RESTRICT next_prime, T x)
+                       T& HURCHALLA_RESTRICT next_prime,
+                       T x, int prime_index = 0)
   {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
+    constexpr int SIZE = HURCHALLA_TRIAL_DIVISION_SIZE_LARGE;
     static_assert(SIZE > 1);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
+    int limit;
+    {
+        static_assert(HURCHALLA_TRIAL_DIVISION_SIZE_SMALL <= SIZE);
+        // Since we're using uint64_t during the left shift below, we must shift
+        // less than 64 bits (change to a bigger type if you need >= 64).
+        static_assert(HURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS < 64);
+        constexpr uint64_t crossover =
+            static_cast<uint64_t>(1) << HURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS;
+        limit = (x < crossover) ? HURCHALLA_TRIAL_DIVISION_SIZE_SMALL : SIZE;
+        HPBC_ASSERT2(limit <= SIZE);
+    }
 
-    // PrimeTrialDivisionWarren and PrimeTrialDivisionMayer include only odd
-    // primes - hence they don't use the prime 2, and so we set their TD_SIZE to
-    // SIZE-1
+    // HURCHALLA_TRIAL_DIVISION_TEMPLATE can be PrimeTrialDivisionWarren or
+    // PrimeTrialDivisionMayer.  These classes include only odd primes -
+    // hence they don't use the prime 2, and so we set their TD_SIZE to SIZE-1.
     constexpr int TD_SIZE = SIZE-1;
-    using TD = TTD<T, TD_SIZE>;
+    using TD = HURCHALLA_TRIAL_DIVISION_TEMPLATE<T, TD_SIZE>;
     static_assert(TD::oddPrime(0) == 3);
+
+    int td_limit = limit - 1;
 
     constexpr auto tmp = TD::nextPrimePastEnd();
     // assert the next prime fits in type T
@@ -158,7 +191,19 @@ struct factorize_trialdivision {
     }
     HPBC_ASSERT2(q > 1);
 
-    for (int i=0; i<TD_SIZE; ++i) {
+    if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
+        if ((q >> HURCHALLA_TARGET_BIT_WIDTH) == 0) {
+            using T2 = sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
+            T2 q2 = static_cast<T2>(q);
+            T2 next_prime2;
+            iter = call<SIZE>(iter, q2, next_prime2, q2, 0);
+            q = q2;
+            next_prime = next_prime2;
+            return iter;
+        }
+    }
+
+    for (int i=prime_index; i<td_limit; ++i) {
         HPBC_ASSERT2(q > 1);
         if (TD::oddPrimeSquared(i) > q) {
             // Since no primes <= sqrt(q) are factors of q, q must be a prime
@@ -175,6 +220,19 @@ struct factorize_trialdivision {
             // Since the prime divides q, div_result was set to q/prime.
             q = div_result;
             if (q == 1) return iter;  // we completely factored x
+
+            if constexpr (ut_numeric_limits<T>::digits
+                          > HURCHALLA_TARGET_BIT_WIDTH) {
+                if ((q >> HURCHALLA_TARGET_BIT_WIDTH) == 0) {
+                    using T2 = sized_uint<HURCHALLA_TARGET_BIT_WIDTH>::type;
+                    T2 q2 = static_cast<T2>(q);
+                    T2 next_prime2;
+                    iter = call<SIZE>(iter, q2, next_prime2, q2, i);
+                    q = q2;
+                    next_prime = next_prime2;
+                    return iter;
+                }
+            }
         }
         HPBC_ASSERT2(q > 1);
     }

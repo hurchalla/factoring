@@ -18,3 +18,8 @@ gcc montgomery pow 2 base (miller-rabin) perf at -Os, vs -O1 -O2 or -O3.
    clang doesn't have the slowdown.
    icc as I recall super-slows down at both -Os and -O1.
    Could it be my Unroll class isn't working as desired at -Os?
+
+
+long compile times
+
+ecm README.md

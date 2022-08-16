@@ -10,7 +10,7 @@
 
 
 #include "hurchalla/factoring/detail/impl_factorize.h"
-#include "hurchalla/factoring/detail/PollardRhoIsPrime.h"
+#include "hurchalla/factoring/detail/IsPrimeFactor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <cstddef>
@@ -19,27 +19,62 @@
 #include <numeric>
 #include <functional>
 
+
+// This is the API for factorization.
+//
+// The API consists of two functions which both return all factors of the
+// argument value.  The only difference between the two functions is the
+// structure used for the factors: the first function uses an array, and the
+// second uses a vector.  See the comments above each function for more details.
+
+
 namespace hurchalla {
 
 
-// factorize() uses the Pollar-Rho factorization algorithm, with Brent's
-// improvements.  See https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm
-// I have made novel improvements to the algorithm; both the code and
-// algorithms are well-optimized.
-// Prior to Pollard-Rho there is a small prime trial division stage.  Upon
-// beginning Pollard-Rho, we test for primality before trying to extract each
-// factor, by using the the deterministic Miller-Rabin algorithm - we usually
-// speed up this algorithm by using one of the very small hash tables (~100
-// bytes for example) from
+
+// ------------------------------------
+// The Algorithms:
+// ------------------------------------
+// Prior to heavier-weight factorization, factorize() first uses a small trial
+// disivion stage.  It then uses either ECM or Pollard-Rho to find all remaining
+// factors, depending on the size of the number.  Prior to trying to extract
+// any factor with ECM or Pollard-Rho, it tests for primality by using the
+// deterministic Miller-Rabin algorithm - we usually speed up this algorithm by
+// using one of the very small hash tables (~100 bytes for example) in
 // factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
 //
-// This resulting factorization algorithm/function is likely to be the fastest
-// method available for factoring arbitrary 64 bit numbers.
-// [Again for arbitary inputs, Hart's One Line Factoring algorithm and/or
-// Lehman's method have a good chance to be fastest for factoring non-large
-// 32 bit numbers; ECM will likely be fastest for 128 bit and 256 bit numbers;
-// and for larger numbers still, see Quadratic Sieve and GNFS.]
+// For numbers below ~40 bits, factorize() uses the Pollard-Rho factorization
+// algorithm, with Brent's improvements (see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm)
+// along with other further improvements I made to the algorithm.
+//
+// For numbers above ~40 bits, factorize() uses ECM tailored for numbers between
+// 32 to 128 bits in size.  This ECM code was initially based on Ben Buhrow's
+// "micro-ecm", which was then improved, optimized, and extended to 128 bits.
 
+// ------------------------------------
+// Performance:
+// ------------------------------------
+// For 64 bit numbers, the resulting factorization functions below are likely
+// the fastest you will currently be able to find, both for factoring arbitrary
+// values and for factoring semiprimes with two large factors.
+//
+// For 128 bit numbers, this code needs to be performance tested against other
+// factoring libraries.  An initial expectation is that this code will be
+// competitive or better than the best libraries available, but this is not yet
+// known.
+//
+// For 32 bit numbers, a very well-optimized implementation of Hart's One Line
+// Factoring algorithm and/or Lehman's method might potentially be faster than
+// the functions here.  The functions here should nonetheless be fairly close to
+// the fastest currently available at 32 bits.
+//
+// For 256 bit or larger numbers - which this library does not support - you may
+// wish to seek out ECM for smaller bit depths, and then Quadratic Sieve and
+// GNFS for larger bit depths.  For example, see the GMP project/library.
+
+
+// ------------------------------------
+// The functions:
 // ------------------------------------
 
 // Returns a std::array that contains all factors of x, and writes the total
@@ -64,7 +99,7 @@ factorize(T x, int& num_factors)
     // so ut_numeric_limits<T>::digits is sufficient to hold all factors.
     std::array<T, ut_numeric_limits<T>::digits> arr =
                 hd::impl_factorize::factorize_to_array(
-                                       x, num_factors, hd::PollardRhoIsPrime());
+                                           x, num_factors, hd::IsPrimeFactor());
     // After calling this function, a client should not index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set
     // all array entries at or beyond num_factors to 0 - this may help to make
@@ -99,8 +134,7 @@ void factorize(T x, std::vector<T>& factors)
     factors.clear();
 
     namespace hd = ::hurchalla::detail;
-    hd::impl_factorize::factorize_to_vector(
-                                           x, factors, hd::PollardRhoIsPrime());
+    hd::impl_factorize::factorize_to_vector(x, factors, hd::IsPrimeFactor());
     HPBC_POSTCONDITION(factors.size() > 0);
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;

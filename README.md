@@ -1,16 +1,16 @@
-# The "P-Rho" Factoring Library
+# The EPR Factoring Library
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-P-Rho is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring available for 64 bit types, such as int64_t and uint64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
+EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring available for 64 bit types, such as int64_t and uint64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
 
 ## Design goals
 
-The goal for P-Rho was to create a correct and easy to use library with extremely fast factoring (and primality checking) for native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints).  Though it was optimized for native C++ integer types, for convenience it supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  Note that it was not designed for best performance with 128 bit types, and another library (look for [ECM](https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)) will do better if 128 bit performance is critical.  The P-Rho library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms), and has proofs for the new variants and extensive unit tests.  A portion of the optimizations (such as Montgomery arithmetic) that P-Rho uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
+The goal for EPR was to create a correct and easy to use library with extremely fast factoring (and primality checking) for native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints).  Though it was optimized for native C++ integer types, for convenience it supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  The EPR library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms), and has proofs for the new variants and extensive unit tests.  A portion of the optimizations (such as Montgomery arithmetic) that EPR uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
 
 ## Requirements
 
-The P-Rho library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
+The EPR library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
 
 For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
 
@@ -42,7 +42,7 @@ It may help to see a simple [example project with CMake](examples/example_with_c
 
 ### Without CMake
 
-If you're not using CMake for your project, you'll need to install/copy the P-Rho library's headers and dependencies to some directory in order to use them.  To do this, first clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
+If you're not using CMake for your project, you'll need to install/copy the EPR library's headers and dependencies to some directory in order to use them.  To do this, first clone this git repository onto your system.  You'll need CMake on your system (at least temporarily), so install CMake if you don't have it.  Then from your shell run the following commands:  
 
 >cd *path_of_the_cloned_factoring_repository*  
 >mkdir tmp  

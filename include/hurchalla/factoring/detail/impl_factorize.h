@@ -9,43 +9,44 @@
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
-#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
-#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
-#include "hurchalla/factoring/detail/factorize_pollard_rho.h"
+#include "hurchalla/factoring/detail/FactorizeStage2.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include <cstddef>
+#include <cstdint>
 #include <array>
 #include <vector>
 
 namespace hurchalla { namespace detail {
 
 
-#ifndef HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE
-#  define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
-//#  define HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
+// Do *NOT* change the values for the macro in the code immediately below.  If
+// you wish to use a different value for the macro (which is fine), please
+// predefine the macro when compiling.
+#ifndef HURCHALLA_FACTORING_ECM_THRESHOLD_BITS
+#  ifdef HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
+#    define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 34
+#  else
+#    define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 40
+#  endif
 #endif
 
-#ifndef HURCHALLA_PR_TRIAL_DIVISION_SIZE
-// FYI there are 54 primes below 256
-// On quick benchmarks on Haswell, 135 worked well for PrimeTrialDivisionWarren
-#  define HURCHALLA_PR_TRIAL_DIVISION_SIZE 135
-#endif
 
 
 // Note: we use a struct with static functions in order to disallow ADL
 struct impl_factorize {
 private:
-  template <int LOG2_MODULUS_LIMIT, class OutputIt,
+
+  template <int EcmMinBits, int MaxBitsX, class OutputIt,
             typename T, class PrimalityFunctor>
   static OutputIt
-  dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_mf)
+  dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_functor)
   {
-    static_assert(ut_numeric_limits<T>::is_integer, "");
-    static_assert(!ut_numeric_limits<T>::is_signed, "");
-    static_assert(ut_numeric_limits<T>::digits % 2 == 0, "");
+    static_assert(ut_numeric_limits<T>::is_integer);
+    static_assert(!ut_numeric_limits<T>::is_signed);
+    static_assert(ut_numeric_limits<T>::digits % 2 == 0);
     HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations.
     // If x fails this precondition, we'll just write it to the destination -
     // technically the result is undefined with an unmet precondition.
@@ -56,28 +57,48 @@ private:
     constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
     T q, next_prime;
-    iter = factorize_trialdivision::call<HURCHALLA_PR_TRIAL_DIVISION_TEMPLATE,
-                      HURCHALLA_PR_TRIAL_DIVISION_SIZE>(iter, q, next_prime, x);
+#ifdef HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
+    // Since this macro is defined, we expect only large primes for factors and
+    // thus we expect it would be a waste of time to look for small factors
+    // (via trial division).
+    // However, to guarantee correctness we do need to attempt to extract any
+    // and all occurences of the factor 2, so that we can later satisfy
+    // Montgomery arithmetic's precondition that its modulus must be odd.
+    q = x;
+    while (q % 2 == 0) {
+        *iter++ = 2;
+        q = static_cast<T>(q / 2);
+    }
+    next_prime = 3;
+#else
+    iter = factorize_trialdivision::call(iter, q, next_prime, x);
+#endif
+
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this
     if (q == 1)   // if factorize_trialdivision() completely factored x
         return iter;
-    // factorize_trialdivision() guarantees that any factor of x that is less
+    // factorize_trialdivision() guarantees that any factor of q that is less
     // than next_prime*next_prime must be prime.
-    T threshold_always_prime = (next_prime < sqrtR) ?
+    T always_prime_limit = (next_prime < sqrtR) ?
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 
-    iter = factorize_pollard_rho::call<LOG2_MODULUS_LIMIT>(iter, q, is_prime_mf,
-                                                        threshold_always_prime);
+    FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
+                         factorize_stage2(is_prime_functor, always_prime_limit);
+    iter = factorize_stage2(iter, q);
     return iter;
   }
 
 
 public:
-  template <typename T, class PrimalityFunctor>
+
+  template <int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS,
+            typename T, class PrimalityFunctor>
   static std::array<T, ut_numeric_limits<T>::digits>
-  factorize_to_array(T x, int& num_factors, const PrimalityFunctor& is_prime_mf)
+  factorize_to_array(T x, int& num_factors,
+                     const PrimalityFunctor& is_prime_functor)
   {
-    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(EcmMinBits > 0);
+    static_assert(ut_numeric_limits<T>::is_integer);
 
     using U = typename extensible_make_unsigned<T>::type;
 
@@ -102,11 +123,11 @@ public:
         std::size_t factor_count;
     };
     FactorArrayAdapter faa(arr);
-    // LOG2_MODULUS_LIMIT lets the called function know the compile-time limit
-    // to the modulus range, so that it can use an efficient Monty type.
-    constexpr int LOG2_MODULUS_LIMIT = ut_numeric_limits<T>::digits;
-    dispatch<LOG2_MODULUS_LIMIT>(
-                       std::back_inserter(faa), static_cast<U>(x), is_prime_mf);
+    // MaxBitsX lets the called function know the compile-time limit to the
+    // possible range of x, so that it can use an efficient Monty type.
+    constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
+    dispatch<EcmMinBits, MaxBitsX>(
+                  std::back_inserter(faa), static_cast<U>(x), is_prime_functor);
     num_factors = static_cast<int>(faa.size());
 
     HPBC_POSTCONDITION(num_factors > 0);
@@ -115,11 +136,13 @@ public:
   }
 
 
-  template <typename T, class PrimalityFunctor>
+  template <int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS,
+            typename T, class PrimalityFunctor>
   static void factorize_to_vector(T x, std::vector<T>& vec,
-                                            const PrimalityFunctor& is_prime_mf)
+                                       const PrimalityFunctor& is_prime_functor)
   {
-    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(EcmMinBits > 0);
+    static_assert(ut_numeric_limits<T>::is_integer);
     using U = typename extensible_make_unsigned<T>::type;
 
     // The max possible vector size needed for factors is when all of them are 2
@@ -139,11 +162,11 @@ public:
         std::vector<T>& v;
     };
     FactorVectorAdapter fva(vec);
-    // LOG2_MODULUS_LIMIT lets the called function know the compile-time limit
-    // to the modulus range, so that it can use an efficient Monty type.
-    constexpr int LOG2_MODULUS_LIMIT = ut_numeric_limits<T>::digits;
-    dispatch<LOG2_MODULUS_LIMIT>(
-                       std::back_inserter(fva), static_cast<U>(x), is_prime_mf);
+    // MaxBitsX lets the called function know the compile-time limit to the
+    // possible range of x, so that it can use an efficient Monty type.
+    constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
+    dispatch<EcmMinBits, MaxBitsX>(
+                  std::back_inserter(fva), static_cast<U>(x), is_prime_functor);
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
   }

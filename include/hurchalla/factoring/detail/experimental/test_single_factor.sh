@@ -30,7 +30,7 @@ prbst_starting_length="-DHURCHALLA_PRBST_STARTING_LENGTH=19"
 #trial_type=-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentTrial
 
 #use_inline_asm_redc="-DHURCHALLA_ALLOW_INLINE_ASM_REDC=1"
-use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1" 
+use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
 #use_inline_asm_add="-DHURCHALLA_ALLOW_INLINE_ASM_MODADD"
 #use_inline_asm_sub="-DHURCHALLA_ALLOW_INLINE_ASM_MODSUB"
 

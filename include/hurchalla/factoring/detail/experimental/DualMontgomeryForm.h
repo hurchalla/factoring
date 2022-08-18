@@ -70,14 +70,14 @@ public:
     {
         return mf.getModulus();
     }
-    HURCHALLA_FORCE_INLINE V convertIn(T a, T b) const 
+    HURCHALLA_FORCE_INLINE V convertIn(T a, T b) const
     {
         V x;
         x.v1 = mf.convertIn(a);
         x.v2 = mf.convertIn(b);
         return x;
     }
-    HURCHALLA_FORCE_INLINE void convertOut(T& a, T& b, V x) const 
+    HURCHALLA_FORCE_INLINE void convertOut(T& a, T& b, V x) const
     {
         a = mf.convertOut(x.v1);
         b = mf.convertOut(x.v2);
@@ -206,7 +206,7 @@ public:
         T a = mf.convertOut(y);
         return a;
     }
-    HURCHALLA_FORCE_INLINE V convertInAndCopy(T a) const 
+    HURCHALLA_FORCE_INLINE V convertInAndCopy(T a) const
     {
         V x;
         x.v1 = mf.convertIn(a);

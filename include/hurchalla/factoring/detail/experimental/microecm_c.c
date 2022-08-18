@@ -763,7 +763,7 @@ uint64_t ubuild(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64
     u = mulredc((uint64_t)sigma, Rsqr, n, rho);  // to_monty(sigma)
 
     //printf("sigma = %" PRIu64 ", u = %" PRIu64 ", n = %" PRIu64 "\n", sigma, u, n);
-    
+
     v = addmod(u, u, n);
     v = addmod(v, v, n);            // 4*sigma
 
@@ -844,8 +844,8 @@ int ucheck_factor(uint64_t Z, uint64_t n, uint64_t* f)
 void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s)
 {
     uint64_t q;
-     
-    // handle the only even case 
+
+    // handle the only even case
     q = 2;
     while (q < stg1 * 4)  // jeff: multiplying by 4 improves perf ~1%
     {
@@ -906,7 +906,7 @@ void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s
     else if (stg1 == 70)
     {
         // call prac with best ratio found in deep search.
-        // some composites are cheaper than their 
+        // some composites are cheaper than their
         // constituent primes.
         uprac70(rho, n, P, s);
     }
@@ -1384,7 +1384,7 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
 #endif
         uecm_stage1(rho, n, &P, (uint64_t)stg1_max, s);
         result = ucheck_factor(P.Z, n, &tmp1);
-            
+
 #ifdef MICRO_ECM_VERBOSE_PRINTF
         {
             printf("after stage1: P = %" PRIx64 ", %" PRIx64 "\n", P.X, P.Z);

@@ -6,10 +6,11 @@
  */
 
 
-// factorize_pollard_rho.h by default uses PollardRhoBrentTrial.
-// If for some reason you instead want to test one of the experimental Pollard-
-// Rho trials in the detail/experimental folder, then uncomment the #define
-// below and specify the name of the experimental trial that you want to use.
+// FactorizeStage2.h by default uses PollardRhoBrentSwitchingTrial for its
+// Pollard-Rho trials.
+// If for some reason you instead want to test a different Pollard-Rho trial
+// (typically from the detail/experimental folder), then uncomment the #define
+// below and specify the name of the Pollard-Rho trial that you want to use.
 // As an example, the commented-out #define below specifies the name
 // PollardRhoTrial.  Ordinarily there's no reason for you to test any of the
 // experimental trials.
@@ -18,8 +19,9 @@
 
 
 #include "../factorize_bruteforce.h"
-#include "hurchalla/factoring/detail/factorize_pollard_rho.h"
-#include "hurchalla/factoring/detail/PollardRhoIsPrime.h"
+#include "hurchalla/factoring/detail/FactorizeStage2.h"
+#include "hurchalla/factoring/detail/impl_factorize.h"
+#include "hurchalla/factoring/detail/IsPrimeFactor.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
@@ -49,9 +51,19 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         std::vector<T> answer = factorize_bruteforce(x);
         std::sort(answer.begin(), answer.end());
         std::vector<T> vec;
-        constexpr bool allowHalfRange = false;
-        factorize_pollard_rho::call<allowHalfRange>(std::back_inserter(vec), x,
-                                                           PollardRhoIsPrime());
+
+#ifndef HURCHALLA_FACTORING_ECM_THRESHOLD_BITS
+# error "HURCHALLA_FACTORING_ECM_THRESHOLD_BITS must be defined"
+#endif
+        constexpr int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS;
+        constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
+        auto is_prime_functor = IsPrimeFactor();
+        using PrimalityFunctor = decltype(is_prime_functor);
+        T always_prime_limit = 0;
+        FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
+                        factorize_stage2(is_prime_functor, always_prime_limit);
+        factorize_stage2(std::back_inserter(vec), x);
+
         std::sort(vec.begin(), vec.end());
         SCOPED_TRACE(testing::Message() << "x == " << x);
         EXPECT_TRUE(vec.size() == answer.size());
@@ -74,7 +86,7 @@ void test_factorize(const std::vector<T>& answer)
     EXPECT_TRUE(x > 0);  // the test is bad if this fails
     std::vector<T> vec;
 
-    constexpr bool allowHalfRange = ut_numeric_limits<T>::is_signed;
+//    constexpr bool allowHalfRange = ut_numeric_limits<T>::is_signed;
     using U = typename extensible_make_unsigned<T>::type;
 
     //convenient adapter to correctly cast between (possible)signed and unsigned
@@ -96,8 +108,20 @@ void test_factorize(const std::vector<T>& answer)
         *iter++ = 2;
         x = x/2;
     }
-    factorize_pollard_rho::call<allowHalfRange>(iter, static_cast<U>(x),
-                                                           PollardRhoIsPrime());
+
+#ifndef HURCHALLA_FACTORING_ECM_THRESHOLD_BITS
+# error "HURCHALLA_FACTORING_ECM_THRESHOLD_BITS must be defined"
+#endif
+    constexpr int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS;
+    constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
+    auto is_prime_functor = IsPrimeFactor();
+    using PrimalityFunctor = decltype(is_prime_functor);
+    U always_prime_limit = 0;
+    FactorizeStage2<EcmMinBits, MaxBitsX, U, PrimalityFunctor>
+                    factorize_stage2(is_prime_functor, always_prime_limit);
+    factorize_stage2(iter, static_cast<U>(x));
+
+
     EXPECT_TRUE(vec.size() == answer.size());
     // at this time, I haven't made a guarantee for factorize()
     // that the destination range will be sorted, so we'll sort it here.

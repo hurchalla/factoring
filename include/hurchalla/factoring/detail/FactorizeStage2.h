@@ -77,8 +77,8 @@ public:
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
 
-    FactorizeStage2(const PrimalityFunctor& is_prime_func, T always_prime_limit)
-        : is_prime_func(is_prime_func), always_prime_limit(always_prime_limit),
+    FactorizeStage2(const PrimalityFunctor& isprime_func, T alwaysprime_limit)
+        : is_prime_func(isprime_func), always_prime_limit(alwaysprime_limit),
           base_c(1), expected_iterations(0), loc_lcg(0)
     {
     }
@@ -182,6 +182,7 @@ private:
     OutputIt factorize2(OutputIt iter, T x)
     {
         using U = typename MF::IntegerType;
+        using P = typename safely_promote_unsigned<T>::type;
         using C = typename MF::CanonicalValue;
         static_assert(ut_numeric_limits<U>::is_integer);
         static_assert(!ut_numeric_limits<U>::is_signed);
@@ -232,7 +233,7 @@ private:
         // to reach x-2.  If we do end up with one of those sequences, it's
         // fairly harmless - they just have low success rate, making them
         // inefficient since we may need another loop iteration after it.
-        if (base_c >= x-2 || base_c == 0)
+        if (static_cast<P>(base_c) >= static_cast<P>(x)-2 || base_c == 0)
             base_c = 1;
         C unity = mf.getUnityValue();
 
@@ -246,13 +247,12 @@ private:
             if (tmp_factor >= 2) {    // we found a factor.
                 // Base_c could overflow, but that's okay.  We'd prefer for
                 // efficiency that it didn't, but any T value would be valid.
-                using P = typename safely_promote_unsigned<T>::type;
                 base_c = static_cast<T>(base_c + static_cast<P>(i) + 1);
                 // Try to factor the factor (fyi, it is usually prime)
                 iter = dispatch(iter, tmp_factor);
                 // Next try to factor the quotient.
                 // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
-                T quotient = static_cast<T>(x/tmp_factor);  
+                T quotient = static_cast<T>(x/tmp_factor);
                 iter = dispatch(iter, quotient);
                 return iter;
             }

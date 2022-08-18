@@ -9,6 +9,8 @@
 #define HURCHALLA_FACTORING_IMPL_FACTORIZE_H_INCLUDED
 
 
+#include "hurchalla/factoring/detail/PrimeTrialDivisionWarren.h"
+#include "hurchalla/factoring/detail/PrimeTrialDivisionMayer.h"
 #include "hurchalla/factoring/detail/factorize_trialdivision.h"
 #include "hurchalla/factoring/detail/FactorizeStage2.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
@@ -31,6 +33,18 @@ namespace hurchalla { namespace detail {
 #  else
 #    define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 40
 #  endif
+#endif
+
+
+#ifndef HURCHALLA_TRIAL_DIVISION_TEMPLATE
+#  define HURCHALLA_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionWarren
+//#  define HURCHALLA_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
+#endif
+
+#ifndef HURCHALLA_TRIAL_DIVISION_SIZE_LARGE
+// FYI there are 54 primes below 256
+// On quick benchmarks on Haswell, 139 worked well for PrimeTrialDivisionWarren
+#  define HURCHALLA_TRIAL_DIVISION_SIZE_LARGE 139
 #endif
 
 
@@ -71,7 +85,8 @@ private:
     }
     next_prime = 3;
 #else
-    iter = factorize_trialdivision::call(iter, q, next_prime, x);
+    iter = factorize_trialdivision::call<HURCHALLA_TRIAL_DIVISION_TEMPLATE,
+                   HURCHALLA_TRIAL_DIVISION_SIZE_LARGE>(iter, q, next_prime, x);
 #endif
 
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this

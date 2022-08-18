@@ -229,7 +229,7 @@ struct uecm_upracparams2 {
         2693, 2699, 2707, 2711, 2713, 2719, 2729, 2731, 2741, 2749,
         2753, 2767, 2777, 2789, 2791,   89, 2797, 2801, 2803, 2819,
         2833, 2837, 2843, 2851, 2857, 2861, 2879, 2887, 2897, 2903,
-        2909, 2917, 2927, 2939, 2953, 2957, 2963, 2969, 2971, 2999, 
+        2909, 2917, 2927, 2939, 2953, 2957, 2963, 2969, 2971, 2999,
         3001, 3011, 3019, 3023, 3037, 3041,   97, 3049, 3061, 3067,
         3079, 3083, 3089,    5, 3109, 3119, 3121, 3137, 3163, 3167,
         3169, 3181, 3187, 3191, 3203, 3209, 3217, 3221, 3229, 3251,
@@ -1251,7 +1251,7 @@ ubuild(const MF& HURCHALLA_RESTRICT mf,
         // For details, see section 2.2 of "Application of Montgomery's Trick to Scalar Multiplication for Elliptic and Hyperelliptic Curves Using a Fixed Base Point"
         //     https://www.iacr.org/archive/pkc2004/29470042/29470042.pdf
         //   See also https://twitter.com/vitalikbuterin/status/1246213886338048000?lang=en
-        //   And the original paper by Montgomery, "Speeding the Pollard and Elliptic Curve Methods of Factorization" 
+        //   And the original paper by Montgomery, "Speeding the Pollard and Elliptic Curve Methods of Factorization"
         //   https://wstein.org/edu/Fall2001/124/misc/montgomery.pdf
 
         // The next line sets s4ab = (s4a * s4b) mod n.

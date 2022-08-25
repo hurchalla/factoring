@@ -22,25 +22,19 @@ designed to find small factors.  Defining this macro also slightly
 lowers the size threshold for the factoring functions to choose the ECM
 algorithm over Pollard-Rho.
 
-HURCHALLA_FACTORING_ECM_THRESHOLD_BITS - this macro provides the cutoff between
+HURCHALLA_FACTORING_ECM_THRESHOLD_BITS - this macro specifies the cutoff between
 using Pollard-Rho or ECM for factoring.  Any number to be factored that is
 (after trial division) greater than (1 << HURCHALLA_FACTORING_ECM_THRESHOLD_BITS)
 will be factored using ECM, and any number that is smaller will be factored using
 Pollard-Rho.  The default value is 34 when HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
 is defined, and 40 when HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS is not defined.
 
-HURCHALLA_TRIAL_DIVISION_SIZE_SMALL and HURCHALLA_TRIAL_DIVISION_SIZE_LARGE -
-you can predefine these macros to integer values that together provide a range.
-The defaults are 109 and 139, respectively, and the 'small' macro value must be
-less than the 'large'.  This range influences the number of
-small primes (starting at 2,3,5, etc) that will be trialed as potential factors
-during the initial trial division stage.  When factoring a large number, a higher
-value from this range will be used, and when factoring a small number, a lower
-value will be used.  If you predefine one of these macros, you should also
-predefine the other.
+HURCHALLA_TRIAL_DIVISION_SIZE - this macro specifies the number of small primes
+(starting at 2,3,5, etc) to trial as potential factors during the initial trial
+division stage of factoring.  The default is 139.
 
 HURCHALLA_TRIAL_DIVISION_TEMPLATE - this is the name of the template that
-performs the trial division; if you predefine it, you must set it to either
+performs the trial division during factoring; if you predefine it, you must set it to either
 PrimeTrialDivisionWarren or PrimeTrialDivisionMayer.  PrimeTrialDivisionWarren
 is the default.  If you have a CPU with very fast division instructions
 (some CPUs from 2019 or later), you might be able to improve performance by
@@ -49,8 +43,7 @@ macro HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.  If you need to minimize resource
 usage, then predefine this macro to PrimeTrialDivisionMayer, since the Mayer
 template uses about a fifth of the memory of PrimeTrialDivisionWarren.  If you
 do predefine this macro, you will very likely also want to predefine
-HURCHALLA_TRIAL_DIVISION_SIZE_SMALL and HURCHALLA_TRIAL_DIVISION_SIZE_LARGE to
-new values that work best with this macro choice.
+HURCHALLA_TRIAL_DIVISION_SIZE to a new value that works best with this macro choice.
 
 HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME - the name of the algorithm/functor
 that carries out a Pollard Rho factoring trial.  You will likely find that

@@ -1,4 +1,4 @@
-This directory is used by the main factoring CMakeLists.txt (via add_subdirectory), in order to optionally facilitate benchmarking from github actions.  See the option BENCH_HURCHALLA_FACTORING within the main factoring CMakeLists.txt file.
+This directory is used by the main factoring CMakeLists.txt to optionally facilitate benchmarking from github actions.  See the option BENCH_HURCHALLA_FACTORING inside ../CMakeLists.txt.
 
 However, you can also build and run the benchmark from this directory by executing ./benchmark.sh.
 

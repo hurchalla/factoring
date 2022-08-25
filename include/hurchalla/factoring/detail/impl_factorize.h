@@ -41,10 +41,10 @@ namespace hurchalla { namespace detail {
 //#  define HURCHALLA_TRIAL_DIVISION_TEMPLATE PrimeTrialDivisionMayer
 #endif
 
-#ifndef HURCHALLA_TRIAL_DIVISION_SIZE_LARGE
+#ifndef HURCHALLA_TRIAL_DIVISION_SIZE
 // FYI there are 54 primes below 256
 // On quick benchmarks on Haswell, 139 worked well for PrimeTrialDivisionWarren
-#  define HURCHALLA_TRIAL_DIVISION_SIZE_LARGE 139
+#  define HURCHALLA_TRIAL_DIVISION_SIZE 139
 #endif
 
 
@@ -86,7 +86,7 @@ private:
     next_prime = 3;
 #else
     iter = factorize_trialdivision::call<HURCHALLA_TRIAL_DIVISION_TEMPLATE,
-                   HURCHALLA_TRIAL_DIVISION_SIZE_LARGE>(iter, q, next_prime, x);
+                         HURCHALLA_TRIAL_DIVISION_SIZE>(iter, q, next_prime, x);
 #endif
 
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this

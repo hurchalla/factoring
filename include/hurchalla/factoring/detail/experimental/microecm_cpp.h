@@ -518,8 +518,6 @@ template <class MF>
 static void uprac_precalc_80(const MF& mf, uecm_mfpt<MF> *P,
                              typename MF::MontgomeryValue s, int target_bits)
 {
-    using MV = typename MF::MontgomeryValue;
-
 // For reference, here are some unused composites:
 //        10,8,8,8,8,8,8,8,8,11,8,8,9,      // 37 * 53
 //        11,8,11,8,10,8,8,8,8,8,8,8,8,9,   // 37 * 83
@@ -599,7 +597,6 @@ template <class MF>
 static void uecm_stage1(const MF& mf, uecm_mfpt<MF> *P,
                         typename MF::MontgomeryValue s, int target_bits)
 {
-    using MV = typename MF::MontgomeryValue;
     using T = typename MF::IntegerType;
     HPBC_PRECONDITION2(0 < target_bits && target_bits <= 128);
 
@@ -686,7 +683,7 @@ static void uecm_stage1(const MF& mf, uecm_mfpt<MF> *P,
                   }};
         float slope = 0.0f;
         float intercept = 0.0f;
-        for (int i = 1; i < bitpoints.size(); ++i) {
+        for (decltype(bitpoints.size()) i = 1; i < bitpoints.size(); ++i) {
             if (target_bits < bitpoints[i].bits) {
                 slope = (static_cast<float>(bitpoints[i].indexlimit)
                            - static_cast<float>(bitpoints[i-1].indexlimit))
@@ -754,7 +751,7 @@ static int get_stage2_num_giant_steps(int target_bits)
                   }};
         float slope = 0.0f;
         float intercept = 0.0f;
-        for (int i = 1; i < bitpoints.size(); ++i) {
+        for (decltype(bitpoints.size()) i = 1; i < bitpoints.size(); ++i) {
             if (target_bits < bitpoints[i].bits) {
                 slope = (static_cast<float>(bitpoints[i].numsteps)
                            - static_cast<float>(bitpoints[i-1].numsteps))

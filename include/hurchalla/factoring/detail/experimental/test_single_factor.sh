@@ -20,9 +20,7 @@ exit_on_failure () {
 
 ecm_threshold="-DHURCHALLA_FACTORING_ECM_THRESHOLD_BITS=40"
 
-trialdiv_size_crossover_bits="-DHURCHALLA_TRIAL_DIVISION_CROSSOVER_BITS=45"
-trialdiv_size_small="-DHURCHALLA_TRIAL_DIVISION_SIZE_SMALL=109"
-trialdiv_size_large="-DHURCHALLA_TRIAL_DIVISION_SIZE_LARGE=139"
+trialdiv_size="-DHURCHALLA_TRIAL_DIVISION_SIZE=139"
 
 prbst_gcd_threshold="-DHURCHALLA_PRBST_GCD_THRESHOLD=711"
 prbst_starting_length="-DHURCHALLA_PRBST_STARTING_LENGTH=19"
@@ -47,11 +45,11 @@ use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
 # SET THIS TO THE DIRECTORY WHERE YOU CLONED THE HURCHALLA GIT REPOSITORIES.
 # (or otherwise ensure the compiler -I flags correctly specify the needed
 # hurchalla include directories)
-repo_directory=/Users/jean/Downloads
+repo_directory=/home/jeff/Desktop
 
 
 cppcompiler=clang++
-cpp_standard="-std=c++1z"
+cpp_standard="-std=c++17"
 
 
 $cppcompiler  \
@@ -62,7 +60,7 @@ $cppcompiler  \
         -I${repo_directory}/modular_arithmetic/montgomery_arithmetic/include \
         -I${repo_directory}/util/include \
         $ecm_threshold  \
-        $trialdiv_size_small  $trialdiv_size_large  $trialdiv_size_crossover_bits \
+        $trialdiv_size \
         $prbst_gcd_threshold  $prbst_starting_length \
         $microecm_expect_large_factors   $allow_microecm_dual_monty  \
         $cpp_standard  $use_inline_asm_add  $use_inline_asm_sub  $use_alt_hr_addsubs  \

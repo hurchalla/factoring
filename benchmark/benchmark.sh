@@ -16,7 +16,7 @@ allow_ecm="-DHURCHALLA_FACTORING_ALLOW_ECM_EXPERIMENTAL"
 use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
 
 
-cpp_standard="-std=c++1z"
+cpp_standard="-std=c++17"
 
 build_dir=tmp
 mkdir -p $build_dir

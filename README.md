@@ -2,7 +2,7 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should provide the fastest factoring available for 64 bit types, such as int64_t and uint64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
+EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should easily provide one of the fastest factoring functions available for 64 bit types, such as int64_t and uint64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
 
 ## Design goals
 

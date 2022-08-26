@@ -52,7 +52,7 @@ either expressed or implied, of the FreeBSD Project.
 #endif
 
 
-//#define MICRO_ECM_EXPECT_LARGE_FACTORS
+#define MICRO_ECM_EXPECT_LARGE_FACTORS
 
 
 //#define MICRO_ECM_VERBOSE_PRINTF

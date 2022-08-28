@@ -67,7 +67,7 @@ either expressed or implied, of the FreeBSD Project.
 #  include <intrin.h>
 #endif
 
-#include "../../getfactor_ecm_c.h"  // the ECM API for C
+#include "microecm_c.h"  // the ECM API for C
 
 
 

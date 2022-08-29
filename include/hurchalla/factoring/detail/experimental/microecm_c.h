@@ -46,6 +46,9 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef MICROECM_GETFACTOR_ECM_C_API_H_INCLUDED
 #define MICROECM_GETFACTOR_ECM_C_API_H_INCLUDED
 
+#ifdef __cplusplus   // C compilers skip this ifdef section
+extern "C" {
+#endif
 
 // This is the C API for ECM factoring.
 // getfactor_ecm() returns a *single* factor.
@@ -62,5 +65,9 @@ either expressed or implied, of the FreeBSD Project.
 
 uint64_t getfactor_ecm(uint64_t n, uint64_t *pran);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

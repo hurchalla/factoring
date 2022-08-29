@@ -63,6 +63,9 @@ either expressed or implied, of the FreeBSD Project.
 #  include <stdio.h>
 #endif
 #if defined(_MSC_VER)
+#  ifndef _WIN64
+#    error "64 bit compilation mode is required for MSVC"
+#  endif
 #  include <immintrin.h>
 #  include <intrin.h>
 #endif
@@ -116,7 +119,8 @@ uint32_t lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
 
 
 
-/* --- The following functions are written by Jeff Hurchalla, Copyright 2022
+/* --- The following six functions are written by Jeff Hurchalla, Copyright 2022
+
 */
 // From the gcc docs on __builtin_ctz:
 // "Returns the number of trailing 0-bits in x, starting at the least
@@ -174,13 +178,21 @@ uint64_t bingcd64(uint64_t u, uint64_t v)
                 u = (uint64_t)(u << k);
                 break;
             }
-            v = (uint64_t)(v >> count_trailing_zeros(v));
+            // For the line below, the standard way to write this algorithm
+            // would have been to use count_trailing_zeros(v)  (instead of
+            // count_trailing_zeros(sub1)).  However, as pointed out by
+            // https://gmplib.org/manual/Binary-GCD, "in twos complement the
+            // number of low zero bits on u-v is the same as v-u, so counting or
+            // testing can begin on u-v without waiting for abs(u-v) to be
+            // determined."  Hence we are able to use sub1 for the argument.
+            // By removing the dependency on abs(u-v), the CPU can execute
+            // count_trailing_zeros() at the same time as abs(u-v).
+            j = count_trailing_zeros(sub1);
+            v = (uint64_t)(v >> j);
         }
     }
     return u;
 }
-
-
 
 // for this algorithm, see https://jeffhurchalla.com/2022/04/28/montgomery-redc-using-the-positive-inverse-mod-r/
 MICRO_ECM_FORCE_INLINE uint64_t mulredc_alt(uint64_t x, uint64_t y, uint64_t N, uint64_t invN)
@@ -231,7 +243,9 @@ uint64_t multiplicative_inverse(uint64_t a)
     uint64_t x4 = x3*(1 + y);
     return x4;
 }
+
 /* --- end Hurchalla functions --- */
+
 
 
 
@@ -239,11 +253,11 @@ uint64_t multiplicative_inverse(uint64_t a)
 // full strength mul/sqr redc
 MICRO_ECM_FORCE_INLINE uint64_t mulredc(uint64_t x, uint64_t y, uint64_t n, uint64_t nhat)
 {
-    return mulredc_alt(x, y, n, -nhat);
+    return mulredc_alt(x, y, n, 0 - nhat);
 }
 MICRO_ECM_FORCE_INLINE uint64_t sqrredc(uint64_t x, uint64_t n, uint64_t nhat)
 {
-    return mulredc_alt(x, x, n, -nhat);
+    return mulredc_alt(x, x, n, 0 - nhat);
 }
 MICRO_ECM_FORCE_INLINE uint64_t submod(uint64_t a, uint64_t b, uint64_t n)
 {
@@ -1038,13 +1052,13 @@ static const uint8_t b1_205[511] = {
 uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, uint64_t s, uint64_t unityval)
 {
     int b;
-    int i, j, k, m;
+    int i, j, k;
     uecm_pt Pa1;
     uecm_pt *Pa = &Pa1;
     uecm_pt Pb[20];
     uecm_pt *Pd;
     const uint8_t *barray = NULL;
-    uint32_t numb;
+    int numb;
 
 #ifdef MICRO_ECM_VERBOSE_PRINTF
     ptadds = 0;
@@ -1319,14 +1333,9 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
 {
     //attempt to factor n with the elliptic curve method
     //following brent and montgomery's papers, and CP's book
-    uint64_t retval;
-    uint64_t i, j;
     int curve;
-    int tid;
-    char *wstr;
     int found = 0;
     int result;
-    uint64_t num_found;
     uecm_pt P;
     uint64_t tmp1;
 
@@ -1350,10 +1359,8 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
     uint64_t Rsqr = sqrredc(two_32, n, rho);     // R*2^64 ≡ R*R  (mod n)
 
     *f = 1;
-    for (curve = 0; curve < curves; curve++)
+    for (curve = 0; (uint32_t)curve < curves; curve++)
     {
-        uint64_t p;
-
 #ifdef MICRO_ECM_VERBOSE_PRINTF
         stg1Add = 0;
         stg1Doub = 0;
@@ -1530,6 +1537,8 @@ int microecm_get_bits(uint64_t n)
 // otherwise returns a factor of n.
 uint64_t getfactor_ecm(uint64_t n, uint64_t *pran)
 {
+    if (n % 2 == 0)
+        return 2;
     int bits = microecm_get_bits(n);
     return do_uecm(n, bits, pran);
 }

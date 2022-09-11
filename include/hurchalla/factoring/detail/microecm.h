@@ -1,44 +1,15 @@
 /*
-Copyright (c) 2022, Jeff Hurchalla
+This file originated as
+https://github.com/bbuhrow/yafu/blob/master/factor/gmp-ecm/microecm.c
+This C++ version adds significant optimizations, and uses extended
+ECM data tables to handle any integer type up to 128 bit.
 
-Original source file prior to modifications was:
-https://github.com/bbuhrow/yafu/blob/25b65990d6501b0a71e69963fb59c1fc4ab28df1/factor/gmp-ecm/microecm.c
-
-IMPORTANT
-Currently (and temporarily) this file and all of its modifications from the
-original file are unavailable under any license.  For now, you are explicitly
-*NOT* allowed to use, copy, distribute, modify, or share this software for any
-purpose, without permission from the author.
-
-You can expect this file will soon have a normal permissive license.
-*/
-
-/*
-The following is reproduced to comply with the original source file:
-
-Copyright (c) 2014, Ben Buhrow
+Copyrights (c) 2014 Ben Buhrow and (c) 2022 Jeff Hurchalla.
 All rights reserved.
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies,
-either expressed or implied, of the FreeBSD Project.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
 
@@ -49,9 +20,10 @@ either expressed or implied, of the FreeBSD Project.
 #include <stddef.h>
 #include <stdint.h>
 #include <type_traits>
+#include <array>
 
 #ifdef HURCHALLA_ECM_ALLOW_DUAL_MONTGOMERY_FORM
-#include "DualMontgomeryForm.h"
+#include "hurchalla/factoring/detail/DualMontgomeryForm.h"
 #endif
 #include "hurchalla/modular_arithmetic/modular_multiplicative_inverse.h"
 #include "hurchalla/factoring/greatest_common_divisor.h"
@@ -297,18 +269,22 @@ struct micro_ecm {
 static
 inline uint32_t lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
 {
-    constexpr double INV_2_POW_32 = 1.0 / (double)((uint64_t)(1) << 32);
-    *ploc_lcg = 6364136223846793005ULL * (*ploc_lcg) + 1442695040888963407ULL;
-    return lower + (uint32_t)(
-        (double)(upper - lower) * (double)((*ploc_lcg) >> 32) * INV_2_POW_32);
+    constexpr double INV_2_POW_32 =
+                      1.0 / static_cast<double>(static_cast<uint64_t>(1) << 32);
+    *ploc_lcg = UINT64_C(6364136223846793005) * (*ploc_lcg) +
+                      UINT64_C(1442695040888963407);
+    return lower + static_cast<uint32_t>(
+                      static_cast<double>(upper - lower) *
+                      static_cast<double>((*ploc_lcg) >> 32) * INV_2_POW_32);
 }
 
 
 
 template <class MF>
-static HURCHALLA_FORCE_INLINE
-void inlined_uadd(const MF& mf, const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
-                  const uecm_mfpt<MF> Pin, uecm_mfpt<MF> *Pout)
+HURCHALLA_FORCE_INLINE
+static void inlined_uadd(const MF& mf,
+                         const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
+                         const uecm_mfpt<MF> Pin, uecm_mfpt<MF> *Pout)
 {
     using MV = typename MF::MontgomeryValue;
     // compute:
@@ -327,7 +303,7 @@ void inlined_uadd(const MF& mf, const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
     MV tt2 = mf.multiply(sum1, diff2); //V
 
     MV tt3 = mf.add(tt1, tt2);
-    MV tt4 = mf.subtract(tt1, tt2);
+    MV tt4 = mf.unorderedSubtract(tt1, tt2);
     tt1 = mf.square(tt3);   //(U + V)^2
     tt2 = mf.square(tt4);   //(U - V)^2
 
@@ -337,6 +313,7 @@ void inlined_uadd(const MF& mf, const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
     return;
 }
 template <class MF>
+HURCHALLA_FORCE_INLINE  // for now, forceinline provides best perf
 static void uadd(const MF& mf, const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
                  const uecm_mfpt<MF> Pin, uecm_mfpt<MF> *Pout)
 {
@@ -345,9 +322,9 @@ static void uadd(const MF& mf, const uecm_mfpt<MF> P1, const uecm_mfpt<MF> P2,
 
 
 template <class MF>
-static HURCHALLA_FORCE_INLINE
-void inlined_udup(const MF& mf, typename MF::MontgomeryValue s,
-                  uecm_mfpt<MF> point, uecm_mfpt<MF> *P)
+HURCHALLA_FORCE_INLINE
+static void inlined_udup(const MF& mf, typename MF::MontgomeryValue s,
+                         uecm_mfpt<MF> point, uecm_mfpt<MF> *P)
 {
     using MV = typename MF::MontgomeryValue;
     using CV = typename MF::CanonicalValue;
@@ -366,6 +343,7 @@ void inlined_udup(const MF& mf, typename MF::MontgomeryValue s,
     return;
 }
 template <class MF>
+HURCHALLA_FORCE_INLINE  // for now, forceinline provides best perf
 static void udup(const MF& mf, typename MF::MontgomeryValue s,
                  uecm_mfpt<MF> point, uecm_mfpt<MF> *P)
 {
@@ -375,7 +353,7 @@ static void udup(const MF& mf, typename MF::MontgomeryValue s,
 
 
 template <class MF>
-static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
+static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, float v,
                   typename MF::MontgomeryValue s)
 {
     HPBC_PRECONDITION2(c > 0);
@@ -386,7 +364,8 @@ static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
     c = c >> shift;
     d = c;
     {
-        uint64_t r = (uint64_t)((double)d * v + 0.5);
+        uint64_t r = static_cast<uint64_t>(
+                         static_cast<double>(d) * static_cast<double>(v) + 0.5);
         d = c - r;
         e = 2 * r - c;
     }
@@ -398,7 +377,7 @@ static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
     pt1.Z = pt2.Z = pt3.Z = P->Z;
 
     // point2 is [2]P
-    udup(mf, s, pt1, &pt1);
+    inlined_udup(mf, s, pt1, &pt1);
 
     while (d != e)
     {
@@ -440,7 +419,7 @@ static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
             d -= e;
 
             uecm_mfpt<MF> pt4;
-            inlined_uadd(mf, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            inlined_uadd(mf, pt1, pt2, pt3, &pt4);        // T = B + A (C)
 
             pt3.X = pt2.X;
             pt2.X = pt4.X;
@@ -450,7 +429,7 @@ static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
         else if ((d + e) % 2 == 0)
         {
             d = (d - e) / 2;
-            inlined_uadd(mf, pt2, pt1, pt3, &pt2);        // B = B + A (C)
+            inlined_uadd(mf, pt1, pt2, pt3, &pt2);        // B = B + A (C)
             inlined_udup(mf, s, pt1, &pt1);        // A = 2A
         }
         else if (d % 2 == 0)
@@ -503,7 +482,7 @@ static void uprac(const MF& mf, uecm_mfpt<MF> *P, uint64_t c, double v,
             inlined_udup(mf, s, pt2, &pt2);        // B = 2B
         }
     }
-    uadd(mf, pt1, pt2, pt3, P);     // A = A + B (C)
+    inlined_uadd(mf, pt1, pt2, pt3, P);     // A = A + B (C)
 
     for (int i = 0; i < shift; i++)
     {
@@ -615,8 +594,8 @@ static void uecm_stage1(const MF& mf, uecm_mfpt<MF> *P,
     }
     for (int i = 0; i < prime3_iterations; i++) {
         uecm_mfpt<MF> tmp;
-        udup(mf, s, *P, &tmp);
-        uadd(mf, tmp, *P, *P, P);
+        inlined_udup(mf, s, *P, &tmp);
+        inlined_uadd(mf, tmp, *P, *P, P);
     }
 
     uprac_precalc_80(mf, P, s, target_bits);
@@ -694,12 +673,13 @@ static void uecm_stage1(const MF& mf, uecm_mfpt<MF> *P,
                 break;
             }
         }
-        int limit2 = static_cast<int>(slope*target_bits + intercept + 0.5f);
+        int limit2 = static_cast<int>(slope * static_cast<float>(target_bits)
+                                                            + intercept + 0.5f);
         if (limit2 > uecm_upracparams2<>::num_params)
             limit2 = uecm_upracparams2<>::num_params;
 
         for (int i = 0; i < limit2; ++i)
-            uprac(mf, P, uecm_upracparams2<>::primes[i], 0.54, s);
+            uprac(mf, P, uecm_upracparams2<>::primes[i], 0.54f, s);
     }
     return;
 }
@@ -762,7 +742,8 @@ static int get_stage2_num_giant_steps(int target_bits)
                 break;
             }
         }
-        num_giant_steps = static_cast<int>(slope*target_bits + intercept + 0.5f);
+        num_giant_steps = static_cast<int>(
+                    slope * static_cast<float>(target_bits) + intercept + 0.5f);
         HPBC_ASSERT2(num_giant_steps > 0);
       }
     }
@@ -793,7 +774,7 @@ static
 typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
                                 int target_bits, typename MF::MontgomeryValue s)
 {
-    static constexpr uint32_t map[61] = {
+    static constexpr int map[61] = {
         0, 1, 2, 0, 0, 0, 0, 3, 0, 0,
         0, 4, 0, 5, 0, 0, 0, 6, 0, 7,
         0, 0, 0, 8, 0, 0, 0, 0, 0, 9,
@@ -896,10 +877,10 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
     int h = 3;
     int k = 4;
     int j = 5;
-    while ((j + 12) < ECM_PARAM_D)
+    while (j < ECM_PARAM_D - 12)
     {
         // [j+6]Q + [6]Q([j]Q) = [j+12]Q
-        uadd(mf, pt3, Pb[k], Pb[h], &Pb[map[j + 12]]);
+        inlined_uadd(mf, pt3, Pb[k], Pb[h], &Pb[map[j + 12]]);
         h = k;
         k = map[j + 12];
         j += 6;
@@ -910,10 +891,10 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
     h = 1;
     k = 3;
     j = 1;
-    while ((j + 12) < ECM_PARAM_D)
+    while (j < ECM_PARAM_D - 12)
     {
         // [j+6]Q + [6]Q([j]Q) = [j+12]Q
-        uadd(mf, pt3, Pb[k], Pb[h], &Pb[map[j + 12]]);
+        inlined_uadd(mf, pt3, Pb[k], Pb[h], &Pb[map[j + 12]]);
         h = k;
         k = map[j + 12];
         j += 6;
@@ -1174,7 +1155,7 @@ ubuild(const MF& HURCHALLA_RESTRICT mf,
     using T = typename MF::IntegerType;
 
     T n = mf.getModulus();
-    uint32_t sigma = lcg_rand_32B(7, (uint32_t)-1, &loc_lcg);
+    uint32_t sigma = lcg_rand_32B(7, static_cast<uint32_t>(-1), &loc_lcg);
     MV u;
 
     // failing the static assert might not be a problem, but it's unexpected
@@ -1405,9 +1386,10 @@ static int ecm_getbits(T n)
 // FYI: loc_lcg is used within this file by a random number generator, and
 // holds the current value of a pseudo random sequence.  Your first assigment
 // to loc_lcg seeds the sequence, and after seeding it you don't want to
-// change loc_lcg, since that would interrupt the sequence.
+// change loc_lcg, since that would restart the sequence.
 template <class MF>
 static typename MF::IntegerType get_ecm_factor(const MF& HURCHALLA_RESTRICT mf,
+                                           bool expect_arbitrary_size_factors,
                                            uint64_t& HURCHALLA_RESTRICT loc_lcg)
 {
     using T = typename MF::IntegerType;
@@ -1417,48 +1399,49 @@ static typename MF::IntegerType get_ecm_factor(const MF& HURCHALLA_RESTRICT mf,
 
     int targetBits = ecm_getbits(mf.getModulus());
 
-#ifndef HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
-    // since we don't expect large factors, try fast attempts to find
-    // potential small factors.
-    curves = 1;
-    if constexpr (hurchalla::ut_numeric_limits<T>::digits <= 64) {
-        if (targetBits > 39) {
-            int tmp_bits = 39;
-            found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
-            if (found_factor)
-                return f64;
-            if (targetBits > 45) {
-                tmp_bits = 45;
+    if (expect_arbitrary_size_factors) {
+        // since we don't expect large factors, try fast attempts to find
+        // potential small factors.
+        curves = 1;
+        if constexpr (hurchalla::ut_numeric_limits<T>::digits <= 64) {
+            if (targetBits > 39) {
+                int tmp_bits = 39;
                 found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
                 if (found_factor)
                     return f64;
-
-                if (targetBits > 51) {
-                    tmp_bits = 51;
+                if (targetBits > 45) {
+                    tmp_bits = 45;
                     found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
                     if (found_factor)
                         return f64;
 
-                    if (targetBits > 58) {
-                        tmp_bits = 58;
+                    if (targetBits > 51) {
+                        tmp_bits = 51;
                         found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
                         if (found_factor)
                             return f64;
+
+                        if (targetBits > 58) {
+                            tmp_bits = 58;
+                            found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
+                            if (found_factor)
+                                return f64;
+                        }
                     }
                 }
             }
         }
-    }
-    else {
-        for (int tmp_bits = 34; targetBits > tmp_bits; tmp_bits += 6) {
-            found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
-            if (found_factor)
-                return f64;
+        else {
+            for (int tmp_bits = 34; targetBits > tmp_bits; tmp_bits += 6) {
+                found_factor = microecm(mf, f64, curves, loc_lcg, tmp_bits);
+                if (found_factor)
+                    return f64;
+            }
         }
     }
-#endif
 
-    curves = 16*targetBits;
+    // the cast to int16_t works around a pointless compiler warning in gcc7
+    curves = 16*static_cast<int16_t>(targetBits);
 
 #ifndef HURCHALLA_ECM_ALLOW_DUAL_MONTGOMERY_FORM
     found_factor = microecm(mf, f64, curves, loc_lcg, targetBits);

@@ -10,22 +10,13 @@
 # performance.
 
 
-allow_ecm="-DHURCHALLA_FACTORING_ALLOW_ECM_EXPERIMENTAL"
-#expect_large_factors="-DHURCHALLA_FACTORING_EXPECT_LARGE_FACTORS"
-
-use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
-
-
 cpp_standard="-std=c++17"
 
 build_dir=tmp
 mkdir -p $build_dir
 cmake -S. -B./$build_dir  \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_CXX_FLAGS="$allow_ecm  \
-        $expect_large_factors  \
-        $cpp_standard  \
-        $use_all_inline_asm"  \
+        -DCMAKE_CXX_FLAGS="$cpp_standard"  \
 
 cmake --build ./tmp --config Release
 

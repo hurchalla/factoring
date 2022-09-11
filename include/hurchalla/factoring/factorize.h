@@ -9,6 +9,11 @@
 #define HURCHALLA_FACTORING_FACTORIZE_H_INCLUDED
 
 
+#if !defined(HURCHALLA_FACTORING_DISALLOW_INLINE_ASM) && \
+        !defined(HURCHALLA_ALLOW_INLINE_ASM_ALL)
+#  define HURCHALLA_ALLOW_INLINE_ASM_ALL
+#endif
+
 #include "hurchalla/factoring/detail/impl_factorize.h"
 #include "hurchalla/factoring/detail/IsPrimeFactor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -60,8 +65,8 @@ namespace hurchalla {
 //
 // For 128 bit numbers, this code needs to be performance tested against other
 // factoring libraries.  An initial expectation is that this code will be
-// competitive or better than the best libraries available, but this is not yet
-// known.
+// be competitive or possibly do better than other libraries available for 128
+// bit numbers, but this is not yet known.
 //
 // For 32 bit numbers, a very well-optimized implementation of Hart's One Line
 // Factoring algorithm and/or Lehman's method might potentially be faster than
@@ -80,6 +85,11 @@ namespace hurchalla {
 // Returns a std::array that contains all factors of x, and writes the total
 // number of factors to num_factors.  The array entries with index < num_factor
 // are the factors.
+// The argument 'expect_arbitrary_size_factors' does not affect the results, but
+// it will optimize the factoring to be faster when you know or expect all the
+// factors will be large (assuming you set it to false), or it will optimize the
+// factoring for arbitrary size factors (if set to true, which is the default).
+//
 // Note that ut_numeric_limits is a utility class that is used here to
 // automatically get the bit width of your type T.  For example, if your type T
 // is uint32_t, then this function returns std::array<uint32_t, 32>.  (The bit
@@ -88,7 +98,7 @@ namespace hurchalla {
 // T can be any integral type <= 128 bits.
 template <typename T>
 std::array<T, ut_numeric_limits<T>::digits>
-factorize(T x, int& num_factors)
+factorize(T x, int& num_factors, bool expect_arbitrary_size_factors = true)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
@@ -98,8 +108,8 @@ factorize(T x, int& num_factors)
     // The max possible number of factors occurs when all factors equal 2,
     // so ut_numeric_limits<T>::digits is sufficient to hold all factors.
     std::array<T, ut_numeric_limits<T>::digits> arr =
-                hd::impl_factorize::factorize_to_array(
-                                           x, num_factors, hd::IsPrimeFactor());
+                hd::impl_factorize::factorize_to_array(x, num_factors,
+                            hd::IsPrimeFactor(), expect_arbitrary_size_factors);
     // After calling this function, a client should not index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set
     // all array entries at or beyond num_factors to 0 - this may help to make
@@ -119,6 +129,11 @@ factorize(T x, int& num_factors)
 // This version of factorize takes a std::vector, which it clears of any
 // existing elements and then fills with the factors of x.  When this function
 // returns, the size of the vector is the number of factors.
+// The argument 'expect_arbitrary_size_factors' does not affect the results, but
+// it will optimize the factoring to be faster when you know or expect all the
+// factors will be large (assuming you set it to false), or it will optimize the
+// factoring for arbitrary size factors (if set to true, which is the default).
+//
 // Note that this version might be preferable to the array version of factorize
 // if you wish to save stack space; vector is heap allocated but the array
 // version needs memory on the stack for its returned array (for example with
@@ -126,7 +141,8 @@ factorize(T x, int& num_factors)
 //
 // T can be any integral type <= 128 bits.
 template <typename T>
-void factorize(T x, std::vector<T>& factors)
+void factorize(T x, std::vector<T>& factors,
+               bool expect_arbitrary_size_factors = true)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
@@ -134,7 +150,8 @@ void factorize(T x, std::vector<T>& factors)
     factors.clear();
 
     namespace hd = ::hurchalla::detail;
-    hd::impl_factorize::factorize_to_vector(x, factors, hd::IsPrimeFactor());
+    hd::impl_factorize::factorize_to_vector(x, factors, hd::IsPrimeFactor(),
+                                                 expect_arbitrary_size_factors);
     HPBC_POSTCONDITION(factors.size() > 0);
     // The max possible vector size needed for factors is when all of them are 2
     constexpr int max_num_factors = ut_numeric_limits<T>::digits;

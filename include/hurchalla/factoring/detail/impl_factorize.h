@@ -28,11 +28,7 @@ namespace hurchalla { namespace detail {
 // you wish to use a different value for the macro (which is fine), please
 // predefine the macro when compiling.
 #ifndef HURCHALLA_FACTORING_ECM_THRESHOLD_BITS
-#  ifdef HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
-#    define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 34
-#  else
-#    define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 40
-#  endif
+#  define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 34
 #endif
 
 
@@ -56,7 +52,8 @@ private:
   template <int EcmMinBits, int MaxBitsX, class OutputIt,
             typename T, class PrimalityFunctor>
   static OutputIt
-  dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_functor)
+  dispatch(OutputIt iter, T x, const PrimalityFunctor& is_prime_functor,
+           bool expect_arbitrary_size_factors)
   {
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
@@ -71,23 +68,22 @@ private:
     constexpr T sqrtR = static_cast<T>(1)<<(ut_numeric_limits<T>::digits/2);
 
     T q, next_prime;
-#ifdef HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
-    // Since this macro is defined, we expect only large primes for factors and
-    // thus we expect it would be a waste of time to look for small factors
-    // (via trial division).
-    // However, to guarantee correctness we do need to attempt to extract any
-    // and all occurences of the factor 2, so that we can later satisfy
-    // Montgomery arithmetic's precondition that its modulus must be odd.
-    q = x;
-    while (q % 2 == 0) {
-        *iter++ = 2;
-        q = static_cast<T>(q / 2);
-    }
-    next_prime = 3;
-#else
-    iter = factorize_trialdivision::call<HURCHALLA_TRIAL_DIVISION_TEMPLATE,
+    if (expect_arbitrary_size_factors) {
+        iter = factorize_trialdivision::call<HURCHALLA_TRIAL_DIVISION_TEMPLATE,
                          HURCHALLA_TRIAL_DIVISION_SIZE>(iter, q, next_prime, x);
-#endif
+    } else {
+        // Since we don't expect arbitrary size factors, we can assume it would
+        // be a waste of time to look for small factors (via trial division).
+        // However, to guarantee correctness we do need to attempt to extract
+        // any and all occurences of the factor 2, so that we can later satisfy
+        // Montgomery arithmetic's precondition that its modulus must be odd.
+        q = x;
+        while (q % 2 == 0) {
+            *iter++ = 2;
+            q = static_cast<T>(q / 2);
+        }
+        next_prime = 3;
+    }
 
     HPBC_ASSERT2(q >= 1);  // factorize_trialdivision() guarantees this
     if (q == 1)   // if factorize_trialdivision() completely factored x
@@ -98,7 +94,8 @@ private:
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 
     FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
-                         factorize_stage2(is_prime_functor, always_prime_limit);
+                          factorize_stage2(is_prime_functor, always_prime_limit,
+                                           expect_arbitrary_size_factors);
     iter = factorize_stage2(iter, q);
     return iter;
   }
@@ -110,7 +107,8 @@ public:
             typename T, class PrimalityFunctor>
   static std::array<T, ut_numeric_limits<T>::digits>
   factorize_to_array(T x, int& num_factors,
-                     const PrimalityFunctor& is_prime_functor)
+                     const PrimalityFunctor& is_prime_functor,
+                     bool expect_arbitrary_size_factors)
   {
     static_assert(EcmMinBits > 0);
     static_assert(ut_numeric_limits<T>::is_integer);
@@ -141,8 +139,8 @@ public:
     // MaxBitsX lets the called function know the compile-time limit to the
     // possible range of x, so that it can use an efficient Monty type.
     constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
-    dispatch<EcmMinBits, MaxBitsX>(
-                  std::back_inserter(faa), static_cast<U>(x), is_prime_functor);
+    dispatch<EcmMinBits, MaxBitsX>(std::back_inserter(faa), static_cast<U>(x),
+                               is_prime_functor, expect_arbitrary_size_factors);
     num_factors = static_cast<int>(faa.size());
 
     HPBC_POSTCONDITION(num_factors > 0);
@@ -154,7 +152,8 @@ public:
   template <int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS,
             typename T, class PrimalityFunctor>
   static void factorize_to_vector(T x, std::vector<T>& vec,
-                                       const PrimalityFunctor& is_prime_functor)
+                                  const PrimalityFunctor& is_prime_functor,
+                                  bool expect_arbitrary_size_factors)
   {
     static_assert(EcmMinBits > 0);
     static_assert(ut_numeric_limits<T>::is_integer);
@@ -180,8 +179,8 @@ public:
     // MaxBitsX lets the called function know the compile-time limit to the
     // possible range of x, so that it can use an efficient Monty type.
     constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
-    dispatch<EcmMinBits, MaxBitsX>(
-                  std::back_inserter(fva), static_cast<U>(x), is_prime_functor);
+    dispatch<EcmMinBits, MaxBitsX>(std::back_inserter(fva), static_cast<U>(x),
+                               is_prime_functor, expect_arbitrary_size_factors);
     HPBC_POSTCONDITION(vec.size() > 0);
     HPBC_POSTCONDITION(vec.size() <= max_num_factors);
   }

@@ -73,6 +73,7 @@ target_sources(hurchalla_factoring INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/is_prime.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/DualMontgomeryForm.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/FactorizeStage2.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/factorize_trialdivision.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/factorize_wheel210.h>
@@ -84,6 +85,7 @@ target_sources(hurchalla_factoring INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/is_prime_miller_rabin.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/is_prime_trialdivision.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/IsPrimeFactor.h>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/microecm.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/OddPrimes.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/PollardRhoBrentTrial.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/PollardRhoBrentSwitchingTrial.h>
@@ -92,9 +94,7 @@ target_sources(hurchalla_factoring INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/PrimeTrialDivisionWarren.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/SieveOfEratosthenes.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/trial_divide_mayer.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/experimental/DualMontgomeryForm.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/experimental/get_single_factor.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/experimental/microecm_cpp.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/experimental/PollardRhoTrial.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/hurchalla/factoring/detail/miller_rabin_bases/MillerRabinBases16_1.h>

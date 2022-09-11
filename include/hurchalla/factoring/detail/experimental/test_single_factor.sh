@@ -14,65 +14,47 @@ exit_on_failure () {
 }
 
 
-# --------
-# Various macros for performance experimentation.
-# For details, see the file  ../../../../../../macros_for_performance.md
-
-ecm_threshold="-DHURCHALLA_FACTORING_ECM_THRESHOLD_BITS=40"
-
-trialdiv_size="-DHURCHALLA_TRIAL_DIVISION_SIZE=139"
-
-prbst_gcd_threshold="-DHURCHALLA_PRBST_GCD_THRESHOLD=711"
-prbst_starting_length="-DHURCHALLA_PRBST_STARTING_LENGTH=19"
-
-#trial_type=-DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoBrentTrial
-
-#use_inline_asm_redc="-DHURCHALLA_ALLOW_INLINE_ASM_REDC=1"
-use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
-#use_inline_asm_add="-DHURCHALLA_ALLOW_INLINE_ASM_MODADD"
-#use_inline_asm_sub="-DHURCHALLA_ALLOW_INLINE_ASM_MODSUB"
-
-#use_alt_hr_addsubs="-DHURCHALLA_MONTYHALFRANGE_USE_ALT_ADDSUBS"
-
-#microecm_expect_large_factors="-DHURCHALLA_FACTORING_EXPECT_LARGE_FACTORS"
-
 #allow_microecm_dual_monty="-DHURCHALLA_ECM_ALLOW_DUAL_MONTGOMERY_FORM"
 
-# -----------
+expect_arbitrary_factors="-DEXPECT_ARBITRARY_SIZE_FACTORS"
+
+#comment out the following macro, in order to test the C++ version of microecm
+use_c_interface="-DUSE_ECM_C_INTERFACE"
 
 
-
-# SET THIS TO THE DIRECTORY WHERE YOU CLONED THE HURCHALLA GIT REPOSITORIES.
-# (or otherwise ensure the compiler -I flags correctly specify the needed
-# hurchalla include directories)
-repo_directory=/home/jeff/Desktop
-
-
+ccompiler=clang
 cppcompiler=clang++
 cpp_standard="-std=c++17"
 
 
+# SET THIS TO THE DIRECTORY WHERE YOU CLONED THE HURCHALLA GIT REPOSITORIES.
+# (or otherwise ensure the compiler /I flags correctly specify the needed
+# hurchalla include directories)
+repo_directory=/home/jeff/Desktop
+
+
+
+$ccompiler -O3  -DNDEBUG  -fomit-frame-pointer -march=native  -c microecm_c.c
+
+
 $cppcompiler  \
-        -O3  -DNDEBUG  -march=haswell -mtune=haswell \
+        -O3  -DNDEBUG \
         $cpp_standard \
         -I${repo_directory}/factoring/include \
         -I${repo_directory}/modular_arithmetic/modular_arithmetic/include \
         -I${repo_directory}/modular_arithmetic/montgomery_arithmetic/include \
         -I${repo_directory}/util/include \
-        $ecm_threshold  \
-        $trialdiv_size \
-        $prbst_gcd_threshold  $prbst_starting_length \
-        $microecm_expect_large_factors   $allow_microecm_dual_monty  \
-        $cpp_standard  $use_inline_asm_add  $use_inline_asm_sub  $use_alt_hr_addsubs  \
-        $use_inline_asm_redc  $use_all_inline_asm  $trial_type \
-        test_single_factor.cpp -o test_single_factor
+        $expect_arbitrary_factors   $allow_microecm_dual_monty  \
+        $use_c_interface  \
+        -c test_single_factor.cpp
+
+$cppcompiler  -O3  -std="c++17"  -o test_single_factor_c  test_single_factor.o microecm_c.o -lm
+
+
 
 exit_on_failure
 
 echo "compilation finished, now executing"
 
 
-./test_single_factor
-
-
-
+./test_single_factor_c

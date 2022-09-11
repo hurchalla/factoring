@@ -9,6 +9,11 @@
 #define HURCHALLA_FACTORING_IS_PRIME_H_INCLUDED
 
 
+#if !defined(HURCHALLA_FACTORING_DISALLOW_INLINE_ASM) && \
+        !defined(HURCHALLA_ALLOW_INLINE_ASM_ALL)
+#  define HURCHALLA_ALLOW_INLINE_ASM_ALL
+#endif
+
 #include "hurchalla/factoring/detail/impl_is_prime.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"

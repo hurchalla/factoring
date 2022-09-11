@@ -60,8 +60,10 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         auto is_prime_functor = IsPrimeFactor();
         using PrimalityFunctor = decltype(is_prime_functor);
         T always_prime_limit = 0;
+        bool expect_arbitrary_size_factors = true;
         FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
-                        factorize_stage2(is_prime_functor, always_prime_limit);
+                        factorize_stage2(is_prime_functor, always_prime_limit,
+                                                 expect_arbitrary_size_factors);
         factorize_stage2(std::back_inserter(vec), x);
 
         std::sort(vec.begin(), vec.end());
@@ -79,7 +81,8 @@ T calculate_x(const std::vector<T>& answer)
                                                       std::multiplies<T>());
 }
 template <typename T>
-void test_factorize(const std::vector<T>& answer)
+void test_factorize(const std::vector<T>& answer,
+                    bool expect_arbitrary_size_factors)
 {
     // multiply all the factors in answer to get the number to factorize.
     T x = calculate_x(answer);
@@ -118,7 +121,8 @@ void test_factorize(const std::vector<T>& answer)
     using PrimalityFunctor = decltype(is_prime_functor);
     U always_prime_limit = 0;
     FactorizeStage2<EcmMinBits, MaxBitsX, U, PrimalityFunctor>
-                    factorize_stage2(is_prime_functor, always_prime_limit);
+                    factorize_stage2(is_prime_functor, always_prime_limit,
+                                                 expect_arbitrary_size_factors);
     factorize_stage2(iter, static_cast<U>(x));
 
 
@@ -136,7 +140,8 @@ TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes) {
     // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer = { twoPow32 - 99, twoPow32 - 65 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-    test_factorize(answer);
+    test_factorize(answer, true);
+    test_factorize(answer, false);
 }
 
 TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes32) {
@@ -146,7 +151,8 @@ TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes32) {
     // (1<<15) minus { 19, 49, 51, 55, 61, 75, 81, 115, 121, 135 }
     std::vector<T> answer = { twoPow15 - 49, twoPow15 - 19 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-    test_factorize(answer);
+    test_factorize(answer, true);
+    test_factorize(answer, false);
 }
 TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes64) {
     using T = std::int64_t;
@@ -155,7 +161,8 @@ TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes64) {
     // (1<<31) minus { 1, 19, 61, 69, 85, 99, 105, 151, 159, 171 }
     std::vector<T> answer = { twoPow31 - 19, twoPow31 - 1 };
     SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-    test_factorize(answer);
+    test_factorize(answer, true);
+    test_factorize(answer, false);
 }
 #if HURCHALLA_COMPILER_HAS_UINT128_T()
 TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes128) {
@@ -164,7 +171,7 @@ TEST(HurchallaFactoringFactorizePollardRho, signed_hard_semi_primes128) {
     // use largest primes < (1<<33):
     // (1<<33) minus { 9, 25, 49, 79, 105, 285, 301, 303, 321, 355 }
     std::vector<T> answer = { twoPow33 - 25, twoPow33 - 9 };
-    test_factorize(answer);
+    test_factorize(answer, true);
 }
 #endif
 
@@ -176,7 +183,7 @@ TEST(HurchallaFactoringFactorizePollardRho, hard_semi_primes128_32) {
     // (1<<32) minus { 5, 17, 65, 99, 107, 135, 153, 185, 209, 267 }
     std::vector<U> answer =
                      { twoPow32-185, twoPow32-153, twoPow32-135, twoPow32-107 };
-    test_factorize<U>(answer);
+    test_factorize<U>(answer, true);
 }
 #endif
 
@@ -186,19 +193,22 @@ TEST(HurchallaFactoringFactorizePollardRho, basic_tests) {
         using U = std::uint64_t;
         std::vector<U> answer = { 3, 5, 19, 23, 59, 127 };
         SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-        test_factorize<U>(answer);
+        test_factorize<U>(answer, true);
+        test_factorize<U>(answer, false);
     }
     {
         using U = std::uint32_t;
         std::vector<U> answer = { 2, 2, 2, 43, 59, 59, 113 };
         SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-        test_factorize<U>(answer);
+        test_factorize<U>(answer, true);
+        test_factorize<U>(answer, false);
     }
     {
         using U = std::uint32_t;
         std::vector<U> answer = { 32771, 32771 };
         SCOPED_TRACE(testing::Message() << "x == " << calculate_x(answer));
-        test_factorize<U>(answer);
+        test_factorize<U>(answer, true);
+        test_factorize<U>(answer, false);
     }
 }
 
@@ -207,7 +217,8 @@ TEST(HurchallaFactoringFactorizePollardRho, basic_tests) {
 TEST(HurchallaFactoringFactorizePollardRho, basic_tests_128bit) {
     using U = __uint128_t;
     std::vector<U> answer = { 2, 3, 5, 13, 17 };
-    test_factorize<U>(answer);
+    test_factorize<U>(answer, true);
+    test_factorize<U>(answer, false);
 }
 #endif
 

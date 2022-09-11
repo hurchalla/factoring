@@ -1,5 +1,7 @@
-The files in this repository are licensed under the Mozilla Public
-License Version 2.0 (MPL v2.0).  You can obtain a copy of the MPL at
+The files in this repository are copyright 2022 by Jeff Hurchalla,
+excluding microecm.h which is copyright 2014 Ben Buhrow and 2022 Jeff
+Hurchalla.  All files are licensed under the Mozilla Public License
+Version 2.0 (MPL v2.0).  You can obtain a copy of the MPL at
 https://mozilla.org/MPL/2.0/.
 
 

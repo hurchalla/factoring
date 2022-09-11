@@ -3,31 +3,24 @@ Optional macros to predefine to tune performance
 ------------------------------------------------
 There are a number of macros you can optionally predefine to tune the
 performance on your system for the factoring and primality testing functions.
-You would predefine one or more of these macros when compiling the sources.  For
-example, with CMake you would add the command "target_compile_definitions" to
-the CMakeLists.txt, similarly to the following:
-target_compile_features(hurchalla_factoring INTERFACE HURCHALLA_FACTORING_ECM_THRESHOLD_BITS=40)
+You would predefine one or more of these macros when compiling *your* sources,
+given that this is a header-only library.
 
-If you are not using CMake, then with clang or gcc you would compile with the -D
-compilation flag.  For example: 
-clang++ -DHURCHALLA_FACTORING_ECM_THRESHOLD_BITS=40 
+For example, if you are compiling using clang or gcc from the command line, you would
+specify the -D compilation flag, similarly to the following: 
+clang++ -DHURCHALLA_TRIAL_DIVISION_SIZE=139 ...more arguments...
+As another example, if you are using CMake you would add the command "target_compile_definitions"
+to your CMakeLists.txt, similarly to the following: 
+target_compile_definitions(&lt;your_target_name&gt;  PRIVATE  HURCHALLA_TRIAL_DIVISION_SIZE=139) 
 \
 \
 Macros for factorize() and factorize_intensive32():
-
-HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS - when this macro is defined, the
-factoring functions expect only very large prime factors.  Therefore they
-skip the normal trial division phase, as well as any other phase
-designed to find small factors.  Defining this macro also slightly
-lowers the size threshold for the factoring functions to choose the ECM
-algorithm over Pollard-Rho.
 
 HURCHALLA_FACTORING_ECM_THRESHOLD_BITS - this macro specifies the cutoff between
 using Pollard-Rho or ECM for factoring.  Any number to be factored that is
 (after trial division) greater than (1 << HURCHALLA_FACTORING_ECM_THRESHOLD_BITS)
 will be factored using ECM, and any number that is smaller will be factored using
-Pollard-Rho.  The default value is 34 when HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS
-is defined, and 40 when HURCHALLA_FACTORING_EXPECT_LARGE_FACTORS is not defined.
+Pollard-Rho.  The default value is 40.
 
 HURCHALLA_TRIAL_DIVISION_SIZE - this macro specifies the number of small primes
 (starting at 2,3,5, etc) to trial as potential factors during the initial trial
@@ -129,14 +122,15 @@ also predefine HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.  Note that even with both
 macros predefined, the Binary GCD will still be used for any integer type T that
 is larger than the CPU's native bit width.
 
-HURCHALLA_ALLOW_INLINE_ASM_ALL - predefining this macro will enable all
-available inline asm functions.  In some cases it may improve performance up to
-25%, and in other cases it may make essentially no difference or harm
-performance.  In all cases, inline asm is very difficult to thoroughly test,
-since the code surrounding the inline asm under test will determine part of the
-machine code generated from the inline asm.  Generally speaking, it is
-[difficult to recommend inline asm](https://gcc.gnu.org/wiki/DontUseInlineAsm)
-unless there is a large performance benefit or performance is critical.
+HURCHALLA_FACTORING_DISALLOW_INLINE_ASM - predefining this macro will prevent
+any inline asm from being compiled.  If this macro is not predefined, this
+library by default will use inline asm for improved performance.  However,
+inline asm is difficult to thoroughly test, because the code surrounding the
+inline asm under test in part determines what binary instructions are generated
+from the inline asm.  Thus inline asm is at much greater risk of bugs than
+ordinary code.  It can often be wise to 
+[avoid inline asm](https://gcc.gnu.org/wiki/DontUseInlineAsm)
+if performance is not critical.
 \
 \
 Miscellaneous macros from dependencies:

@@ -1,23 +1,32 @@
 /*
-Copyright (c) 2022, Jeff Hurchalla
+IMPORTANT NOTE:
+The newest version of microecm_c.c always exists at
+https://github.com/bbuhrow/yafu/blob/master/factor/gmp-ecm/microecm.c
 
-Original source file prior to modifications was:
-https://github.com/bbuhrow/yafu/blob/25b65990d6501b0a71e69963fb59c1fc4ab28df1/factor/gmp-ecm/microecm.c
+I wrote a noteably faster C++ version of microecm, which exists in this current
+repository at
+https://github.com/hurchalla/factoring/blob/master/include/hurchalla/factoring/detail/microecm.h
+------------------------------------------------------------------------------
 
-IMPORTANT
-Currently (and temporarily) this file and all of its modifications from the
-original file are unavailable under any license.  For now, you are explicitly
-*NOT* allowed to use, copy, distribute, modify, or share this software for any
-purpose, without permission from the author.
 
-You can expect this file will soon have a normal permissive license.
-*/
-
-/*
-The following is reproduced to comply with the original source file:
-
-Copyright (c) 2014, Ben Buhrow
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
 All rights reserved.
+This software is provided "as is," without warranty of any kind,
+express or implied.  In no event shall the author or contributors
+be held liable for any damages arising in any way from the use of
+this software.
+The contents of this file are DUAL-LICENSED.  You may modify and/or
+redistribute this software according to the terms of one of the
+following two licenses (at your option):
+
+
+LICENSE 1 ("FreeBSD")
+---------------------
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
@@ -39,35 +48,49 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
+
+
+LICENSE 2 (MPL 2.0)
+-------------------
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
+All rights reserved.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
 
+#ifndef MICROECM_GETFACTOR_UECM_H_INCLUDED
+#define MICROECM_GETFACTOR_UECM_H_INCLUDED
 
-#ifndef MICROECM_GETFACTOR_ECM_C_API_H_INCLUDED
-#define MICROECM_GETFACTOR_ECM_C_API_H_INCLUDED
+#include <stdint.h>
+
 
 #ifdef __cplusplus   // C compilers skip this ifdef section
 extern "C" {
 #endif
 
-// This is the C API for ECM factoring.
-// getfactor_ecm() returns a *single* factor.
 
-// getfactor_ecm() returns 1 if unable to find a factor of n,
-// otherwise returns a factor of n.
+// getfactor_uecm() returns 1 if unable to find a factor of q64,
+// Otherwise it returns a factor of q64.
 //
-// Prior to your first call of getfactor_ecm(), set *pran = 0 (or some arbitrary
-// value); after that, don't change *pran.
-// FYI: *pran is used within microecm_c.c by a random number generator, and
+// if the input is known to have no small factors, set is_arbitrary=0,
+// otherwise, set is_arbitrary=1 and a few curves targetting small factors
+// will be run prior to the standard sequence of curves for the input size.
+//
+// Prior to your first call of getfactor_uecm(), set *pran = 0  (or set it to
+// some other arbitrary value); after that, don't change *pran.
+// FYI: *pran is used within this file by a random number generator, and it
 // holds the current value of a pseudo random sequence.  Your first assigment
 // to *pran seeds the sequence, and after seeding it you don't want to
 // change *pran, since that would restart the sequence.
-
-uint64_t getfactor_ecm(uint64_t n, uint64_t *pran);
+uint64_t getfactor_uecm(uint64_t q64, int is_arbitrary, uint64_t *pran);
 
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif

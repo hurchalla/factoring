@@ -1,23 +1,36 @@
 /*
-Copyright (c) 2022, Jeff Hurchalla
+IMPORTANT NOTE:
+The newest version of this file always exists at
+https://github.com/bbuhrow/yafu/blob/master/factor/gmp-ecm/microecm.c
 
-Original source file prior to modifications was:
-https://github.com/bbuhrow/yafu/blob/25b65990d6501b0a71e69963fb59c1fc4ab28df1/factor/gmp-ecm/microecm.c
+This present file has convenient functions that avoid the need to include
+monty.h, but this present file is likely to be out of date or to go out of
+date compared to the version above.
 
-IMPORTANT
-Currently (and temporarily) this file and all of its modifications from the
-original file are unavailable under any license.  For now, you are explicitly
-*NOT* allowed to use, copy, distribute, modify, or share this software for any
-purpose, without permission from the author.
+I wrote a noteably faster C++ version of microecm, which exists in this current
+repository at
+https://github.com/hurchalla/factoring/blob/master/include/hurchalla/factoring/detail/microecm.h
+------------------------------------------------------------------------------
 
-You can expect this file will soon have a normal permissive license.
-*/
 
-/*
-The following is reproduced to comply with the original source file:
-
-Copyright (c) 2014, Ben Buhrow
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
 All rights reserved.
+This software is provided "as is," without warranty of any kind,
+express or implied.  In no event shall the author or contributors
+be held liable for any damages arising in any way from the use of
+this software.
+The contents of this file are DUAL-LICENSED.  You may modify and/or
+redistribute this software according to the terms of one of the
+following two licenses (at your option):
+
+
+LICENSE 1 ("FreeBSD")
+---------------------
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
@@ -39,7 +52,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
+
+
+LICENSE 2 (MPL 2.0)
+-------------------
+Copyright (c) 2014, Ben Buhrow and (c) 2022, Jeff Hurchalla.
+All rights reserved.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
+
+
+#include "microecm_c.h"
+//#include "monty.h"
+
+#include <stddef.h>
+#include <stdint.h>
+#if defined(_MSC_VER)
+#  ifndef _WIN64
+#    error "64 bit compilation mode is required for MSVC"
+#  endif
+#  include <immintrin.h>
+#  include <intrin.h>
+#endif
 
 
 
@@ -51,30 +88,23 @@ either expressed or implied, of the FreeBSD Project.
 #  define MICRO_ECM_ADDMOD_USE_ASM_X86
 #endif
 
-
-#define MICRO_ECM_EXPECT_LARGE_FACTORS
-
-
+// We rarely will ever want to use debugging printfs
 //#define MICRO_ECM_VERBOSE_PRINTF
 
-#include <stddef.h>
-#include <stdint.h>
-#ifdef MICRO_ECM_VERBOSE_PRINTF
-#  include <stdio.h>
-#endif
-#if defined(_MSC_VER)
-#  ifndef _WIN64
-#    error "64 bit compilation mode is required for MSVC"
-#  endif
-#  include <immintrin.h>
-#  include <intrin.h>
-#endif
 
-#include "microecm_c.h"  // the ECM API for C
 
+
+#ifdef _MSC_VER
+#  define MICRO_ECM_FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#  define MICRO_ECM_FORCE_INLINE inline __attribute__((always_inline))
+#else
+#  define MICRO_ECM_FORCE_INLINE __inline
+#endif
 
 
 #ifdef MICRO_ECM_VERBOSE_PRINTF
+#  include <stdio.h>
 // these globals will cause data races, if we run multithreaded
     uint32_t stg1Doub;
     uint32_t stg1Add;
@@ -101,16 +131,7 @@ static const uint32_t map[61] = {
 static const double INV_2_POW_32 = 1.0 / (double)((uint64_t)(1) << 32);
 
 
-#ifdef _MSC_VER
-#  define MICRO_ECM_FORCE_INLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-#  define MICRO_ECM_FORCE_INLINE inline __attribute__((always_inline))
-#else
-#  define MICRO_ECM_FORCE_INLINE __inline
-#endif
-
-
-uint32_t lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
+static uint32_t uecm_lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
 {
     *ploc_lcg = 6364136223846793005ULL * (*ploc_lcg) + 1442695040888963407ULL;
     return lower + (uint32_t)(
@@ -119,9 +140,8 @@ uint32_t lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
 
 
 
-/* --- The following six functions are written by Jeff Hurchalla, Copyright 2022
+/* --- The following six functions are written by Jeff Hurchalla, Copyright 2022 --- */
 
-*/
 // From the gcc docs on __builtin_ctz:
 // "Returns the number of trailing 0-bits in x, starting at the least
 // significant bit position.  If x is 0, the result is undefined."
@@ -129,7 +149,7 @@ uint32_t lcg_rand_32B(uint32_t lower, uint32_t upper, uint64_t *ploc_lcg)
 // "Similar to __builtin_ctz, except the argument type is unsigned long."
 // From the gcc docs on __builtin_ctzll:
 // "Similar to __builtin_ctz, except the argument type is unsigned long long."
-MICRO_ECM_FORCE_INLINE int count_trailing_zeros_ul(unsigned long x)
+MICRO_ECM_FORCE_INLINE static int uecm_count_trailing_zeros_ul(unsigned long x)
 {
 #ifdef _MSC_VER
     unsigned long index;
@@ -139,7 +159,7 @@ MICRO_ECM_FORCE_INLINE int count_trailing_zeros_ul(unsigned long x)
     return __builtin_ctzl(x);
 #endif
 }
-MICRO_ECM_FORCE_INLINE int count_trailing_zeros_ull(unsigned long long x)
+MICRO_ECM_FORCE_INLINE static int uecm_count_trailing_zeros_ull(unsigned long long x)
 {
 #ifdef _MSC_VER
     unsigned long index;
@@ -149,22 +169,22 @@ MICRO_ECM_FORCE_INLINE int count_trailing_zeros_ull(unsigned long long x)
     return __builtin_ctzll(x);
 #endif
 }
-MICRO_ECM_FORCE_INLINE int count_trailing_zeros(uint64_t x)
+MICRO_ECM_FORCE_INLINE static int uecm_count_trailing_zeros(uint64_t x)
 {
     // static assert hack
     typedef char assert_via_array[
                      (sizeof(uint64_t) == sizeof(unsigned long long)) ? 1 : -1];
-    // use count_trailing_zeros_ul if  sizeof(uint64_t) == sizeof(unsigned long)
-    return count_trailing_zeros_ull(x);
+    // use uecm_count_trailing_zeros_ul if  sizeof(uint64_t) == sizeof(unsigned long)
+    return uecm_count_trailing_zeros_ull(x);
 }
-uint64_t bingcd64(uint64_t u, uint64_t v)
+static uint64_t uecm_bingcd64(uint64_t u, uint64_t v)
 {
     if (u == 0) {
         return v;
     }
     if (v != 0) {
-        int i = count_trailing_zeros(u);
-        int j = count_trailing_zeros(v);
+        int i = uecm_count_trailing_zeros(u);
+        int j = uecm_count_trailing_zeros(v);
         u = (uint64_t)(u >> i);
         v = (uint64_t)(v >> j);
         int k = (i < j) ? i : j;
@@ -179,15 +199,15 @@ uint64_t bingcd64(uint64_t u, uint64_t v)
                 break;
             }
             // For the line below, the standard way to write this algorithm
-            // would have been to use count_trailing_zeros(v)  (instead of
-            // count_trailing_zeros(sub1)).  However, as pointed out by
+            // would have been to use uecm_count_trailing_zeros(v)  (instead of
+            // uecm_count_trailing_zeros(sub1)).  However, as pointed out by
             // https://gmplib.org/manual/Binary-GCD, "in twos complement the
             // number of low zero bits on u-v is the same as v-u, so counting or
             // testing can begin on u-v without waiting for abs(u-v) to be
             // determined."  Hence we are able to use sub1 for the argument.
             // By removing the dependency on abs(u-v), the CPU can execute
-            // count_trailing_zeros() at the same time as abs(u-v).
-            j = count_trailing_zeros(sub1);
+            // uecm_count_trailing_zeros() at the same time as abs(u-v).
+            j = uecm_count_trailing_zeros(sub1);
             v = (uint64_t)(v >> j);
         }
     }
@@ -195,7 +215,7 @@ uint64_t bingcd64(uint64_t u, uint64_t v)
 }
 
 // for this algorithm, see https://jeffhurchalla.com/2022/04/28/montgomery-redc-using-the-positive-inverse-mod-r/
-MICRO_ECM_FORCE_INLINE uint64_t mulredc_alt(uint64_t x, uint64_t y, uint64_t N, uint64_t invN)
+MICRO_ECM_FORCE_INLINE static uint64_t uecm_mulredc_alt(uint64_t x, uint64_t y, uint64_t N, uint64_t invN)
 {
 #if defined(_MSC_VER)
     uint64_t T_hi;
@@ -229,7 +249,7 @@ MICRO_ECM_FORCE_INLINE uint64_t mulredc_alt(uint64_t x, uint64_t y, uint64_t N, 
 }
 
 // for this algorithm, see https://jeffhurchalla.com/2022/04/25/a-faster-multiplicative-inverse-mod-a-power-of-2/
-uint64_t multiplicative_inverse(uint64_t a)
+static uint64_t uecm_multiplicative_inverse(uint64_t a)
 {
 //    assert(a%2 == 1);  // the inverse (mod 2<<64) only exists for odd values
     uint64_t x0 = (3*a)^2;
@@ -251,15 +271,15 @@ uint64_t multiplicative_inverse(uint64_t a)
 
 
 // full strength mul/sqr redc
-MICRO_ECM_FORCE_INLINE uint64_t mulredc(uint64_t x, uint64_t y, uint64_t n, uint64_t nhat)
+MICRO_ECM_FORCE_INLINE static uint64_t uecm_mulredc(uint64_t x, uint64_t y, uint64_t n, uint64_t nhat)
 {
-    return mulredc_alt(x, y, n, 0 - nhat);
+    return uecm_mulredc_alt(x, y, n, 0 - nhat);
 }
-MICRO_ECM_FORCE_INLINE uint64_t sqrredc(uint64_t x, uint64_t n, uint64_t nhat)
+MICRO_ECM_FORCE_INLINE static uint64_t uecm_sqrredc(uint64_t x, uint64_t n, uint64_t nhat)
 {
-    return mulredc_alt(x, x, n, 0 - nhat);
+    return uecm_mulredc_alt(x, x, n, 0 - nhat);
 }
-MICRO_ECM_FORCE_INLINE uint64_t submod(uint64_t a, uint64_t b, uint64_t n)
+MICRO_ECM_FORCE_INLINE static uint64_t submod(uint64_t a, uint64_t b, uint64_t n)
 {
 #if defined(MICRO_ECM_SUBMOD_USE_ASM_X86) && !defined(_MSC_VER)
   __asm__(
@@ -275,7 +295,7 @@ MICRO_ECM_FORCE_INLINE uint64_t submod(uint64_t a, uint64_t b, uint64_t n)
     return (a>=b) ? a-b : a-b + n;
 #endif
 }
-MICRO_ECM_FORCE_INLINE uint64_t addmod(uint64_t x, uint64_t y, uint64_t n)
+MICRO_ECM_FORCE_INLINE static uint64_t addmod(uint64_t x, uint64_t y, uint64_t n)
 {
 #if defined(MICRO_ECM_ADDMOD_USE_ASM_X86) && !defined(_MSC_VER)
     uint64_t t = x - n;
@@ -295,7 +315,7 @@ MICRO_ECM_FORCE_INLINE uint64_t addmod(uint64_t x, uint64_t y, uint64_t n)
 
 
 
-void uadd(uint64_t rho, uint64_t n, const uecm_pt P1, const uecm_pt P2,
+MICRO_ECM_FORCE_INLINE static void uecm_uadd(uint64_t rho, uint64_t n, const uecm_pt P1, const uecm_pt P2,
     const uecm_pt Pin, uecm_pt *Pout)
 {
     // compute:
@@ -310,16 +330,16 @@ void uadd(uint64_t rho, uint64_t n, const uecm_pt P1, const uecm_pt P2,
     uint64_t diff2 = submod(P2.X, P2.Z, n);
     uint64_t sum2 = addmod(P2.X, P2.Z, n);
 
-    uint64_t tt1 = mulredc(diff1, sum2, n, rho); //U
-    uint64_t tt2 = mulredc(sum1, diff2, n, rho); //V
+    uint64_t tt1 = uecm_mulredc(diff1, sum2, n, rho); //U
+    uint64_t tt2 = uecm_mulredc(sum1, diff2, n, rho); //V
 
     uint64_t tt3 = addmod(tt1, tt2, n);
     uint64_t tt4 = submod(tt1, tt2, n);
-    tt1 = sqrredc(tt3, n, rho);   //(U + V)^2
-    tt2 = sqrredc(tt4, n, rho);   //(U - V)^2
+    tt1 = uecm_sqrredc(tt3, n, rho);   //(U + V)^2
+    tt2 = uecm_sqrredc(tt4, n, rho);   //(U - V)^2
 
-    uint64_t tmpx = mulredc(tt1, Pin.Z, n, rho);     //Z * (U + V)^2
-    uint64_t tmpz = mulredc(tt2, Pin.X, n, rho);     //x * (U - V)^2
+    uint64_t tmpx = uecm_mulredc(tt1, Pin.Z, n, rho);     //Z * (U + V)^2
+    uint64_t tmpz = uecm_mulredc(tt2, Pin.X, n, rho);     //x * (U - V)^2
     Pout->X = tmpx;
     Pout->Z = tmpz;
 
@@ -329,17 +349,17 @@ void uadd(uint64_t rho, uint64_t n, const uecm_pt P1, const uecm_pt P2,
     return;
 }
 
-void udup(uint64_t s, uint64_t rho, uint64_t n, 
+MICRO_ECM_FORCE_INLINE static void uecm_udup(uint64_t s, uint64_t rho, uint64_t n,
     uint64_t insum, uint64_t indiff, uecm_pt *P)
 {
-    uint64_t tt1 = sqrredc(indiff, n, rho);          // U=(x1 - z1)^2
-    uint64_t tt2 = sqrredc(insum, n, rho);           // V=(x1 + z1)^2
-    P->X = mulredc(tt1, tt2, n, rho);         // x=U*V
+    uint64_t tt1 = uecm_sqrredc(indiff, n, rho);          // U=(x1 - z1)^2
+    uint64_t tt2 = uecm_sqrredc(insum, n, rho);           // V=(x1 + z1)^2
+    P->X = uecm_mulredc(tt1, tt2, n, rho);         // x=U*V
 
     uint64_t tt3 = submod(tt2, tt1, n);          // w = V-U
-    tt2 = mulredc(tt3, s, n, rho);      // w = (A+2)/4 * w
+    tt2 = uecm_mulredc(tt3, s, n, rho);      // w = (A+2)/4 * w
     tt2 = addmod(tt2, tt1, n);          // w = w + U
-    P->Z = mulredc(tt2, tt3, n, rho);         // Z = w*(V-U)
+    P->Z = uecm_mulredc(tt2, tt3, n, rho);         // Z = w*(V-U)
 #ifdef MICRO_ECM_VERBOSE_PRINTF
     stg1Doub++;
 #endif
@@ -347,7 +367,7 @@ void udup(uint64_t s, uint64_t rho, uint64_t n,
 }
 
 
-void uprac70(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
+static void uecm_uprac70(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
 {
     uint64_t s1, s2, d1, d2;
     uint64_t swp;
@@ -372,13 +392,13 @@ void uprac70(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
 
             d1 = submod(pt1.X, pt1.Z, n);
             s1 = addmod(pt1.X, pt1.Z, n);
-            udup(s, rho, n, s1, d1, &pt1);
+            uecm_udup(s, rho, n, s1, d1, &pt1);
         }
         else if (steps[i] == 3)
         {
             // integrate step 4 followed by swap(1,2)
             uecm_pt pt4;
-            uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
 
             swp = pt1.X;
             pt1.X = pt4.X;
@@ -394,7 +414,7 @@ void uprac70(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
         else if (steps[i] == 4)
         {
             uecm_pt pt4;
-            uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
 
             swp = pt2.X;
             pt2.X = pt4.X;
@@ -410,18 +430,18 @@ void uprac70(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
 
-            uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
-            udup(s, rho, n, s2, d2, &pt1);        // A = 2A
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
+            uecm_udup(s, rho, n, s2, d2, &pt1);        // A = 2A
         }
         else if (steps[i] == 6)
         {
-            uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
         }
     }
     return;
 }
 
-void uprac85(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
+static void uecm_uprac85(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
 {
     uint64_t s1, s2, d1, d2;
     uint64_t swp;
@@ -453,13 +473,13 @@ void uprac85(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
 
             d1 = submod(pt1.X, pt1.Z, n);
             s1 = addmod(pt1.X, pt1.Z, n);
-            udup(s, rho, n, s1, d1, &pt1);
+            uecm_udup(s, rho, n, s1, d1, &pt1);
         }
         else if (steps[i] == 3)
         {
             // integrate step 4 followed by swap(1,2)
             uecm_pt pt4;
-            uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
 
             swp = pt1.X;
             pt1.X = pt4.X;
@@ -475,7 +495,7 @@ void uprac85(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
         else if (steps[i] == 4)
         {
             uecm_pt pt4;
-            uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
 
             swp = pt2.X;
             pt2.X = pt4.X;
@@ -491,18 +511,18 @@ void uprac85(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t s)
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
 
-            uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
-            udup(s, rho, n, s2, d2, &pt1);        // A = 2A
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
+            uecm_udup(s, rho, n, s2, d2, &pt1);        // A = 2A
         }
         else if (steps[i] == 6)
         {
-            uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
         }
     }
     return;
 }
 
-void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t s)
+static void uecm_uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t s)
 {
     uint64_t d, e, r;
     int i;
@@ -510,7 +530,7 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
     uint64_t swp;
 
     // we require c != 0
-    int shift = count_trailing_zeros(c);
+    int shift = uecm_count_trailing_zeros(c);
     c = c >> shift;
 
     d = c;
@@ -530,7 +550,7 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
     s1 = addmod(pt1.X, pt1.Z, n);
 
     // point2 is [2]P
-    udup(s, rho, n, s1, d1, &pt1);
+    uecm_udup(s, rho, n, s1, d1, &pt1);
 
     while (d != e)
     {
@@ -552,10 +572,10 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             e = (e - d) / 2;
 
             uecm_pt pt4;
-            uadd(rho, n, pt1, pt2, pt3, &pt4); // T = A + B (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, &pt4); // T = A + B (C)
             uecm_pt pt5;
-            uadd(rho, n, pt4, pt1, pt2, &pt5); // T2 = T + A (B)
-            uadd(rho, n, pt2, pt4, pt1, &pt2); // B = B + T (A)
+            uecm_uadd(rho, n, pt4, pt1, pt2, &pt5); // T2 = T + A (B)
+            uecm_uadd(rho, n, pt2, pt4, pt1, &pt2); // B = B + T (A)
 
             swp = pt1.X;
             pt1.X = pt5.X;
@@ -571,15 +591,15 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             d1 = submod(pt1.X, pt1.Z, n);
             s1 = addmod(pt1.X, pt1.Z, n);
 
-            uadd(rho, n, pt1, pt2, pt3, &pt2);        // B = A + B (C)
-            udup(s, rho, n, s1, d1, &pt1);        // A = 2A
+            uecm_uadd(rho, n, pt1, pt2, pt3, &pt2);        // B = A + B (C)
+            uecm_udup(s, rho, n, s1, d1, &pt1);        // A = 2A
         }
         else if ((d + 3) / 4 <= e)
         {
             d -= e;
 
             uecm_pt pt4;
-            uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt4);        // T = B + A (C)
 
             swp = pt2.X;
             pt2.X = pt4.X;
@@ -597,8 +617,8 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
 
-            uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
-            udup(s, rho, n, s2, d2, &pt1);        // A = 2A
+            uecm_uadd(rho, n, pt2, pt1, pt3, &pt2);        // B = B + A (C)
+            uecm_udup(s, rho, n, s2, d2, &pt1);        // A = 2A
         }
         else if (d % 2 == 0)
         {
@@ -607,8 +627,8 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
 
-            uadd(rho, n, pt3, pt1, pt2, &pt3);        // C = C + A (B)
-            udup(s, rho, n, s2, d2, &pt1);        // A = 2A
+            uecm_uadd(rho, n, pt3, pt1, pt2, &pt3);        // C = C + A (B)
+            uecm_udup(s, rho, n, s2, d2, &pt1);        // A = 2A
         }
         else if (d % 3 == 0)
         {
@@ -618,11 +638,11 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             s1 = addmod(pt1.X, pt1.Z, n);
 
             uecm_pt pt4;
-            udup(s, rho, n, s1, d1, &pt4);        // T = 2A
+            uecm_udup(s, rho, n, s1, d1, &pt4);        // T = 2A
             uecm_pt pt5;
-            uadd(rho, n, pt1, pt2, pt3, &pt5);        // T2 = A + B (C)
-            uadd(rho, n, pt4, pt1, pt1, &pt1);        // A = T + A (A)
-            uadd(rho, n, pt4, pt5, pt3, &pt4);        // T = T + T2 (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, &pt5);        // T2 = A + B (C)
+            uecm_uadd(rho, n, pt4, pt1, pt1, &pt1);        // A = T + A (A)
+            uecm_uadd(rho, n, pt4, pt5, pt3, &pt4);        // T = T + T2 (C)
 
             swp = pt3.X;
             pt3.X = pt2.X;
@@ -639,25 +659,25 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             d = (d - 2 * e) / 3;
 
             uecm_pt pt4;
-            uadd(rho, n, pt1, pt2, pt3, &pt4);        // T = A + B (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, &pt4);        // T = A + B (C)
 
 
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
-            uadd(rho, n, pt4, pt1, pt2, &pt2);        // B = T + A (B)
-            udup(s, rho, n, s2, d2, &pt4);        // T = 2A
-            uadd(rho, n, pt1, pt4, pt1, &pt1);        // A = A + T (A) = 3A
+            uecm_uadd(rho, n, pt4, pt1, pt2, &pt2);        // B = T + A (B)
+            uecm_udup(s, rho, n, s2, d2, &pt4);        // T = 2A
+            uecm_uadd(rho, n, pt1, pt4, pt1, &pt1);        // A = A + T (A) = 3A
         }
         else if ((d - e) % 3 == 0)
         {
             d = (d - e) / 3;
 
             uecm_pt pt4;
-            uadd(rho, n, pt1, pt2, pt3, &pt4);        // T = A + B (C)
+            uecm_uadd(rho, n, pt1, pt2, pt3, &pt4);        // T = A + B (C)
 
             d2 = submod(pt1.X, pt1.Z, n);
             s2 = addmod(pt1.X, pt1.Z, n);
-            uadd(rho, n, pt3, pt1, pt2, &pt3);        // C = C + A (B)
+            uecm_uadd(rho, n, pt3, pt1, pt2, &pt3);        // C = C + A (B)
 
             swp = pt2.X;
             pt2.X = pt4.X;
@@ -666,8 +686,8 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             pt2.Z = pt4.Z;
             pt4.Z = swp;
 
-            udup(s, rho, n, s2, d2, &pt4);        // T = 2A
-            uadd(rho, n, pt1, pt4, pt1, &pt1);        // A = A + T (A) = 3A
+            uecm_udup(s, rho, n, s2, d2, &pt4);        // T = 2A
+            uecm_uadd(rho, n, pt1, pt4, pt1, &pt1);        // A = A + T (A) = 3A
         }
         else
         {
@@ -676,17 +696,17 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
             d2 = submod(pt2.X, pt2.Z, n);
             s2 = addmod(pt2.X, pt2.Z, n);
 
-            uadd(rho, n, pt3, pt2, pt1, &pt3);        // C = C + B (A)
-            udup(s, rho, n, s2, d2, &pt2);        // B = 2B
+            uecm_uadd(rho, n, pt3, pt2, pt1, &pt3);        // C = C + B (A)
+            uecm_udup(s, rho, n, s2, d2, &pt2);        // B = 2B
         }
     }
-    uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
+    uecm_uadd(rho, n, pt1, pt2, pt3, P);     // A = A + B (C)
 
     for (i = 0; i < shift; i++)
     {
         d1 = submod(P->X, P->Z, n);
         s1 = addmod(P->X, P->Z, n);
-        udup(s, rho, n, s1, d1, P);     // P = 2P
+        uecm_udup(s, rho, n, s1, d1, P);     // P = 2P
     }
     return;
 }
@@ -695,8 +715,8 @@ void uprac(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t c, double v, uint64_t 
 // jeff: "likely_gcd" is probably always the correct gcd, but I didn't add this
 // parameter by using any proof; it's conceivable it might be wrong sometimes.
 // See comments within the function.
-inline uint64_t modinv_64(uint64_t a, uint64_t p, uint64_t* plikely_gcd) {
-
+inline static uint64_t uecm_modinv_64(uint64_t a, uint64_t p, uint64_t* plikely_gcd)
+{
     /* thanks to the folks at www.mersenneforum.org */
 
     uint64_t ps1, ps2, parity, dividend, divisor, rem, q, t;
@@ -767,14 +787,14 @@ inline uint64_t modinv_64(uint64_t a, uint64_t p, uint64_t* plikely_gcd) {
 }
 
 
-uint64_t ubuild(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64_t* ps, uint64_t five, uint64_t Rsqr)
+static uint64_t uecm_build(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64_t* ps, uint64_t five, uint64_t Rsqr)
 {
     uint64_t t1, t2, t3, t4;
     uint64_t u, v;
 
-    uint32_t sigma = lcg_rand_32B(7, (uint32_t)-1, ploc_lcg);
+    uint32_t sigma = uecm_lcg_rand_32B(7, (uint32_t)-1, ploc_lcg);
 
-    u = mulredc((uint64_t)sigma, Rsqr, n, rho);  // to_monty(sigma)
+    u = uecm_mulredc((uint64_t)sigma, Rsqr, n, rho);  // to_monty(sigma)
 
     //printf("sigma = %" PRIu64 ", u = %" PRIu64 ", n = %" PRIu64 "\n", sigma, u, n);
 
@@ -783,7 +803,7 @@ uint64_t ubuild(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64
 
     //printf("v = %" PRIu64 "\n", v);
 
-    u = sqrredc(u, n, rho);
+    u = uecm_sqrredc(u, n, rho);
     t1 = five;
 
     //printf("monty(5) = %" PRIu64 "\n", t1);
@@ -792,40 +812,40 @@ uint64_t ubuild(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64
 
     //printf("u = %" PRIu64 "\n", u);
 
-    t1 = mulredc(u, u, n, rho);
-    uint64_t tmpx = mulredc(t1, u, n, rho);  // u^3
+    t1 = uecm_mulredc(u, u, n, rho);
+    uint64_t tmpx = uecm_mulredc(t1, u, n, rho);  // u^3
 
     uint64_t v2 = addmod(v, v, n);             // 2*v
     uint64_t v4 = addmod(v2, v2, n);           // 4*v
     uint64_t v8 = addmod(v4, v4, n);           // 8*v
     uint64_t v16 = addmod(v8, v8, n);          // 16*v
-    uint64_t t5 = mulredc(v16, tmpx, n, rho);    // 16*u^3*v
+    uint64_t t5 = uecm_mulredc(v16, tmpx, n, rho);    // 16*u^3*v
 
-    t1 = mulredc(v, v, n, rho);
-    uint64_t tmpz = mulredc(t1, v, n, rho);  // v^3
+    t1 = uecm_mulredc(v, v, n, rho);
+    uint64_t tmpz = uecm_mulredc(t1, v, n, rho);  // v^3
 
     //compute parameter A
     t1 = submod(v, u, n);           // (v - u)
-    t2 = sqrredc(t1, n, rho);
-    t4 = mulredc(t2, t1, n, rho);   // (v - u)^3
+    t2 = uecm_sqrredc(t1, n, rho);
+    t4 = uecm_mulredc(t2, t1, n, rho);   // (v - u)^3
 
     t1 = addmod(u, u, n);           // 2u
     t2 = addmod(u, v, n);           // u + v
     t3 = addmod(t1, t2, n);         // 3u + v
 
-    t1 = mulredc(t3, t4, n, rho);   // a = (v-u)^3 * (3u + v)
+    t1 = uecm_mulredc(t3, t4, n, rho);   // a = (v-u)^3 * (3u + v)
 
     // u holds the denom (jeff note: isn't it t5 that has the denom?)
     // t1 holds the numer
     // accomplish the division by multiplying by the modular inverse
     t2 = 1;
-    t5 = mulredc(t5, t2, n, rho);   // take t5 out of monty rep
+    t5 = uecm_mulredc(t5, t2, n, rho);   // take t5 out of monty rep
 
     uint64_t likely_gcd;
-    t3 = modinv_64(t5, n, &likely_gcd);
+    t3 = uecm_modinv_64(t5, n, &likely_gcd);
 
-    t3 = mulredc(t3, Rsqr, n, rho); // to_monty(t3)
-    *ps = mulredc(t3, t1, n, rho);
+    t3 = uecm_mulredc(t3, Rsqr, n, rho); // to_monty(t3)
+    *ps = uecm_mulredc(t3, t1, n, rho);
 
     P->X = tmpx;
     P->Z = tmpz;
@@ -834,10 +854,10 @@ uint64_t ubuild(uecm_pt *P, uint64_t rho, uint64_t n, uint64_t *ploc_lcg, uint64
 }
 
 
-int ucheck_factor(uint64_t Z, uint64_t n, uint64_t* f)
+static int uecm_check_factor(uint64_t Z, uint64_t n, uint64_t* f)
 {
     int status = 0;
-    *f = bingcd64(n, Z);
+    *f = uecm_bingcd64(n, Z);
 
     if (*f > 1)
     {
@@ -855,7 +875,7 @@ int ucheck_factor(uint64_t Z, uint64_t n, uint64_t* f)
 }
 
 
-void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s)
+static void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s)
 {
     uint64_t q;
 
@@ -865,7 +885,7 @@ void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s
     {
         uint64_t diff1 = submod(P->X, P->Z, n);
         uint64_t sum1 = addmod(P->X, P->Z, n);
-        udup(s, rho, n, sum1, diff1, P);
+        uecm_udup(s, rho, n, sum1, diff1, P);
         q *= 2;
     }
 
@@ -873,107 +893,107 @@ void uecm_stage1(uint64_t rho, uint64_t n, uecm_pt *P, uint64_t stg1, uint64_t s
     {
         // jeff: improved perf slightly by using one more uprac for 3,
         // and removing uprac for 47.
-        uprac(rho, n, P, 3, 0.618033988749894903, s);
-        uprac(rho, n, P, 3, 0.618033988749894903, s);
-        uprac(rho, n, P, 3, 0.618033988749894903, s);
-        uprac(rho, n, P, 3, 0.618033988749894903, s);
-        uprac(rho, n, P, 5, 0.618033988749894903, s);
-        uprac(rho, n, P, 5, 0.618033988749894903, s);
-        uprac(rho, n, P, 7, 0.618033988749894903, s);
-        uprac(rho, n, P, 11, 0.580178728295464130, s);
-        uprac(rho, n, P, 13, 0.618033988749894903, s);
-        uprac(rho, n, P, 17, 0.618033988749894903, s);
-        uprac(rho, n, P, 19, 0.618033988749894903, s);
-        uprac(rho, n, P, 23, 0.522786351415446049, s);
-        uprac(rho, n, P, 29, 0.548409048446403258, s);
-        uprac(rho, n, P, 31, 0.618033988749894903, s);
-        uprac(rho, n, P, 37, 0.580178728295464130, s);
-        uprac(rho, n, P, 41, 0.548409048446403258, s);
-        uprac(rho, n, P, 43, 0.618033988749894903, s);
-//        uprac(rho, n, P, 47, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 3, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 3, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 3, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 3, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 5, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 5, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 7, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 11, 0.580178728295464130, s);
+        uecm_uprac(rho, n, P, 13, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 17, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 19, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 23, 0.522786351415446049, s);
+        uecm_uprac(rho, n, P, 29, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 31, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 37, 0.580178728295464130, s);
+        uecm_uprac(rho, n, P, 41, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 43, 0.618033988749894903, s);
+//        uecm_uprac(rho, n, P, 47, 0.548409048446403258, s);
     }
     else if (stg1 == 59)
     {   // jeff: probably stg1 of 59 would benefit from similar changes
         // as stg1 of 47 above, but I didn't bother. Stg1 of 59 seems to
         // always perform worse than stg1 of 47, so there doesn't seem
         // to be any reason to ever use stg1 of 59.
-        uprac(rho, n, P, 3, 0.61803398874989485, s);
-        uprac(rho, n, P, 3, 0.61803398874989485, s);
-        uprac(rho, n, P, 3, 0.61803398874989485, s);
-        uprac(rho, n, P, 5, 0.618033988749894903, s);
-        uprac(rho, n, P, 5, 0.618033988749894903, s);
-        uprac(rho, n, P, 7, 0.618033988749894903, s);
-        uprac(rho, n, P, 7, 0.618033988749894903, s);
-        uprac(rho, n, P, 11, 0.580178728295464130, s);
-        uprac(rho, n, P, 13, 0.618033988749894903, s);
-        uprac(rho, n, P, 17, 0.618033988749894903, s);
-        uprac(rho, n, P, 19, 0.618033988749894903, s);
-        uprac(rho, n, P, 23, 0.522786351415446049, s);
-        uprac(rho, n, P, 29, 0.548409048446403258, s);
-        uprac(rho, n, P, 31, 0.618033988749894903, s);
-        uprac(rho, n, P, 1961, 0.552936068843375, s);   // 37 * 53
-        uprac(rho, n, P, 41, 0.548409048446403258, s);
-        uprac(rho, n, P, 43, 0.618033988749894903, s);
-        uprac(rho, n, P, 47, 0.548409048446403258, s);
-        uprac(rho, n, P, 59, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 3, 0.61803398874989485, s);
+        uecm_uprac(rho, n, P, 3, 0.61803398874989485, s);
+        uecm_uprac(rho, n, P, 3, 0.61803398874989485, s);
+        uecm_uprac(rho, n, P, 5, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 5, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 7, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 7, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 11, 0.580178728295464130, s);
+        uecm_uprac(rho, n, P, 13, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 17, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 19, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 23, 0.522786351415446049, s);
+        uecm_uprac(rho, n, P, 29, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 31, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 1961, 0.552936068843375, s);   // 37 * 53
+        uecm_uprac(rho, n, P, 41, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 43, 0.618033988749894903, s);
+        uecm_uprac(rho, n, P, 47, 0.548409048446403258, s);
+        uecm_uprac(rho, n, P, 59, 0.548409048446403258, s);
     }
     else if (stg1 == 70)
     {
         // call prac with best ratio found in deep search.
         // some composites are cheaper than their
         // constituent primes.
-        uprac70(rho, n, P, s);
+        uecm_uprac70(rho, n, P, s);
     }
     else // if (stg1 >= 85)
     {
-        uprac85(rho, n, P, s);
+        uecm_uprac85(rho, n, P, s);
 
         if (stg1 == 85)
         {
-            uprac(rho, n, P, 61, 0.522786351415446049, s);
+            uecm_uprac(rho, n, P, 61, 0.522786351415446049, s);
         }
         else
         {
-            uprac(rho, n, P, 5, 0.618033988749894903, s);
-            uprac(rho, n, P, 11, 0.580178728295464130, s);
-//            uprac(rho, n, P, 61, 0.522786351415446049, s);
-            uprac(rho, n, P, 89, 0.618033988749894903, s);
-            uprac(rho, n, P, 97, 0.723606797749978936, s);
-            uprac(rho, n, P, 101, 0.556250337855490828, s);
-            uprac(rho, n, P, 107, 0.580178728295464130, s);
-            uprac(rho, n, P, 109, 0.548409048446403258, s);
-            uprac(rho, n, P, 113, 0.618033988749894903, s);
+            uecm_uprac(rho, n, P, 5, 0.618033988749894903, s);
+            uecm_uprac(rho, n, P, 11, 0.580178728295464130, s);
+//            uecm_uprac(rho, n, P, 61, 0.522786351415446049, s);
+            uecm_uprac(rho, n, P, 89, 0.618033988749894903, s);
+            uecm_uprac(rho, n, P, 97, 0.723606797749978936, s);
+            uecm_uprac(rho, n, P, 101, 0.556250337855490828, s);
+            uecm_uprac(rho, n, P, 107, 0.580178728295464130, s);
+            uecm_uprac(rho, n, P, 109, 0.548409048446403258, s);
+            uecm_uprac(rho, n, P, 113, 0.618033988749894903, s);
 
             if (stg1 == 125)
             {
                 // jeff: moved 61 to here
-                uprac(rho, n, P, 61, 0.522786351415446049, s);
-                uprac(rho, n, P, 103, 0.632839806088706269, s);
+                uecm_uprac(rho, n, P, 61, 0.522786351415446049, s);
+                uecm_uprac(rho, n, P, 103, 0.632839806088706269, s);
             }
             else
             {
-                uprac(rho, n, P, 7747, 0.552188778811121, s); // 61 x 127
-                uprac(rho, n, P, 131, 0.618033988749894903, s);
-                uprac(rho, n, P, 14111, 0.632839806088706, s);  // 103 x 137
-                uprac(rho, n, P, 20989, 0.620181980807415, s);  // 139 x 151
-                uprac(rho, n, P, 157, 0.640157392785047019, s);
-                uprac(rho, n, P, 163, 0.551390822543526449, s);
+                uecm_uprac(rho, n, P, 7747, 0.552188778811121, s); // 61 x 127
+                uecm_uprac(rho, n, P, 131, 0.618033988749894903, s);
+                uecm_uprac(rho, n, P, 14111, 0.632839806088706, s);  // 103 x 137
+                uecm_uprac(rho, n, P, 20989, 0.620181980807415, s);  // 139 x 151
+                uecm_uprac(rho, n, P, 157, 0.640157392785047019, s);
+                uecm_uprac(rho, n, P, 163, 0.551390822543526449, s);
 
                 if (stg1 == 165)
                 {
-                    uprac(rho, n, P, 149, 0.580178728295464130, s);
+                    uecm_uprac(rho, n, P, 149, 0.580178728295464130, s);
                 }
                 else
                 {
-                    uprac(rho, n, P, 13, 0.618033988749894903, s);
-                    uprac(rho, n, P, 167, 0.580178728295464130, s);
-                    uprac(rho, n, P, 173, 0.612429949509495031, s);
-                    uprac(rho, n, P, 179, 0.618033988749894903, s);
-                    uprac(rho, n, P, 181, 0.551390822543526449, s);
-                    uprac(rho, n, P, 191, 0.618033988749894903, s);
-                    uprac(rho, n, P, 193, 0.618033988749894903, s);
-                    uprac(rho, n, P, 29353, 0.580178728295464, s);  // 149 x 197
-                    uprac(rho, n, P, 199, 0.551390822543526449, s);
+                    uecm_uprac(rho, n, P, 13, 0.618033988749894903, s);
+                    uecm_uprac(rho, n, P, 167, 0.580178728295464130, s);
+                    uecm_uprac(rho, n, P, 173, 0.612429949509495031, s);
+                    uecm_uprac(rho, n, P, 179, 0.618033988749894903, s);
+                    uecm_uprac(rho, n, P, 181, 0.551390822543526449, s);
+                    uecm_uprac(rho, n, P, 191, 0.618033988749894903, s);
+                    uecm_uprac(rho, n, P, 193, 0.618033988749894903, s);
+                    uecm_uprac(rho, n, P, 29353, 0.580178728295464, s);  // 149 x 197
+                    uecm_uprac(rho, n, P, 199, 0.551390822543526449, s);
                 }
             }
         }
@@ -1049,7 +1069,7 @@ static const uint8_t b1_205[511] = {
     29,49 };
 
 
-uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, uint64_t s, uint64_t unityval)
+static uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, uint64_t s, uint64_t unityval)
 {
     int b;
     int i, j, k;
@@ -1057,7 +1077,7 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     uecm_pt *Pa = &Pa1;
     uecm_pt Pb[20];
     uecm_pt *Pd;
-    const uint8_t *barray = NULL;
+    const uint8_t *barray = 0;
     int numb;
 
 #ifdef MICRO_ECM_VERBOSE_PRINTF
@@ -1080,15 +1100,15 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     // [1]Q
     Pb[1].Z = P->Z;
     Pb[1].X = P->X;
-    Pbprod[1] = mulredc(Pb[1].X, Pb[1].Z, n, rho);
+    Pbprod[1] = uecm_mulredc(Pb[1].X, Pb[1].Z, n, rho);
 
     // [2]Q
     Pb[2].Z = P->Z;
     Pb[2].X = P->X;
     uint64_t diff1 = submod(P->X, P->Z, n);
     uint64_t sum1 = addmod(P->X, P->Z, n);
-    udup(s, rho, n, sum1, diff1, &Pb[2]);
-    Pbprod[2] = mulredc(Pb[2].X, Pb[2].Z, n, rho);
+    uecm_udup(s, rho, n, sum1, diff1, &Pb[2]);
+    Pbprod[2] = uecm_mulredc(Pb[2].X, Pb[2].Z, n, rho);
 
     /*
     MICRO_ECM_PARAM_D is small in tinyecm, so it is straightforward to just enumerate the needed
@@ -1147,20 +1167,20 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
 
     // Calculate all Pb: the following is specialized for MICRO_ECM_PARAM_D=60
     // [2]Q + [1]Q([1]Q) = [3]Q
-    uadd(rho, n, Pb[1], Pb[2], Pb[1], &Pb[3]);        // <-- temporary
+    uecm_uadd(rho, n, Pb[1], Pb[2], Pb[1], &Pb[3]);        // <-- temporary
 
     // 2*[3]Q = [6]Q
     diff1 = submod(Pb[3].X, Pb[3].Z, n);
     sum1 = addmod(Pb[3].X, Pb[3].Z, n);
-    udup(s, rho, n, sum1, diff1, &pt3);   // pt3 = [6]Q
+    uecm_udup(s, rho, n, sum1, diff1, &pt3);   // pt3 = [6]Q
 
     // [3]Q + [2]Q([1]Q) = [5]Q
-    uadd(rho, n, Pb[3], Pb[2], Pb[1], &pt1);    // <-- pt1 = [5]Q
+    uecm_uadd(rho, n, Pb[3], Pb[2], Pb[1], &pt1);    // <-- pt1 = [5]Q
     Pb[3].X = pt1.X;
     Pb[3].Z = pt1.Z;
 
     // [6]Q + [5]Q([1]Q) = [11]Q
-    uadd(rho, n, pt3, pt1, Pb[1], &Pb[4]);    // <-- [11]Q
+    uecm_uadd(rho, n, pt3, pt1, Pb[1], &Pb[4]);    // <-- [11]Q
 
     i = 3;
     k = 4;
@@ -1168,21 +1188,21 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     while ((j + 12) < MICRO_ECM_PARAM_D)
     {
         // [j+6]Q + [6]Q([j]Q) = [j+12]Q
-        uadd(rho, n, pt3, Pb[k], Pb[i], &Pb[map[j + 12]]);
+        uecm_uadd(rho, n, pt3, Pb[k], Pb[i], &Pb[map[j + 12]]);
         i = k;
         k = map[j + 12];
         j += 6;
     }
 
     // [6]Q + [1]Q([5]Q) = [7]Q
-    uadd(rho, n, pt3, Pb[1], pt1, &Pb[3]);    // <-- [7]Q
+    uecm_uadd(rho, n, pt3, Pb[1], pt1, &Pb[3]);    // <-- [7]Q
     i = 1;
     k = 3;
     j = 1;
     while ((j + 12) < MICRO_ECM_PARAM_D)
     {
         // [j+6]Q + [6]Q([j]Q) = [j+12]Q
-        uadd(rho, n, pt3, Pb[k], Pb[i], &Pb[map[j + 12]]);
+        uecm_uadd(rho, n, pt3, Pb[k], Pb[i], &Pb[map[j + 12]]);
         i = k;
         k = map[j + 12];
         j += 6;
@@ -1190,7 +1210,7 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
 
     // Pd = [2w]Q
     // [31]Q + [29]Q([2]Q) = [60]Q
-    uadd(rho, n, Pb[9], Pb[10], Pb[2], Pd);   // <-- [60]Q
+    uecm_uadd(rho, n, Pb[9], Pb[10], Pb[2], Pd);   // <-- [60]Q
 
 #ifdef MICRO_ECM_VERBOSE_PRINTF
     ptadds++;
@@ -1199,7 +1219,7 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     // make all of the Pbprod's
     for (i = 3; i < 19; i++)
     {
-        Pbprod[i] = mulredc(Pb[i].X, Pb[i].Z, n, rho);
+        Pbprod[i] = uecm_mulredc(Pb[i].X, Pb[i].Z, n, rho);
     }
 
 
@@ -1207,26 +1227,26 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     // temporary - make [4]Q
     diff1 = submod(Pb[2].X, Pb[2].Z, n);
     sum1 = addmod(Pb[2].X, Pb[2].Z, n);
-    udup(s, rho, n, sum1, diff1, &pt3);   // pt3 = [4]Q
+    uecm_udup(s, rho, n, sum1, diff1, &pt3);   // pt3 = [4]Q
 
     uecm_pt Pad;
 
     // Pd = [w]Q
     // [17]Q + [13]Q([4]Q) = [30]Q
-    uadd(rho, n, Pb[map[17]], Pb[map[13]], pt3, &Pad);    // <-- [30]Q
+    uecm_uadd(rho, n, Pb[map[17]], Pb[map[13]], pt3, &Pad);    // <-- [30]Q
 
     // [60]Q + [30]Q([30]Q) = [90]Q
-    uadd(rho, n, *Pd, Pad, Pad, Pa);
+    uecm_uadd(rho, n, *Pd, Pad, Pad, Pa);
     pt1.X = Pa->X;
     pt1.Z = Pa->Z;
 
     // [90]Q + [30]Q([60]Q) = [120]Q
-    uadd(rho, n, *Pa, Pad, *Pd, Pa);
+    uecm_uadd(rho, n, *Pa, Pad, *Pd, Pa);
     Pd->X = Pa->X;
     Pd->Z = Pa->Z;
 
     // [120]Q + [30]Q([90]Q) = [150]Q
-    uadd(rho, n, *Pa, Pad, pt1, Pa);
+    uecm_uadd(rho, n, *Pa, Pad, pt1, Pa);
 
     // adjustment of Pa and Pad for larger B1.
     // Currently we have Pa=150, Pd=120, Pad=30
@@ -1234,11 +1254,11 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
     {
         // need Pa = 180, Pad = 60
         // [150]Q + [30]Q([120]Q) = [180]Q
-        uadd(rho, n, *Pa, Pad, *Pd, Pa);
+        uecm_uadd(rho, n, *Pa, Pad, *Pd, Pa);
 
         diff1 = submod(Pad.X, Pad.Z, n);
         sum1 = addmod(Pad.X, Pad.Z, n);
-        udup(s, rho, n, sum1, diff1, &Pad);   // Pad = [60]Q
+        uecm_udup(s, rho, n, sum1, diff1, &Pad);   // Pad = [60]Q
     }
     else if (stg1_max == 205)
     {
@@ -1247,17 +1267,17 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
 
         diff1 = submod(Pad.X, Pad.Z, n);
         sum1 = addmod(Pad.X, Pad.Z, n);
-        udup(s, rho, n, sum1, diff1, &Pad);   // Pad = [60]Q
+        uecm_udup(s, rho, n, sum1, diff1, &Pad);   // Pad = [60]Q
 
         // [150]Q + [60]Q([90]Q) = [210]Q
-        uadd(rho, n, *Pa, Pad, pt1, Pa);
+        uecm_uadd(rho, n, *Pa, Pad, pt1, Pa);
         Pad.X = pt1.X;
         Pad.Z = pt1.Z;
     }
 
     //initialize accumulator and Paprod
     uint64_t acc = unityval;
-    uint64_t Paprod = mulredc(Pa->X, Pa->Z, n, rho);
+    uint64_t Paprod = uecm_mulredc(Pa->X, Pa->Z, n, rho);
 
     if (stg1_max <= 70)
     {
@@ -1294,14 +1314,14 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
             pt1.Z = Pa->Z;
 
             //Pa + Pd
-            uadd(rho, n, *Pa, *Pd, Pad, Pa);
+            uecm_uadd(rho, n, *Pa, *Pd, Pad, Pa);
 
             //Pad holds the previous Pa
             Pad.X = pt1.X;
             Pad.Z = pt1.Z;
 
             //and Paprod
-            Paprod = mulredc(Pa->X, Pa->Z, n, rho);
+            Paprod = uecm_mulredc(Pa->X, Pa->Z, n, rho);
 
             i++;
         }
@@ -1314,11 +1334,11 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
         // page 342 in C&P
         uint64_t tt1 = submod(Pa->X, Pb[map[b]].X, n);
         uint64_t tt2 = addmod(Pa->Z, Pb[map[b]].Z, n);
-        uint64_t tt3 = mulredc(tt1, tt2, n, rho);
+        uint64_t tt3 = uecm_mulredc(tt1, tt2, n, rho);
         tt1 = addmod(tt3, Pbprod[map[b]], n);
         tt2 = submod(tt1, Paprod, n);
 
-        uint64_t tmp = mulredc(acc, tt2, n, rho);
+        uint64_t tmp = uecm_mulredc(acc, tt2, n, rho);
         if (tmp == 0)
             break;
         acc = tmp;
@@ -1328,8 +1348,8 @@ uint64_t uecm_stage2(uecm_pt *P, uint64_t rho, uint64_t n, uint32_t stg1_max, ui
 }
 
 
-void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
-    uint32_t curves, uint64_t *ploc_lcg)
+static void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
+                     uint32_t curves, uint64_t *ploc_lcg)
 {
     //attempt to factor n with the elliptic curve method
     //following brent and montgomery's papers, and CP's book
@@ -1339,7 +1359,7 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
     uecm_pt P;
     uint64_t tmp1;
 
-    uint64_t rho = (uint64_t)0 - multiplicative_inverse(n);
+    uint64_t rho = (uint64_t)0 - uecm_multiplicative_inverse(n);
 
     uint32_t stg1_max = B1;
 //    uint32_t stg2_max = B2;
@@ -1353,10 +1373,10 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
     uint64_t five = addmod(unityval, four, n);
     uint64_t eight = addmod(four, four, n);
     uint64_t sixteen = addmod(eight, eight, n);
-    uint64_t two_8 = sqrredc(sixteen, n, rho);   // R*2^8         (mod n)
-    uint64_t two_16 = sqrredc(two_8, n, rho);    // R*2^16        (mod n)
-    uint64_t two_32 = sqrredc(two_16, n, rho);   // R*2^32        (mod n)
-    uint64_t Rsqr = sqrredc(two_32, n, rho);     // R*2^64 ≡ R*R  (mod n)
+    uint64_t two_8 = uecm_sqrredc(sixteen, n, rho);   // R*2^8         (mod n)
+    uint64_t two_16 = uecm_sqrredc(two_8, n, rho);    // R*2^16        (mod n)
+    uint64_t two_32 = uecm_sqrredc(two_16, n, rho);   // R*2^32        (mod n)
+    uint64_t Rsqr = uecm_sqrredc(two_32, n, rho);     // R*2^64 ≡ R*R  (mod n)
 
     *f = 1;
     for (curve = 0; (uint32_t)curve < curves; curve++)
@@ -1367,11 +1387,11 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
             printf("commencing curve %d of %u\n", curve, curves);
 #endif
         uint64_t s;
-        uint64_t likely_gcd = ubuild(&P, rho, n, ploc_lcg, &s, five, Rsqr);
+        uint64_t likely_gcd = uecm_build(&P, rho, n, ploc_lcg, &s, five, Rsqr);
         if (likely_gcd > 1)
         {
             // If the gcd gave us a factor, we're done.  If not, since gcd != 1
-            // the inverse calculated in ubuild would have bogus, and so this
+            // the inverse calculated in uecm_build would have bogus, and so this
             // curve is probably set up for failure (hence we continue).
             if (likely_gcd == n || n % likely_gcd != 0)
                 continue;
@@ -1390,7 +1410,7 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
         }
 #endif
         uecm_stage1(rho, n, &P, (uint64_t)stg1_max, s);
-        result = ucheck_factor(P.Z, n, &tmp1);
+        result = uecm_check_factor(P.Z, n, &tmp1);
 
 #ifdef MICRO_ECM_VERBOSE_PRINTF
         {
@@ -1421,7 +1441,7 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
                 printf("performed %u point-additions and %u point-doubles in stage 2\n",
                     ptadds + stg1Add, stg1Doub);
 #endif
-            result = ucheck_factor(stg2acc, n, &tmp1);
+            result = uecm_check_factor(stg2acc, n, &tmp1);
 
             if (result == 1)
             {
@@ -1438,51 +1458,37 @@ void microecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2,
 }
 
 
-/*
-void init_uecm(uint64_t lcg)
-{
-//    LOC_LCG = lcg;
-    return;
-}
-*/
-
-
-// Prior to your first call of do_uecm(), set *ploc_lcg = 0 (or some arbitrary
-// value); after that, don't change *ploc_lcg.
-// FYI: *ploc_lcg is used within this file by a random number generator, and
-// holds the current value of a pseudo random sequence.  Your first assigment
-// to *ploc_lcg seeds the sequence, and after seeding it you don't want to
-// change *ploc_lcg, since that would restart the sequence.
-uint64_t do_uecm(uint64_t n, int targetBits, uint64_t *ploc_lcg)
+static uint64_t uecm_dispatch(uint64_t n, int targetBits, uint64_t *ploc_lcg,
+                              int is_arbitrary)
 {
     int B1, curves;
     uint64_t f64 = 1;
 
-#ifndef MICRO_ECM_EXPECT_LARGE_FACTORS
-    // try fast attempts to find possible small factors.
-    {
-        B1 = 47;
-        curves = 1;
-        microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
-        if (f64 > 1)
-            return f64;
+    if (is_arbitrary) {
+        // try fast attempts to find possible small factors.
+        {
+            B1 = 47;
+            curves = 1;
+            microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
+            if (f64 > 1)
+                return f64;
+        }
+        {
+            B1 = 70;
+            curves = 1;
+            microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
+            if (f64 > 1)
+                return f64;
+        }
+        if (targetBits > 58)
+        {
+            B1 = 125;
+            curves = 1;
+            microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
+            if (f64 > 1)
+                return f64;
+        }
     }
-    {
-        B1 = 70;
-        curves = 1;
-        microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
-        if (f64 > 1)
-            return f64;
-    }
-    if (targetBits > 58)
-    {
-        B1 = 125;
-        curves = 1;
-        microecm(n, &f64, B1, 25 * B1, curves, ploc_lcg);
-        if (f64 > 1)
-            return f64;
-    }
-#endif
 
     if (targetBits <= 48)
     {
@@ -1521,7 +1527,7 @@ uint64_t do_uecm(uint64_t n, int targetBits, uint64_t *ploc_lcg)
 }
 
 
-int microecm_get_bits(uint64_t n)
+static int uecm_get_bits(uint64_t n)
 {
     int i = 0;
     while (n != 0)
@@ -1533,12 +1539,25 @@ int microecm_get_bits(uint64_t n)
 }
 
 
-// getfactor_ecm() returns 1 if unable to find a factor of n,
-// otherwise returns a factor of n.
-uint64_t getfactor_ecm(uint64_t n, uint64_t *pran)
+
+
+// getfactor_uecm() returns 1 if unable to find a factor of q64,
+// Otherwise it returns a factor of q64.
+//
+// if the input is known to have no small factors, set is_arbitrary=0,
+// otherwise, set is_arbitrary=1 and a few curves targetting small factors
+// will be run prior to the standard sequence of curves for the input size.
+//
+// Prior to your first call of getfactor_uecm(), set *pran = 0  (or set it to
+// some other arbitrary value); after that, don't change *pran.
+// FYI: *pran is used within this file by a random number generator, and it
+// holds the current value of a pseudo random sequence.  Your first assigment
+// to *pran seeds the sequence, and after seeding it you don't want to
+// change *pran, since that would restart the sequence.
+uint64_t getfactor_uecm(uint64_t q64, int is_arbitrary, uint64_t *pran)
 {
-    if (n % 2 == 0)
+    if (q64 % 2 == 0)
         return 2;
-    int bits = microecm_get_bits(n);
-    return do_uecm(n, bits, pran);
+    int bits = uecm_get_bits(q64);
+    return uecm_dispatch(q64, bits, pran, is_arbitrary);
 }

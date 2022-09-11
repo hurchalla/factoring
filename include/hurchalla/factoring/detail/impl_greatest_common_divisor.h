@@ -93,16 +93,14 @@ struct impl_greatest_common_divisor {
             T tmp = u;
             T sub1 = static_cast<T>(v - tmp);
             T sub2 = static_cast<T>(tmp - v);
+            if (tmp == v)
+                break;
                // u = (tmp >= v) ? v : tmp;
             u = hc::conditional_select((tmp >= v), v, tmp);
             // set v to the absolute value of (v - tmp)
                // v = (tmp >= v) ? sub2 : sub1;
             v = hc::conditional_select((tmp >= v), sub2, sub1);
             HPBC_ASSERT2(u % 2 == 1);
-            if (v == 0) {
-                u = static_cast<T>(u << k);
-                break;
-            }
             // In an earlier version of this function, the line below used
             // count_trailing_zeros(v) instead of count_trailing_zeros(sub1),
             // which had been more of a standard way to write the algorithm.
@@ -115,6 +113,7 @@ struct impl_greatest_common_divisor {
             j = hc::count_trailing_zeros(sub1);
             v = static_cast<T>(v >> j);
         }
+        u = static_cast<T>(u << k);
     }
     HPBC_POSTCONDITION2(u > 0);
     return u;

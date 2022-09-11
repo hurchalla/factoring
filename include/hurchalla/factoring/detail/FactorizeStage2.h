@@ -9,6 +9,7 @@
 #define HURCHALLA_FACTORING_FACTORIZE_STAGE2_H_INCLUDED
 
 
+#include "hurchalla/factoring/detail/microecm.h"
 #include "hurchalla/factoring/detail/PollardRhoBrentSwitchingTrial.h"
 #ifndef HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME
 #  define HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME PollardRhoBrentSwitchingTrial
@@ -16,8 +17,6 @@
 #  include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
 #  include "hurchalla/factoring/detail/PollardRhoBrentTrialParallel.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoTrial.h"
-#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrial.h"
-#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentMontgomeryTrialParallel.h"
 #endif
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
@@ -31,9 +30,6 @@
 #include <type_traits>
 #include <cstdint>
 
-#ifdef HURCHALLA_FACTORING_ALLOW_ECM_EXPERIMENTAL
-#include "hurchalla/factoring/detail/experimental/microecm_cpp.h"
-#endif
 
 namespace hurchalla { namespace detail {
 
@@ -57,6 +53,7 @@ template <int EcmMinBits, int MaxBitsX, class T, class PrimalityFunctor>
 class FactorizeStage2 {
     const PrimalityFunctor& is_prime_func;
     const T always_prime_limit;
+    bool expect_arbitrary_size_factors;
     T base_c;               // for Pollard-Rho
     T expected_iterations;  // for Pollard-Rho
     std::uint64_t loc_lcg;  // for ECM
@@ -77,8 +74,10 @@ public:
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
 
-    FactorizeStage2(const PrimalityFunctor& isprime_func, T alwaysprime_limit)
+    FactorizeStage2(const PrimalityFunctor& isprime_func, T alwaysprime_limit,
+                    bool expect_arbitrarysize_factors)
         : is_prime_func(isprime_func), always_prime_limit(alwaysprime_limit),
+          expect_arbitrary_size_factors(expect_arbitrarysize_factors),
           base_c(1), expected_iterations(0), loc_lcg(0)
     {
     }
@@ -201,26 +200,30 @@ private:
             return iter;
         }
 
-#ifdef HURCHALLA_FACTORING_ALLOW_ECM_EXPERIMENTAL
-        // Try to use ECM if we can
+        // Try to use microECM if we can
         static_assert(0 <= EcmMinBits);
         if constexpr (EcmMinBits < ut_numeric_limits<T>::digits) {
-            constexpr T ecm_threshold = static_cast<T>(1) << EcmMinBits;
-            if (x >= ecm_threshold) {   // use ecm only if x is 'big'
-                T tmp_factor = micro_ecm::get_ecm_factor(mf, loc_lcg);
-                if (tmp_factor >= 2) {   // we found a factor
-                    // Try to factor the factor (fyi, it is usually prime)
-                    iter = dispatch(iter, tmp_factor);
-                    // Next try to factor the quotient.
-                    // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
-                    T quotient = static_cast<T>(x/tmp_factor);
-                    iter = dispatch(iter, quotient);
-                    return iter;
+            int ecm_crossover_bits = (expect_arbitrary_size_factors)
+                                     ? EcmMinBits + 6 : EcmMinBits;
+            if (ecm_crossover_bits < ut_numeric_limits<T>::digits) {
+                T ecm_threshold = static_cast<T>(1) << ecm_crossover_bits;
+                if (x >= ecm_threshold) {   // use ecm only if x is 'big'
+                    T tmp_factor = micro_ecm::get_ecm_factor(mf,
+                                        expect_arbitrary_size_factors, loc_lcg);
+                    if (tmp_factor >= 2) {   // we found a factor
+                        // Try to factor the factor (fyi, it is usually prime)
+                        iter = dispatch(iter, tmp_factor);
+                        // Next try to factor the quotient.
+                        // since 1 < tmp_factor < x,
+                        // we know 1 < (x/tmp_factor) < x
+                        T quotient = static_cast<T>(x/tmp_factor);
+                        iter = dispatch(iter, quotient);
+                        return iter;
+                    }
                 }
             }
         }
         // If we don't use ECM (or if it found no factors), use Pollard-Rho.
-#endif
 
         HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME<MF> pr_trial_func;
 

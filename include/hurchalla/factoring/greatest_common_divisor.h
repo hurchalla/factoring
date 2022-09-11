@@ -9,6 +9,11 @@
 #define HURCHALLA_FACTORING_GREATEST_COMMON_DIVISOR_H_INCLUDED
 
 
+#if !defined(HURCHALLA_FACTORING_DISALLOW_INLINE_ASM) && \
+        !defined(HURCHALLA_ALLOW_INLINE_ASM_ALL)
+#  define HURCHALLA_ALLOW_INLINE_ASM_ALL
+#endif
+
 #include "hurchalla/factoring/detail/impl_greatest_common_divisor.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"

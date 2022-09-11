@@ -2,25 +2,30 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for up to 128 bit integer types.  At the time of this writing, it should easily provide one of the fastest factoring functions available for 64 bit types, such as int64_t and uint64_t, when using arbitrary input values (for best performance just make sure you define the standard C++ macro NDEBUG).
+EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for any integer up to 128 bits in size.  At the time of this writing, EPR easily provides one of the fastest factoring functions available to you for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see How to use the library.
+
+The name EPR is an acronym for Ecm and Pollard-Rho, since those are the two main algorithms this library uses for factoring.  It's also a play on [Einstein-Podolsky-Rosen](https://en.wikipedia.org/wiki/EPR_paradox) for fun ([for now](https://en.wikipedia.org/wiki/Shor%27s_algorithm)).
+
+Thanks to [Ben Buhrow](https://github.com/bbuhrow/yafu) for his great microecm code for ECM, which this library optimizes (exploiting [Clockwork](https://github.com/hurchalla/modular_arithmetic)) and extends to 128 bit.
 
 ## Design goals
 
-The goal for EPR was to create a correct and easy to use library with extremely fast factoring (and primality checking) for native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints).  Though it was optimized for native C++ integer types, for convenience it supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  The EPR library uses variants of the Pollard-Rho and the deterministic Miller-Rabin algorithms, described [below](#algorithms), and has proofs for the new variants and extensive unit tests.  A portion of the optimizations (such as Montgomery arithmetic) that EPR uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
+The goal for EPR was to create a correct and easy to use library with extremely fast factoring (and primality checking) for native C++ integer types (i.e. 16/32/64 bit signed and unsigned ints).  Though it was optimized for native C++ integer types, it also efficiently supports 128 bit types - including the compiler extensions __int128_t and __uint128_t.  The EPR library uses variants of ECM and Pollard-Rho and deterministic Miller-Rabin algorithms, described [below](#algorithms), and has proofs for the new variants (with the exception of ECM) and extensive unit tests.  A portion of the optimizations (such as Montgomery arithmetic) that EPR uses are provided by the [Clockwork](https://github.com/hurchalla/modular_arithmetic) modular arithmetic library.
 
 ## Requirements
 
 The EPR library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
 
-For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
+For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
 
 ## Status
 
 Released. All planned functionality and unit tests are finished and working correctly.
 
-## Author
+## Authors
 
 * **Jeffrey Hurchalla**
+* (microecm.h by **Ben Buhrow** and **Jeff Hurchalla**)
 
 ## License
 
@@ -36,7 +41,7 @@ If you're using CMake for your project and you wish to add this library to it, t
 add_subdirectory(*path_of_the_cloned_factoring_repository* &nbsp; *your_binary_dir*/factoring)  
 target_link_libraries(*your_project_target_name* &nbsp; hurchalla_factoring)  
 
-For best performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can do this by calling CMake with -DCMAKE_BUILD_TYPE=Release.  
+For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can do this by calling CMake with -DCMAKE_BUILD_TYPE=Release.  
 
 It may help to see a simple [example project with CMake](examples/example_with_cmake).
 
@@ -54,7 +59,7 @@ If you prefer, for the last command you could instead use CMake's default instal
 This will copy all the header files needed for the factoring library to an "include" subfolder in the installation folder of your choosing.
 When compiling your project, you'll of course need to ensure that you have that include subfolder as part of your include path.  
 
-For good performance you *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can generally do this by adding the option flag -DNDEBUG to your compile command.  
+For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  You can generally do this by adding the option flag -DNDEBUG to your compile command.  
 
 It may help to see a simple [example](examples/example_without_cmake).
 
@@ -73,14 +78,16 @@ The API consists of five header files in total (all the headers that are not und
 
 ## Algorithms
 
-For factoring: Pollard-Rho Brent (["An Improved Monte Carlo Factorization Algorithm"](https://maths-people.anu.edu.au/~brent/pub/pub051.html) by Richard Brent, and https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm#Variants),
-preceded by a stage of trial division using special algorithms for divisibility (Section 10-17 from Hacker's Delight 2nd edition by Henry Warren, and "ALGORITHM A: IS_DIV_A" from ["Efficient long division via Montgomery multiply"](https://arxiv.org/abs/1303.0328) by Ernst W. Mayer).  
+For factoring: ECM (["Factoring Integers with Elliptic Curves"](https://www.jstor.org/stable/1971363)) by H.W. Lenstra Jr. (see also https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization).  For smaller integers: Pollard-Rho Brent (["An Improved Monte Carlo Factorization Algorithm"](https://maths-people.anu.edu.au/~brent/pub/pub051.html) by Richard Brent (see also https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm#Variants)).
+Both ECM and Pollard-Rho preceded by a stage of trial division using special algorithms for divisibility (Section 10-17 from Hacker's Delight 2nd edition by Henry Warren, and "ALGORITHM A: IS_DIV_A" from ["Efficient long division via Montgomery multiply"](https://arxiv.org/abs/1303.0328) by Ernst W. Mayer).  
 
 For primality testing: Deterministic Miller-Rabin (https://miller-rabin.appspot.com/ and https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Deterministic_variants).  If using the resource_intensive_api, also Sieve of Eratosthenes for 32 bit and smaller types (https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes).
 
 Special attention was paid to instruction level parallelism, to take advantage of typical pipelined/superscalar CPUs.  This resulted in modifications to some algorithms.  For example, Miller-Rabin is changed (along with its associated modular exponentiation) to perform more than one trial/exponentiation at a time.  And there is a changed Pollard-Rho Brent algorithm that simultaneously advances two independent sequences (from which it extracts factors), rather than just one.
 
 Near-optimal hash tables are used for fast deterministic Miller-Rabin primality testing.  For information on the tables and how they were generated, you can view the [README.md](https://github.com/hurchalla/factoring/blob/master/include/hurchalla/factoring/detail/miller_rabin_bases/README.TXT), and see the [header files with the tables](include/hurchalla/factoring/detail/miller_rabin_bases).  These hash tables are the densest known at this time.  The general purpose functions *hurchalla::is_prime* and *hurchalla::factorize* use some of the smallest of these hash tables (8 to 320 byte), to minimize memory footprint and cache impact while still receiving a performance boost.  The resource_intensive_api functions use the largest of the hash tables for best possible performance.
+
+The particular ECM variant used by this library originated from Ben Buhrow's microecm in [yafu](https://github.com/bbuhrow/yafu).
 
 The Pollard-Rho-Brent algorithm uses an easy extra step that seems to be unmentioned in the literature.  The step is a "pre-loop" that advances as quickly as possible through a portion of the initial pseduo-random sequence before beginning the otherwise normal Pollard-Rho Brent algorithm.  The rationale for this is that every Pollard-Rho pseudo-random sequence begins with a non-periodic segment, and trying to extract factors from that segment is mostly wasted work since the algorithm logic relies on a periodic sequence.  Using a "pre-loop" that does nothing except iterate for a set number of times through the sequence thus improves performance on average, since it quickly gets past some of that unwanted non-periodic segment.  In particular, the "pre-loop" avoids calling the greatest common divisor, which would rarely find a factor during the non-periodic segment.  This optimization would likely help any form/variant of the basic Pollard-Rho algorithm.
 

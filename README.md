@@ -78,7 +78,7 @@ The API consists of five header files in total (all the headers that are not und
 
 ## Algorithms
 
-For factoring: ECM (["Factoring Integers with Elliptic Curves"](https://www.jstor.org/stable/1971363)) by H.W. Lenstra Jr. (see also https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization).  For smaller integers: Pollard-Rho Brent (["An Improved Monte Carlo Factorization Algorithm"](https://maths-people.anu.edu.au/~brent/pub/pub051.html) by Richard Brent (see also https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm#Variants)).
+For factoring: ECM (["Factoring Integers with Elliptic Curves"](https://www.jstor.org/stable/1971363) by H.W. Lenstra Jr. (see also https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization)).  For smaller integers: Pollard-Rho Brent (["An Improved Monte Carlo Factorization Algorithm"](https://maths-people.anu.edu.au/~brent/pub/pub051.html) by Richard Brent (see also https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm#Variants)).
 Both ECM and Pollard-Rho preceded by a stage of trial division using special algorithms for divisibility (Section 10-17 from Hacker's Delight 2nd edition by Henry Warren, and "ALGORITHM A: IS_DIV_A" from ["Efficient long division via Montgomery multiply"](https://arxiv.org/abs/1303.0328) by Ernst W. Mayer).  
 
 For primality testing: Deterministic Miller-Rabin (https://miller-rabin.appspot.com/ and https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Deterministic_variants).  If using the resource_intensive_api, also Sieve of Eratosthenes for 32 bit and smaller types (https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes).

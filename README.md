@@ -2,7 +2,7 @@
 
 ![Alt text](images/cycle5.jpg?raw=true "Greek rho symbol")
 
-EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for any integer up to 128 bits in size.  At the time of this writing, EPR easily provides one of the fastest factoring functions available to you for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see How to use the library.
+EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for any integer up to 128 bits in size.  At the time of this writing, EPR can provide you with one of the fastest factoring functions known for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see How to use the library.
 
 The name EPR is an acronym for Ecm and Pollard-Rho, since those are the two main algorithms this library uses for factoring.  It's also a play on [Einstein-Podolsky-Rosen](https://en.wikipedia.org/wiki/EPR_paradox) for fun ([for now](https://en.wikipedia.org/wiki/Shor%27s_algorithm)).
 

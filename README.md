@@ -6,7 +6,7 @@ EPR is a high performance, easy to use factoring and primality checking C++ libr
 
 The name EPR is an acronym for Ecm and Pollard-Rho, since those are the two main algorithms this library uses for factoring.  It's also a play on [Einstein-Podolsky-Rosen](https://en.wikipedia.org/wiki/EPR_paradox) for fun ([for now](https://en.wikipedia.org/wiki/Shor%27s_algorithm)).
 
-Thanks to [Ben Buhrow](https://github.com/bbuhrow/yafu) for his great microecm code for ECM, which this library optimizes (exploiting [Clockwork](https://github.com/hurchalla/modular_arithmetic)) and extends to 128 bit.
+Thanks to [Ben Buhrow](https://github.com/bbuhrow/yafu) for his great microecm code that implements ECM, which this library uses in an optimized form (exploiting [Clockwork](https://github.com/hurchalla/modular_arithmetic)) and extended to 128 bits.
 
 ## Design goals
 

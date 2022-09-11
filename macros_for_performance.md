@@ -8,7 +8,7 @@ given that this is a header-only library.
 
 For example, if you are compiling using clang or gcc from the command line, you would
 specify the -D compilation flag, similarly to the following: 
-clang++ -DHURCHALLA_TRIAL_DIVISION_SIZE=139 ...more arguments... 
+clang++ -DHURCHALLA_TRIAL_DIVISION_SIZE=139 ...more arguments...  
 As another example, if you are using CMake you would add the command "target_compile_definitions"
 to your CMakeLists.txt, similarly to the following: 
 target_compile_definitions(&lt;your_target_name&gt;  PRIVATE  HURCHALLA_TRIAL_DIVISION_SIZE=139) 

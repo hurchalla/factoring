@@ -1,6 +1,6 @@
 # The EPR Factoring Library
 
-![Alt text](images/cycle6.jpg?raw=true "Greek rho cycle")
+![Alt text](images/epr.jpg?raw=true "Elliptic curve, and rho cycle")
 
 EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for any integer up to 128 bits in size.  At the time of this writing, EPR can provide you with one of the fastest factoring functions known for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see How to use the library.
 

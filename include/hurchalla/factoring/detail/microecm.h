@@ -1269,6 +1269,86 @@ ubuild(const MF& HURCHALLA_RESTRICT mf,
 
 
 
+template <typename DUMMY=void>  //for DUMMY rationale, see uecm_steps80 comments
+struct precalc_curve_params64 {
+    static_assert(std::is_same<DUMMY, void>::value, "");
+
+    static constexpr int NUM_PRECALCULATED = 8;
+//    static constexpr uint8_t smallsigma[NUM_PRECALCULATED] = {
+//        11,       61,
+//        56,       81,
+//        83,       7,
+//        30,       51 };
+
+    static constexpr uint32_t Z[NUM_PRECALCULATED] = {
+        85184,    14526784,
+        11239424, 34012224,
+        36594368, 21952,
+        1728000,  8489664 };
+
+    static constexpr uint64_t X[NUM_PRECALCULATED] = {
+        UINT64_C(1560896),          UINT64_C(51312965696),
+        UINT64_C(30693697091),      UINT64_C(281784327616),
+        UINT64_C(326229015104),     UINT64_C(85184),
+        UINT64_C(716917375),        UINT64_C(17495004736) };
+
+//    uint64_t u_v[8] = { 373248ULL, 41854210048ULL, 24566036643ULL, 242037319168ULL,
+//        281268868608ULL, 4096ULL, 465484375ULL, 13686220288ULL };
+//    uint64_t u3_v[8] = { 392, 11392, 9617, 19992, 20984, 160, 2805, 7992 };
+
+    // the negt1 array = u_v[i] * u3_v[i].
+    static constexpr uint64_t negt1[NUM_PRECALCULATED] = {
+        UINT64_C(146313216),        UINT64_C(476803160866816),
+        UINT64_C(236251574395731),  UINT64_C(4838810084806656),
+        UINT64_C(5902145938870272), UINT64_C(655360),
+        UINT64_C(1305683671875),    UINT64_C(109380272541696) };
+
+    static constexpr uint64_t d[NUM_PRECALCULATED] = {
+        UINT64_C(1098870784),       UINT64_C(200325818077184),
+        UINT64_C(110006210374144),  UINT64_C(1460769954361344),
+        UINT64_C(1732928528232448), UINT64_C(38162432),
+        UINT64_C(1376481360000),    UINT64_C(57103695458304) };
+};
+
+
+template <class MF>
+static typename MF::IntegerType
+ubuild64_precalculated_curve(const MF& HURCHALLA_RESTRICT mf,
+                             uecm_mfpt<MF>& HURCHALLA_RESTRICT P,
+                             typename MF::MontgomeryValue& HURCHALLA_RESTRICT s,
+                             int curve_num)
+{
+    using MV = typename MF::MontgomeryValue;
+    using T = typename MF::IntegerType;
+    static_assert(ut_numeric_limits<T>::max() >= 
+                                            ut_numeric_limits<uint64_t>::max());
+    using Precalc = precalc_curve_params64<void>;
+    HPBC_PRECONDITION2(0<=curve_num && curve_num < Precalc::NUM_PRECALCULATED);
+
+    T likely_gcd = 1;
+    T dem = Precalc::d[curve_num];
+    // note:  the 64 bit version of modinverse(dem, modulus, likely_gcd) appears
+    // to require dem < modulus, so I take the remainder now to achieve dem < n.
+    // Below is a faster way to compute dem = dem % n, even if the CPU
+    // has extremely fast division (as present in many new CPUs).
+    dem = mf.remainder(dem);
+
+    MV mvnum = mf.convertIn(Precalc::negt1[curve_num]);
+    mvnum = mf.negate(mvnum);
+
+    T modulus = mf.getModulus();
+    dem = modinverse(dem, modulus, likely_gcd);
+
+    MV mvdem = mf.convertIn(dem);
+    s = mf.multiply(mvdem, mvnum);
+
+    P.X = mf.convertIn(Precalc::X[curve_num]);
+    P.Z = mf.convertIn(Precalc::Z[curve_num]);
+
+    return likely_gcd;
+}
+
+
 
 template <class MF>
 static bool ucheck_factor(const MF& HURCHALLA_RESTRICT mf,
@@ -1339,7 +1419,18 @@ static bool microecm(const MF& HURCHALLA_RESTRICT mf,
     {
         MV s;
         uecm_mfpt<MF> P;
-        T likely_gcd = ubuild(mf, P, loc_lcg, s);
+        T likely_gcd;
+        if constexpr (hurchalla::ut_numeric_limits<T>::digits == 
+                      hurchalla::ut_numeric_limits<uint64_t>::digits)
+        {
+            if (i < precalc_curve_params64<void>::NUM_PRECALCULATED)
+                likely_gcd = ubuild64_precalculated_curve(mf, P, s, i);
+            else
+                likely_gcd = ubuild(mf, P, loc_lcg, s);
+        }
+        else
+            likely_gcd = ubuild(mf, P, loc_lcg, s);
+
         if (likely_gcd > 1)
         {
             // If the gcd gave us a factor, we're done.  If not, since gcd != 1,

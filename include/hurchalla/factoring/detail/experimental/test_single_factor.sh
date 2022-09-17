@@ -18,8 +18,9 @@ exit_on_failure () {
 
 expect_arbitrary_factors="-DEXPECT_ARBITRARY_SIZE_FACTORS"
 
-#comment out the following macro, in order to test the C++ version of microecm
-use_c_interface="-DUSE_ECM_C_INTERFACE"
+# uncomment the following macro, in order to test the C version of microecm
+# instead of the normal C++ version.
+#use_c_interface="-DUSE_ECM_C_INTERFACE"
 
 
 ccompiler=clang

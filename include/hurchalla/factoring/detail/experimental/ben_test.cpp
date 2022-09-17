@@ -209,6 +209,7 @@ int main(int argc, char** argv)
     fclose(in);
     for (int tries = 0; tries < 16; ++tries)
     {
+#if 1
         // -------------------
         // benchmark C version
         // -------------------
@@ -239,8 +240,9 @@ int main(int argc, char** argv)
 //      printf("percent correct = %.2f\n", 
 //                100.0*(double)correct / (double)num);
 //      printf("average time per input = %.2f ms\n", 1000 * t_time / (double)num);
+#endif
 
-
+#if 1
         // ---------------------
         // benchmark C++ version
         // ---------------------
@@ -268,6 +270,7 @@ int main(int argc, char** argv)
 
         printf("(C++ port) got %d of %d correct in %2.3f sec\n",
                 correct, num, t_time);
+#endif
     }
 
     return 0;

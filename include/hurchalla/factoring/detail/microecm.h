@@ -774,14 +774,13 @@ static
 typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
                                 int target_bits, typename MF::MontgomeryValue s)
 {
-    static constexpr int map[61] = {
+    static constexpr int map[60] = {
         0, 1, 2, 0, 0, 0, 0, 3, 0, 0,
         0, 4, 0, 5, 0, 0, 0, 6, 0, 7,
         0, 0, 0, 8, 0, 0, 0, 0, 0, 9,
         0, 10, 0, 0, 0, 0, 0, 11, 0, 0,
         0, 12, 0, 13, 0, 0, 0, 14, 0, 15,
-        0, 0, 0, 16, 0, 0, 0, 0, 0, 17,
-        18 };
+        0, 0, 0, 16, 0, 0, 0, 0, 0, 17 };
 
     using MV = typename MF::MontgomeryValue;
     using CV = typename MF::CanonicalValue;
@@ -791,10 +790,12 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
     //stage 2 init
     //Q = P = result of stage 1
     //compute [d]Q for 0 < d <= D
-    uecm_mfpt<MF> Pb[20];
-    uecm_mfpt<MF> *Pd = &Pb[map[ECM_PARAM_D]];
+    uecm_mfpt<MF> Pb[18];
 
-    CV Pbprod[20];
+    uecm_mfpt<MF> Pd1;
+    uecm_mfpt<MF> *Pd = &Pd1;
+
+    CV Pbprod[18];
 
     // [1]Q
     Pb[1].Z = P.Z;
@@ -803,7 +804,7 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
 
     // [2]Q
     udup(mf, s, P, &Pb[2]);
-    Pbprod[2] = mf.getCanonicalValue(mf.multiply(Pb[2].X, Pb[2].Z));
+//    Pbprod[2] = mf.getCanonicalValue(mf.multiply(Pb[2].X, Pb[2].Z));     // never used
 
     /*
     D is small in tinyecm, so it is straightforward to just enumerate the needed
@@ -818,15 +819,14 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
     Pb[7] = [19]Q;  prog2
     Pb[8] = [23]Q;  prog1
     Pb[9] = [29]Q;  prog1
-    Pb[10] = [30 == D]Q;
-    Pb[11] = [31]Q; prog2
-    Pb[12] = [37]Q; prog2
-    Pb[13] = [41]Q; prog1
-    Pb[14] = [43]Q; prog2
-    Pb[15] = [47]Q; prog1
-    Pb[16] = [49]Q; prog2
-    Pb[17] = [53]Q; prog1
-    Pb[18] = [59]Q; prog1
+    Pb[10] = [31]Q; prog2
+    Pb[11] = [37]Q; prog2
+    Pb[12] = [41]Q; prog1
+    Pb[13] = [43]Q; prog2
+    Pb[14] = [47]Q; prog1
+    Pb[15] = [49]Q; prog2
+    Pb[16] = [53]Q; prog1
+    Pb[17] = [59]Q; prog1
 
     two progressions with total of 17 adds to get 15 values of Pb.
     6 + 5(1) -> 11 + 6(5) -> 17 + 6(11) -> 23 + 6(17) -> 29 + 6(23) -> 35 + 6(29) -> 41 + 6(35) -> 47 + 6(41) -> 53 + 6(47) -> 59
@@ -900,69 +900,109 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
         j += 6;
     }
 
-    // Pd = [2w]Q
+
+    uecm_mfpt<MF> pt60;
     // [31]Q + [29]Q([2]Q) = [60]Q
-    uadd(mf, Pb[9], Pb[10], Pb[2], Pd);   // <-- [60]Q
+    uadd(mf, Pb[9], Pb[10], Pb[2], &pt60);   // <-- [60]Q
+
 
     // make all of the Pbprod's
-    for (int i = 3; i < 19; i++)
+    for (int i = 3; i < 18; i++)
     {
         Pbprod[i] = mf.getCanonicalValue(mf.multiply(Pb[i].X, Pb[i].Z));
     }
 
 
-    //initialize info needed for giant step
-    // temporary - make [4]Q
-    udup(mf, s, Pb[2], &pt3);   // pt3 = [4]Q
-
     uecm_mfpt<MF> Pad;
-
-    // Pd = [w]Q
-    // [17]Q + [13]Q([4]Q) = [30]Q
-    uadd(mf, Pb[map[17]], Pb[map[13]], pt3, &Pad);    // <-- [30]Q
-
-
     uecm_mfpt<MF> Pa1;
     uecm_mfpt<MF> *Pa = &Pa1;
 
-    // [60]Q + [30]Q([30]Q) = [90]Q
-    uadd(mf, *Pd, Pad, Pad, Pa);
-    pt1.X = Pa->X;
-    pt1.Z = Pa->Z;
-
-    // [90]Q + [30]Q([60]Q) = [120]Q
-    uadd(mf, *Pa, Pad, *Pd, Pa);
-    Pd->X = Pa->X;
-    Pd->Z = Pa->Z;
-
-    // [120]Q + [30]Q([90]Q) = [150]Q
-    uadd(mf, *Pa, Pad, pt1, Pa);
-
-
-    // adjustment of Pa and Pad for larger B1.
-    // Currently we have Pa=150, Pd=120, Pad=30
-    if (target_bits > 58)
+    using T = typename MF::IntegerType;
+    if constexpr (hurchalla::ut_numeric_limits<T>::digits > 64)
     {
-        if (target_bits <= 62)
+        // this section was tuned for __uin128_t.
+
+        //initialize info needed for giant step
+        uecm_mfpt<MF> pt4;
+        udup(mf, s, Pb[2], &pt4);   // pt4 = [4]Q
+
+        // [17]Q + [13]Q([4]Q) = [30]Q
+        uadd(mf, Pb[map[17]], Pb[map[13]], pt4, &Pad);    // <-- [30]Q
+
+        // [60]Q + [30]Q([30]Q) = [90]Q
+        uadd(mf, pt60, Pad, Pad, Pa);
+        uecm_mfpt<MF> pt90 = *Pa;
+
+        // [90]Q + [30]Q([60]Q) = [120]Q
+        uadd(mf, pt90, Pad, pt60, Pd);
+
+        // Set Pa and Pad for different B1.
+        // Currently we have Pa=90, Pd=120, Pad=30
+        if (target_bits < 62)
         {
-            // need Pa = 180, Pad = 60
-            // [150]Q + [30]Q([120]Q) = [180]Q
-            uadd(mf, *Pa, Pad, *Pd, Pa);
-            udup(mf, s, Pad, &Pad);   // Pad = [60]Q
+            // need Pa = 150, Pad = 30
+            // [120]Q + [30]Q([90]Q) = [150]Q
+            uadd(mf, *Pd, Pad, pt90, Pa);
         }
-        else  // if (target_bits > 62)
+        else // if (target_bits >= 62)
         {
             // need Pa = 210, Pad = 90.
-            // have pt1 = 90
-            udup(mf, s, Pad, &Pad);   // Pad = [60]Q
-            // [150]Q + [60]Q([90]Q) = [210]Q
-            uadd(mf, *Pa, Pad, pt1, Pa);
-            Pad.X = pt1.X;
-            Pad.Z = pt1.Z;
+            // [120]Q + [90]Q([30]Q) = [210]Q
+            uadd(mf, *Pd, pt90, Pad, Pa);
+
+            uecm_mfpt<MF> pt150;
+            // [120]Q + [30]Q([90]Q) = [150]Q
+            uadd(mf, *Pd, Pad, pt90, &pt150);
+
+            uecm_mfpt<MF> ptPow = *Pd;        // ptPow = 120
+            uecm_mfpt<MF> pt30 = Pad;
+            Pad = pt90;
+
+            int num_doublings = 2 + (target_bits >= 78) + (target_bits >= 89) + (target_bits >= 107) + (target_bits >= 119);
+
+            for (int i=0; i<num_doublings; ++i)
+            {
+                udup(mf, s, ptPow, &ptPow);
+                inlined_uadd(mf, ptPow, *Pa, pt30, Pa);
+                inlined_uadd(mf, ptPow, Pad, pt150, &Pad);
+            }
         }
-//TODO: We haven't adjusted for target_bits > 64 yet.  Presumably we should...
-//TODO: Is the earlier setup in this function appropriate for target_bits > 64?
     }
+    else
+    {
+        // This section was tuned for uint64_t, via speed testing using clang.
+        // (It's not tuned for __uint128_t)
+        udup(mf, s, pt60, Pd);   // Pd = [120]Q
+
+        // adjustment of Pa and Pad for larger B1.
+        // Currently we have Pd = [120]Q.  Pa and Pad are not set
+        if (target_bits < 44)
+        {
+            // [120]Q + [60]Q([60]Q) = [180]Q
+            uadd(mf, *Pd, pt60, pt60, Pa);  // Pa = [180]Q
+            Pad = pt60;                     // Pad = [60]Q
+        }
+        else  // (target_bits >= 44)
+        {
+            udup(mf, s, *Pd, Pa);   // Pa  = [240]Q
+            Pad = *Pd;              // Pad = [120]Q
+
+            if (target_bits >= 52)
+            {
+                // [240]Q + [120]Q([120]Q) = [360]Q
+                uadd(mf, *Pa, *Pd, *Pd, &Pad);  // Pad = [360]Q
+                udup(mf, s, *Pa, Pa);           // Pa  = [480]Q
+
+                if (target_bits > 62)
+                {
+                    // [480]Q + [360]Q([120]Q) = [840]Q
+                    uadd(mf, *Pa, Pad, *Pd, &Pad); // Pad = [840]Q
+                    udup(mf, s, *Pa, Pa);          // Pa  = [960]Q
+                }
+            }
+        }
+    }
+
 
     //initialize accumulator and Paprod
     MV acc = mf.getUnityValue();
@@ -1026,13 +1066,11 @@ typename MF::MontgomeryValue uecm_stage2(const MF& mf, const uecm_mfpt<MF>& P,
         ++g;
 
         //giant step - use the addition formula for ECM
-        pt1.X = Pa->X;
-        pt1.Z = Pa->Z;
+        uecm_mfpt<MF> tmp_point = *Pa;
         //Pa + Pd
         inlined_uadd(mf, *Pa, *Pd, Pad, Pa);
         //Pad holds the previous Pa
-        Pad.X = pt1.X;
-        Pad.Z = pt1.Z;
+        Pad = tmp_point;
         //and Paprod
         Paprod = mf.multiply(Pa->X, Pa->Z);
     }

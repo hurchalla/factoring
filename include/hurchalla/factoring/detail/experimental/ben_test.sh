@@ -14,7 +14,16 @@ exit_on_failure () {
 
 # using a macro to index the semiprimes file number we want to use is a hack...
 # ...but it's easy and it works
-semiprime_filenum="-DUECM_SEMIPRIME_FILENUM=8"
+semiprime_filenum="-DUECM_SEMIPRIME_FILENUM=13"
+
+input_type="-DUECM_INPUT_TYPE=uint64_t"
+#input_type="-DUECM_INPUT_TYPE=__uint128_t"
+
+num_tries="-DUECM_NUM_TRIES=5"
+
+start=0
+length=100000
+
 
 
 # this macro can increase the C++ version's speed at 63 and 64 bits, but otherwise slows things down
@@ -23,10 +32,10 @@ semiprime_filenum="-DUECM_SEMIPRIME_FILENUM=8"
 
 microecm_c_filename="microecm_c"
 
-#ccompiler=clang
-#cppcompiler=clang++
-ccompiler=gcc
-cppcompiler=g++
+ccompiler=clang
+cppcompiler=clang++
+#ccompiler=gcc
+#cppcompiler=g++
 cpp_standard="-std=c++17"
 
 # SET THIS TO THE DIRECTORY WHERE YOU CLONED THE HURCHALLA GIT REPOSITORIES.
@@ -39,7 +48,7 @@ repo_directory=/home/jeff/Desktop
 
 
 $ccompiler  -O3  -DNDEBUG  -fomit-frame-pointer -march=native  \
-        $yafu_include  $semiprime_filenum  -c ${microecm_c_filename}.c
+        -pthread $yafu_include  $semiprime_filenum  -c ${microecm_c_filename}.c
 #yafu/arith/arith.c
 
 
@@ -51,11 +60,11 @@ $cppcompiler  \
         -I${repo_directory}/modular_arithmetic/modular_arithmetic/include \
         -I${repo_directory}/modular_arithmetic/montgomery_arithmetic/include \
         -I${repo_directory}/util/include \
-        $semiprime_filenum  $allow_microecm_dual_monty \
-        -c ben_test.cpp
+        $semiprime_filenum  $allow_microecm_dual_monty  $num_tries  $input_type \
+        -pthread -c ben_test.cpp
 
 #$cppcompiler  -O3  -std="c++17"  -o ben_test   ben_test.o ${microecm_c_filename}.o arith.o -lm
-$cppcompiler  -O3  -std="c++17"  -o ben_test   ben_test.o ${microecm_c_filename}.o  -lm
+$cppcompiler  -pthread -O3  -std="c++17"  -o ben_test   ben_test.o ${microecm_c_filename}.o  -lm
 
 
 exit_on_failure
@@ -63,4 +72,4 @@ exit_on_failure
 echo "compilation finished, now executing"
 
 
-./ben_test
+./ben_test  $start  $length

@@ -256,10 +256,14 @@ private:
     };
     static_assert(sizeof(table)/sizeof(table[0]) == SIZE, "");
 };
+// This section is only needed prior to C++17, and can cause deprecation
+// warnings if enabled after C++17
+#if __cplusplus < 201703L
 template <typename DUMMY>
 constexpr std::size_t MillerRabinBases<31, 1, DUMMY>::SIZE;
 template <typename DUMMY>
 constexpr std::uint16_t MillerRabinBases<31, 1, DUMMY>::table[];
+#endif
 
 
 }}  // end namespace

@@ -61,8 +61,12 @@ struct MillerRabinProbabilisticBases128 {
         607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683,
         691, 701, 709, 719 };
 };
+// This section is only needed prior to C++17, and can cause deprecation
+// warnings if enabled after C++17
+#if __cplusplus < 201703L
 template <typename DUMMY> constexpr
 std::array<std::uint16_t, 128> MillerRabinProbabilisticBases128<DUMMY>::bases;
+#endif
 
 
 }}  // end namespace

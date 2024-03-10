@@ -231,6 +231,12 @@ elif [ "${compiler,,}" = "gcc-10" ] || [ "${compiler,,}" = "g++-10" ] ||
   cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-10
   compiler_name=gcc
   compiler_version=10
+elif [ "${compiler,,}" = "gcc-13" ] || [ "${compiler,,}" = "g++-13" ] ||
+     [ "${compiler,,}" = "gcc13" ] || [ "${compiler,,}" = "g++13" ]; then
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=g++-13
+  cmake_c_compiler=-DCMAKE_C_COMPILER=gcc-13
+  compiler_name=gcc
+  compiler_version=13
 elif [ "${compiler,,}" = "clang" ] || [ "${compiler,,}" = "clang++" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang
@@ -254,6 +260,12 @@ elif [ "${compiler,,}" = "clang-10" ] || [ "${compiler,,}" = "clang++-10" ] ||
   cmake_c_compiler=-DCMAKE_C_COMPILER=clang-10
   compiler_name=clang
   compiler_version=10
+elif [ "${compiler,,}" = "clang-18" ] || [ "${compiler,,}" = "clang++-18" ] ||
+     [ "${compiler,,}" = "clang18" ] || [ "${compiler,,}" = "clang++18" ]; then
+  cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=clang++-18
+  cmake_c_compiler=-DCMAKE_C_COMPILER=clang-18
+  compiler_name=clang
+  compiler_version=18
 elif [ "${compiler,,}" = "icc" ] || [ "${compiler,,}" = "icpc" ]; then
   cmake_cpp_compiler=-DCMAKE_CXX_COMPILER=icpc
   cmake_c_compiler=-DCMAKE_C_COMPILER=icc

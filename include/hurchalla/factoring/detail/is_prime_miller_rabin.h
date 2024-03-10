@@ -63,6 +63,10 @@
 // initialization lists with std::array (newer versions fixed this).
 #  pragma GCC diagnostic ignored "-Wmissing-braces"
 #endif
+#ifdef __clang__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
 
 namespace hurchalla { namespace detail {
 
@@ -837,6 +841,9 @@ struct is_prime_miller_rabin {
 
 }}  // end namespace
 
+#ifdef __clang__
+#  pragma GCC diagnostic pop
+#endif
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif

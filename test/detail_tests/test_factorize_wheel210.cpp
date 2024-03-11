@@ -112,10 +112,24 @@ void test_factor_wheel210(T x, const std::vector<T>& answer)
     FactorArrayAdapter faa(arr);
     factorize_wheel210::call(std::back_inserter(faa), x);
     auto num_factors = faa.size();
+    EXPECT_TRUE(num_factors <= arr.size());
     EXPECT_TRUE(num_factors == answer.size());
+
+#if !defined(__GNUC__) || defined(__clang__)
+    // gcc10 appears to have a compiler bug, claiming that when we are called by
+    // TEST(...basic_tests_8), the line below for std::sort accesses the array
+    // out of bounds.  It's a compile-time warning/error with gcc10.  I can find
+    // no problem in the code, and the run-time test above for
+    // (num_factors <= arr.size()) doesn't fail in any compiler.
+    // --- Therefore we provide an alternate #else for gcc ---
     std::sort(arr.begin(), arr.begin()+num_factors);
     EXPECT_TRUE(std::equal(arr.begin(), arr.begin()+num_factors,
                                                            answer.begin()));
+#else
+    std::vector<T> tmp(arr.begin(), arr.begin()+num_factors);
+    std::sort(tmp.begin(), tmp.end());
+    EXPECT_TRUE(tmp == answer);
+#endif
 }
 
 

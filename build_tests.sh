@@ -10,7 +10,7 @@
 # This is a working convenience script for invoking the testing builds and then
 # running the tests.
 # The syntax is 
-# ./build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>]
+# ./build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
 #
 # -c allows you to select the compiler, rather than using the default.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
@@ -25,6 +25,7 @@
 #    repository.  Without -t, only tests for this repository will be compiled.
 # -m allows you to choose between Release, Debug, and Profile(Release with
 #    debug symbols) build configurations, rather than using the default.
+# -l allows you to choose between either libstdc++ or libc++ when using clang.
 #
 # Currently it supports clang, gcc, and icc but you'll need to customize the
 # section under "#Compiler commands" to match the compilers on your system.  The
@@ -167,12 +168,12 @@
 
 
 
-while getopts ":m:c:h-:raut" opt; do
+while getopts ":m:l:c:h-:raut" opt; do
   case $opt in
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
       exit 1
       ;;
     c)
@@ -180,6 +181,9 @@ while getopts ":m:c:h-:raut" opt; do
       ;;
     m)
       mode=$OPTARG
+      ;;
+    l)
+      library=$OPTARG
       ;;
     r)
       run_tests=true
@@ -210,6 +214,10 @@ if [ -z "$compiler" ]; then
 fi
 if [ -z "$mode" ]; then
   mode=Debug
+fi
+
+if [ -n "$library" ]; then
+  cpp_stdlib="-stdlib=$library"
 fi
 
 
@@ -506,7 +514,7 @@ if [ "${mode,,}" = "release" ]; then
             -DBENCH_HURCHALLA_FACTORING=ON \
             $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_FLAGS="$cpp_standard  \
+            -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
             $use_inline_asm  $use_all_inline_asm \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
@@ -522,7 +530,8 @@ elif [ "${mode,,}" = "debug" ]; then
             $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXE_LINKER_FLAGS="$clang_ubsan_link_flags" \
-            -DCMAKE_CXX_FLAGS="$cpp_standard  $clang_ubsan  $gcc_ubsan  \
+            -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
+            $clang_ubsan  $gcc_ubsan  \
             $use_inline_asm  $use_all_inline_asm \
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
@@ -538,7 +547,7 @@ elif [ "${mode,,}" = "profile" ]; then
             $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_EXE_LINKER_FLAGS="-ldl" \
-            -DCMAKE_CXX_FLAGS="$cpp_standard \
+            -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
             $use_inline_asm  $use_all_inline_asm" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure

@@ -65,6 +65,7 @@
 #endif
 #ifdef __clang__
 #  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #  pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
 #endif
 

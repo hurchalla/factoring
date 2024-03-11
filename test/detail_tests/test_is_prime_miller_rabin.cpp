@@ -78,6 +78,11 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, exhaustive_uint16_t) {
     }
 #endif
 
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic warning "-Wstrict-overflow=2"
+#endif
 TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test1) {
     using T = std::uint32_t;
     T modulus = 127;
@@ -90,6 +95,10 @@ TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test1) {
     EXPECT_TRUE(is_prime_miller_rabin::call(mFR));
     EXPECT_TRUE(is_prime_miller_rabin::call(mQR));
 }
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
+
 
 TEST(HurchallaFactoringIsPrimeMillerRabin, basic_test2) {
     using T = std::uint32_t;

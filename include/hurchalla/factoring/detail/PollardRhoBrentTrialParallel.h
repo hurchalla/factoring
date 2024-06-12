@@ -40,10 +40,13 @@ namespace hurchalla { namespace detail {
 #  pragma warning(disable : 4701)
 #endif
 
-// The following functor is an adaptation of the function above, using a
-// Montgomery Form type M, and Montgomery domain values and arithmetic.
-// For type M, ordinarily you'll use a template class instantiation of
-// hurchalla/montgomery_arithmetic/MontgomeryForm.h
+// The following functor is a simple parallel (instruction level, not thread)
+// variation on Pollard-Rho-Brent that advances two separate sequences.
+// The instruction level parallelism allows most CPUs to advance two sequences
+// with only slightly more cost than one sequence.
+
+// M must be a Montgomery Form type; ordinarily you'd use a template class
+// instantiation of hurchalla/montgomery_arithmetic/MontgomeryForm.h
 template <class M>
 struct PollardRhoBrentTrialParallel {
   using T = typename M::IntegerType;

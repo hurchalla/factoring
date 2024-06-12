@@ -181,7 +181,7 @@ struct PollardRhoBrentSwitchingTrial {
             if (p > 1)
                 return p;
             if (mf.getCanonicalValue(absValDiff) == mf.getZeroValue())
-                return 0; // sequence1 cycled before we could find a factor
+                return 0; // a sequence cycled before we could find a factor
         }
     }
   }

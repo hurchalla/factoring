@@ -93,10 +93,10 @@ private:
     T always_prime_limit = (next_prime < sqrtR) ?
           static_cast<T>(next_prime * next_prime) : ut_numeric_limits<T>::max();
 
-    FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
-                          factorize_stage2(is_prime_functor, always_prime_limit,
+    FactorizeStage2<EcmMinBits, MaxBitsX, T>
+                          factorize_stage2(always_prime_limit,
                                            expect_arbitrary_size_factors);
-    iter = factorize_stage2(iter, q);
+    iter = factorize_stage2(iter, is_prime_functor, q);
     return iter;
   }
 

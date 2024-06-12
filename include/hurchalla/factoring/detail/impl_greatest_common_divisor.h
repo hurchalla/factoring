@@ -14,6 +14,7 @@
 #include "hurchalla/util/conditional_select.h"
 #include "hurchalla/util/programming_by_contract.h"
 #include "hurchalla/util/compiler_macros.h"
+#include <algorithm>
 
 namespace hurchalla { namespace detail {
 
@@ -74,18 +75,28 @@ struct impl_greatest_common_divisor {
     // We use this precondition solely to ensure a nonzero return value
     HPBC_PRECONDITION2(u > 0 || v > 0);
 
-    namespace hc = ::hurchalla;
+    if constexpr (ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH) {
+        if (u < v)
+            std::swap(u, v);
+        if (v == 0) {
+            HPBC_POSTCONDITION2(u > 0);
+            return u;
+        }
+        HPBC_ASSERT2(v != 0);
+        u = u % v;
+    }
+
     if (u == 0) {
         HPBC_POSTCONDITION2(v > 0);
         return v;
     }
     if (v != 0) {
-        int i = hc::count_trailing_zeros(u);
-        int j = hc::count_trailing_zeros(v);
+        int i = count_trailing_zeros(u);
+        int j = count_trailing_zeros(v);
         u = static_cast<T>(u >> i);
         v = static_cast<T>(v >> j);
            //int k = (i < j) ? i : j;
-        int k = hc::conditional_select((i < j), i, j);
+        int k = conditional_select((i < j), i, j);
 
         while (true) {
             HPBC_ASSERT2(u % 2 == 1);
@@ -96,10 +107,10 @@ struct impl_greatest_common_divisor {
             if (tmp == v)
                 break;
                // u = (tmp >= v) ? v : tmp;
-            u = hc::conditional_select((tmp >= v), v, tmp);
+            u = conditional_select((tmp >= v), v, tmp);
             // set v to the absolute value of (v - tmp)
                // v = (tmp >= v) ? sub2 : sub1;
-            v = hc::conditional_select((tmp >= v), sub2, sub1);
+            v = conditional_select((tmp >= v), sub2, sub1);
             HPBC_ASSERT2(u % 2 == 1);
             // In an earlier version of this function, the line below used
             // count_trailing_zeros(v) instead of count_trailing_zeros(sub1),
@@ -110,7 +121,7 @@ struct impl_greatest_common_divisor {
             // for abs(u-v) to be determined."  Hence we are able to use sub1
             // for the argument, which saves a few cycles because it lets the
             // CPU exploit instruction level parallelism.
-            j = hc::count_trailing_zeros(sub1);
+            j = count_trailing_zeros(sub1);
             v = static_cast<T>(v >> j);
         }
         u = static_cast<T>(u << k);

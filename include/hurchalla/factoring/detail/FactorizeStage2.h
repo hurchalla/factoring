@@ -49,51 +49,38 @@ namespace hurchalla { namespace detail {
 // all factors get written to the output iterator.
 
 
-template <int EcmMinBits, int MaxBitsX, class T, class PrimalityFunctor>
+template <int EcmMinBits, int MaxBitsX, class T>
 class FactorizeStage2 {
-    const PrimalityFunctor& is_prime_func;
     const T always_prime_limit;
     bool expect_arbitrary_size_factors;
     T base_c;               // for Pollard-Rho
     T expected_iterations;  // for Pollard-Rho
     std::uint64_t loc_lcg;  // for ECM
 
-    // The current client code for this class doesn't need this class to provide
-    // copy construction/assignment.  We delete the copy constructor/assignment
-    // functions so that future callers will not accidentally cause
-    // 'is_prime_func' to become an invalid reference (which would happen if the
-    // referred object's lifetime ended after the copy was made, but the copy
-    // was kept alive).
-    // If needed, this class could be changed so that 'is_prime_func' is not a
-    // class member, but is instead passed by reference to all of this class's
-    // member functions.  Copy construction/assignment would become safe.
-    FactorizeStage2& operator=(const FactorizeStage2&) = delete;
-    FactorizeStage2(const FactorizeStage2&) = delete;
-
 public:
     static_assert(ut_numeric_limits<T>::is_integer);
     static_assert(!ut_numeric_limits<T>::is_signed);
 
-    FactorizeStage2(const PrimalityFunctor& isprime_func, T alwaysprime_limit,
-                    bool expect_arbitrarysize_factors)
-        : is_prime_func(isprime_func), always_prime_limit(alwaysprime_limit),
+    FactorizeStage2(T alwaysprime_limit, bool expect_arbitrarysize_factors)
+        : always_prime_limit(alwaysprime_limit),
           expect_arbitrary_size_factors(expect_arbitrarysize_factors),
           base_c(1), expected_iterations(0), loc_lcg(0)
     {
     }
 
-    template <class OutputIt>
-    OutputIt operator()(OutputIt iter, T x)
+    template <class OutputIt, class PrimalityFunctor>
+    OutputIt operator()(OutputIt iter, const PrimalityFunctor& is_prime_func,
+                        T x)
     {
         base_c = 1;
         expected_iterations = 0;
-        return dispatch(iter, x);
+        return dispatch(iter, is_prime_func, x);
     }
 
 
 private:
-    template <class OutputIt>
-    OutputIt dispatch(OutputIt iter, T x)
+    template <class OutputIt, class PrimalityFunctor>
+    OutputIt dispatch(OutputIt iter, const PrimalityFunctor& is_prime_func, T x)
     {
         HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations
         HPBC_PRECONDITION2(x % 2 == 1); // x odd is required for montgomery form
@@ -108,7 +95,7 @@ private:
                   T, S>::type;
 #if defined(HURCHALLA_FACTORIZE_NEVER_USE_MONTGOMERY_MATH)
             using MF = MontgomeryStandardMathWrapper<U>;
-            return factorize2<MF>(iter, x);
+            return factorize2<MF>(iter, is_prime_func, x);
 #else
             static_assert(ut_numeric_limits<U>::digits >= 2);
             constexpr U Udiv4 = static_cast<U>(static_cast<U>(1) <<
@@ -117,10 +104,10 @@ private:
                                             (ut_numeric_limits<U>::digits - 1));
             if (x < Udiv4) {
                 using MF = MontgomeryQuarter<U>;
-                return factorize2<MF>(iter, x);
+                return factorize2<MF>(iter, is_prime_func, x);
             } else if (x < Udiv2) {
                 using MF = MontgomeryHalf<U>;
-                return factorize2<MF>(iter, x);
+                return factorize2<MF>(iter, is_prime_func, x);
             } else {
                 constexpr bool limited_to_halfrange =
                                  (MaxBitsX == ut_numeric_limits<T>::digits - 1);
@@ -138,7 +125,7 @@ private:
                     return iter;
                 } else {
                     using MF = MontgomeryForm<U>;
-                    return factorize2<MF>(iter, x);
+                    return factorize2<MF>(iter, is_prime_func, x);
                 }
             }
 #endif
@@ -150,17 +137,17 @@ private:
         if constexpr (ut_numeric_limits<T>::digits > HURCHALLA_TARGET_BIT_WIDTH) {
 #if defined(HURCHALLA_FACTORIZE_NEVER_USE_MONTGOMERY_MATH)
             using MF = MontgomeryStandardMathWrapper<T>;
-            return factorize2<MF>(iter, x);
+            return factorize2<MF>(iter, is_prime_func, x);
 #else
             static_assert(ut_numeric_limits<T>::digits >= 2);
             T Rdiv4 = static_cast<T>(
                        static_cast<T>(1) << (ut_numeric_limits<T>::digits - 2));
             if (x < Rdiv4) {
                 using MF = MontgomeryQuarter<T>;
-                return factorize2<MF>(iter, x);
+                return factorize2<MF>(iter, is_prime_func, x);
             } else {
                 using MF = MontgomeryForm<T>;
-                return factorize2<MF>(iter, x);
+                return factorize2<MF>(iter, is_prime_func, x);
             }
 #endif
         } else {
@@ -177,8 +164,9 @@ private:
 
 
 
-    template <class MF, class OutputIt>
-    OutputIt factorize2(OutputIt iter, T x)
+    template <class MF, class OutputIt, class PrimalityFunctor>
+    OutputIt factorize2(OutputIt iter,
+                        const PrimalityFunctor& is_prime_func, T x)
     {
         using U = typename MF::IntegerType;
         using P = typename safely_promote_unsigned<T>::type;
@@ -212,12 +200,12 @@ private:
                                         expect_arbitrary_size_factors, loc_lcg);
                     if (tmp_factor >= 2) {   // we found a factor
                         // Try to factor the factor (fyi, it is usually prime)
-                        iter = dispatch(iter, tmp_factor);
+                        iter = dispatch(iter, is_prime_func, tmp_factor);
                         // Next try to factor the quotient.
                         // since 1 < tmp_factor < x,
                         // we know 1 < (x/tmp_factor) < x
                         T quotient = static_cast<T>(x/tmp_factor);
-                        iter = dispatch(iter, quotient);
+                        iter = dispatch(iter, is_prime_func, quotient);
                         return iter;
                     }
                 }
@@ -252,11 +240,11 @@ private:
                 // efficiency that it didn't, but any T value would be valid.
                 base_c = static_cast<T>(base_c + static_cast<P>(i) + 1);
                 // Try to factor the factor (fyi, it is usually prime)
-                iter = dispatch(iter, tmp_factor);
+                iter = dispatch(iter, is_prime_func, tmp_factor);
                 // Next try to factor the quotient.
                 // since 1 < tmp_factor < x, we know 1 < (x/tmp_factor) < x
                 T quotient = static_cast<T>(x/tmp_factor);
-                iter = dispatch(iter, quotient);
+                iter = dispatch(iter, is_prime_func, quotient);
                 return iter;
             }
             else {

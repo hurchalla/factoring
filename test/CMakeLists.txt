@@ -29,6 +29,7 @@ target_sources(test_hurchalla_factoring PRIVATE
                factorize_bruteforce.h
                integer_sqrt.h
                sample_primes_and_nonprimes.h
+               test_FactorByTable32.cpp
                test_factorize.cpp
                test_factorize_intensive_uint32.cpp
                test_greatest_common_divisor.cpp

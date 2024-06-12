@@ -61,10 +61,10 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         using PrimalityFunctor = decltype(is_prime_functor);
         T always_prime_limit = 0;
         bool expect_arbitrary_size_factors = true;
-        FactorizeStage2<EcmMinBits, MaxBitsX, T, PrimalityFunctor>
-                        factorize_stage2(is_prime_functor, always_prime_limit,
+        FactorizeStage2<EcmMinBits, MaxBitsX, T>
+                                            factorize_stage2(always_prime_limit,
                                                  expect_arbitrary_size_factors);
-        factorize_stage2(std::back_inserter(vec), x);
+        factorize_stage2(std::back_inserter(vec), is_prime_functor, x);
 
         std::sort(vec.begin(), vec.end());
         SCOPED_TRACE(testing::Message() << "x == " << x);
@@ -120,10 +120,10 @@ void test_factorize(const std::vector<T>& answer,
     auto is_prime_functor = IsPrimeFactor();
     using PrimalityFunctor = decltype(is_prime_functor);
     U always_prime_limit = 0;
-    FactorizeStage2<EcmMinBits, MaxBitsX, U, PrimalityFunctor>
-                    factorize_stage2(is_prime_functor, always_prime_limit,
+    FactorizeStage2<EcmMinBits, MaxBitsX, U>
+                    factorize_stage2(always_prime_limit,
                                                  expect_arbitrary_size_factors);
-    factorize_stage2(iter, static_cast<U>(x));
+    factorize_stage2(iter, is_prime_functor, static_cast<U>(x));
 
 
     EXPECT_TRUE(vec.size() == answer.size());

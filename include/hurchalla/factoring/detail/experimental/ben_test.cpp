@@ -194,8 +194,8 @@ double factoring_speed(int num, const UECM_INPUT_TYPE* inputs, const uint64_t* k
         if (lowest_time < 0 || t_time < lowest_time)
             lowest_time = t_time;
 
-        printf("(C++ port) got %d of %d correct in %2.3f sec\n",
-                correct, num, t_time);
+//        printf("(C++ port) got %d of %d correct in %2.3f sec\n",
+//                correct, num, t_time);
 #endif
     }
 
@@ -346,7 +346,7 @@ int main(int argc, char** argv)
     fclose(in);
 
 
-#if 1
+#if 0
     factoring_speed(num, inputs, knowns1, knowns2, num_start, length);
 #else
     // parallel version, intended for 4 cores.

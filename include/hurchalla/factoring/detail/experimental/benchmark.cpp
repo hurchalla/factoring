@@ -8,6 +8,7 @@
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/factoring/factorize.h"
+
 #include <iostream>
 #include <chrono>
 #if defined(__GNUC__)
@@ -71,7 +72,7 @@ void bench_range(T min, T max)
    auto t0 = steady_clock::now();
 
    for (T x = max; x > min; x = x-2) {
-      int num_factors;
+      unsigned int num_factors;
       auto arr = hurchalla::factorize(x, num_factors);
       // We need to prevent the compiler from completely removing
       // the factorize calls due to the array never being used.
@@ -82,7 +83,7 @@ void bench_range(T min, T max)
       }
 #if 0
       std::cout << "the factors of " << x << " are:" << "\n";
-      for (int j = 0; j < num_factors; ++j)
+      for (unsigned int j = 0; j < num_factors; ++j)
          std::cout << arr[j] << "\n";
 #endif
    }
@@ -113,26 +114,26 @@ int main()
    std::cout << displayCPU() << "\n";
 #endif
     
-   std::cout << "HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME is ";
+   std::cout << "Using ";
    std::cout << STRINGIFYMACRO(HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME) << "\n";
-
-   std::cout << "---started---\n";
-
 
    int num_test_runs = 5;
    using T = uint64_t;
    T span = 4000000;
 
+   std::cout << "Using ";  print_int_type<T>();  std::cout << "\n";
+   std::cout << "---started---\n";
+
 
 //   T max = hurchalla::ut_numeric_limits<T>::max();
-   T max = static_cast<T>(static_cast<T>(1) << 36);
+   T max = static_cast<T>(static_cast<T>(1) << 32);
    if (max < span) {
        std::cout << "Error: max < span\n";
        return 1;
    }
    T min = max - span;
 
-   std::cout << "using ";  print_int_type<T>();  std::cout << "\n";
+
    for (int i=0; i<num_test_runs; ++i) {
       bench_range(min, max);
    }

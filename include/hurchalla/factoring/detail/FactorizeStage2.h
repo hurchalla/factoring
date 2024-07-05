@@ -17,6 +17,8 @@
 #  include "hurchalla/factoring/detail/PollardRhoBrentTrial.h"
 #  include "hurchalla/factoring/detail/PollardRhoBrentTrialParallel.h"
 #  include "hurchalla/factoring/detail/experimental/PollardRhoTrial.h"
+#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentTrialParallelOpt.h"
+#  include "hurchalla/factoring/detail/experimental/PollardRhoBrentTrialParallelAlt.h"
 #endif
 #include "hurchalla/factoring/detail/factorize_wheel210.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"

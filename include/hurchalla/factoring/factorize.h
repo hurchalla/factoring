@@ -98,7 +98,8 @@ namespace hurchalla {
 // T can be any integral type <= 128 bits.
 template <typename T>
 std::array<T, ut_numeric_limits<T>::digits>
-factorize(T x, int& num_factors, bool expect_arbitrary_size_factors = true)
+factorize(T x, unsigned int& num_factors,
+          bool expect_arbitrary_size_factors = true)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
@@ -114,11 +115,11 @@ factorize(T x, int& num_factors, bool expect_arbitrary_size_factors = true)
     // array with an index >= num_factors.  As a defensive measure, we'll set
     // all array entries at or beyond num_factors to 0 - this may help to make
     // an indexing error more obvious if a caller later makes this mistake.
-    for (auto i = static_cast<std::size_t>(num_factors); i < arr.size(); ++i)
+    for (auto i = num_factors; i < arr.size(); ++i)
         arr[i] = 0;
 
     HPBC_POSTCONDITION(num_factors > 0);
-    HPBC_POSTCONDITION(static_cast<std::size_t>(num_factors) <= arr.size());
+    HPBC_POSTCONDITION(num_factors <= arr.size());
     // all the factors multiplied together should == x
     HPBC_POSTCONDITION(x == std::accumulate(arr.begin(),
              arr.begin()+num_factors, static_cast<T>(1), std::multiplies<T>()));

@@ -58,7 +58,6 @@ TEST(HurchallaFactoringFactorizePollardRho, exhaustive_uint16_t) {
         constexpr int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS;
         constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
         auto is_prime_functor = IsPrimeFactor();
-        using PrimalityFunctor = decltype(is_prime_functor);
         T always_prime_limit = 0;
         bool expect_arbitrary_size_factors = true;
         FactorizeStage2<EcmMinBits, MaxBitsX, T>
@@ -118,7 +117,6 @@ void test_factorize(const std::vector<T>& answer,
     constexpr int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS;
     constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
     auto is_prime_functor = IsPrimeFactor();
-    using PrimalityFunctor = decltype(is_prime_functor);
     U always_prime_limit = 0;
     FactorizeStage2<EcmMinBits, MaxBitsX, U>
                     factorize_stage2(always_prime_limit,

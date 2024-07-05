@@ -29,9 +29,10 @@ namespace hurchalla {
 // it tends to be about 10% faster on x86.  However, if you set FAVOR_SMALL_SIZE
 // to true, you save ~15% memory space for the table.  You will probably want
 // to use writeTableToFile() at some point, and if so, FAVOR_SMALL_SIZE would
-// affect your serialized data file's size also.
-// (With FAVOR_SMALL_SIZE = true, you can expect memory/disk usage of ~1.4GB,
-// and with it set to false you can expect usage of ~1.6GB.)
+// similarly affect your serialized data file's size.
+// (Assuming INPUT_BIT_LIMIT = 32, with FAVOR_SMALL_SIZE = true you can expect
+// memory/disk usage of ~1.4GB, and with FAVOR_SMALL_SIZE = false you can expect
+// memory/disk usage of ~1.6GB.)
 template <int INPUT_BIT_LIMIT = 32, bool FAVOR_SMALL_SIZE = false>
 class FactorByTable
 {
@@ -42,13 +43,13 @@ public:
     FactorByTable(const FactorByTable&) = delete;
     FactorByTable(FactorByTable&& other) : impl(std::move(other.impl)) {}
 
-    // This might take ~5 minutes to construct, since it creates a 1.3GB table
-    // in memory from scratch.
+    // This might take a few minutes to construct, since it creates a ~1.5GB
+    // table in memory from scratch.
     FactorByTable() : impl() {}
 
     // If you call this next constructor with an argument of false for
     // createTableIfCantOpen, then the constructor will throw if it is unable
-    // to open table_filepath.  Otherwise (or by default), it will create the
+    // to open table_filepath.  Otherwise (and by default), it will create the
     // table, which will very likely take a few minutes to complete.
     //
     // Can throw from a file open failure, a read failure, or mismatch in
@@ -64,7 +65,7 @@ public:
 
     // the factorize function
     std::array<std::uint32_t, 32>
-    operator()(std::uint32_t x, int& num_factors) const
+    operator()(std::uint32_t x, unsigned int& num_factors) const
     {
         // 0 and 1 do not have prime factorizations
         HPBC_PRECONDITION2(x >= 2);

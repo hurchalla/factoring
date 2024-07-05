@@ -83,7 +83,7 @@ struct impl_greatest_common_divisor {
             return u;
         }
         HPBC_ASSERT2(v != 0);
-        u = u % v;
+        u = static_cast<T>(u % v);
     }
 
     if (u == 0) {

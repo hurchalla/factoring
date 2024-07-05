@@ -106,7 +106,7 @@ public:
   template <int EcmMinBits = HURCHALLA_FACTORING_ECM_THRESHOLD_BITS,
             typename T, class PrimalityFunctor>
   static std::array<T, ut_numeric_limits<T>::digits>
-  factorize_to_array(T x, int& num_factors,
+  factorize_to_array(T x, unsigned int& num_factors,
                      const PrimalityFunctor& is_prime_functor,
                      bool expect_arbitrary_size_factors)
   {
@@ -141,10 +141,10 @@ public:
     constexpr int MaxBitsX = ut_numeric_limits<T>::digits;
     dispatch<EcmMinBits, MaxBitsX>(std::back_inserter(faa), static_cast<U>(x),
                                is_prime_functor, expect_arbitrary_size_factors);
-    num_factors = static_cast<int>(faa.size());
+    num_factors = static_cast<unsigned int>(faa.size());
 
     HPBC_POSTCONDITION(num_factors > 0);
-    HPBC_POSTCONDITION(static_cast<std::size_t>(num_factors) <= array_size);
+    HPBC_POSTCONDITION(num_factors <= array_size);
     return arr;
   }
 

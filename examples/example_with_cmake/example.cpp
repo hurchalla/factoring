@@ -23,10 +23,10 @@ int main()
 {
    unsigned int x = 322u;
 
-   int num_factors;
+   unsigned int num_factors;
    auto array = hurchalla::factorize(x, num_factors);
    std::cout << "the factors of " << x << " are:" << "\n";
-   for (int i = 0; i < num_factors; ++i)
+   for (unsigned int i = 0; i < num_factors; ++i)
       std::cout << array[i] << "\n";
    return 0;
 }

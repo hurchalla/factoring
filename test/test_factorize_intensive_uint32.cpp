@@ -40,7 +40,7 @@ using namespace hurchalla;
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;
         for (T x = max; x >= max - 4000000; x = x-2) {
-            int num_factors;
+            unsigned int num_factors;
             auto arr = factorize_intensive_uint32(x, num_factors, ipi);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
@@ -68,9 +68,9 @@ void test_factorize(const std::vector<T>& answer,
 {
     // multiply all the factors in answer to get the number to factorize.
     T x = calculate_x(answer);
-    int num_factors;
+    unsigned int num_factors;
     auto arr = factorize_intensive_uint32(x, num_factors, ipi);
-    EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
+    EXPECT_TRUE(num_factors == answer.size());
     // at this time, I haven't made a guarantee for factorize_intensive_uint32()
     // that the destination range will be sorted, so we'll sort it here.
     std::sort(arr.begin(), arr.begin()+num_factors);

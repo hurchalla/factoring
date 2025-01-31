@@ -71,7 +71,7 @@ void bench_range(T min, T max)
    auto t0 = steady_clock::now();
 
    for (T x = max; x > min; x = x-2) {
-      int num_factors;
+      unsigned int num_factors;
       auto arr = hurchalla::factorize(x, num_factors);
       // We need to prevent the compiler from completely removing
       // the factorize calls due to the array never being used.
@@ -82,7 +82,7 @@ void bench_range(T min, T max)
       }
 #if 0
       std::cout << "the factors of " << x << " are:" << "\n";
-      for (int j = 0; j < num_factors; ++j)
+      for (unsigned int j = 0; j < num_factors; ++j)
          std::cout << arr[j] << "\n";
 #endif
    }

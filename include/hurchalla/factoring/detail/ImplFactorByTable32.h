@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <fstream>
 #include <exception>
+#include <type_traits>
 
 namespace hurchalla { namespace detail {
 
@@ -93,21 +94,40 @@ private:
 // ----------- Usually you should change nothing past this point. --------------
 
 
-    // multiple places in this file rely on 2 being a wheel divisor
-    static_assert(wheel_divisors[0] == 2);
-    static constexpr std::size_t size_wheel_divisors = sizeof(wheel_divisors) / sizeof(wheel_divisors[0]);
+    static constexpr std::size_t size_wheel_divs = sizeof(wheel_divisors) / sizeof(wheel_divisors[0]);
 
-    // wheel_divisors must be prime, and it saves no memory space to go past 19
-    static_assert(size_wheel_divisors > 0);
-    static_assert(wheel_divisors[0] == 2);
-    static_assert(size_wheel_divisors <= 1 || wheel_divisors[1] == 3);
-    static_assert(size_wheel_divisors <= 2 || wheel_divisors[2] == 5);
-    static_assert(size_wheel_divisors <= 3 || wheel_divisors[3] == 7);
-    static_assert(size_wheel_divisors <= 4 || wheel_divisors[4] == 11);
-    static_assert(size_wheel_divisors <= 5 || wheel_divisors[5] == 13);
-    static_assert(size_wheel_divisors <= 6 || wheel_divisors[6] == 17);
-    static_assert(size_wheel_divisors <= 7 || wheel_divisors[7] == 19);
-    static_assert(size_wheel_divisors < 8); // there's little/no benefit past 19
+    // We work around an apparent bug in clang v16 to v18 (and perhaps beyond)
+    // where wheel_divisors[0] can't be accessed at compile time - clang states
+    // in a compilation output note that "read of element of array without known
+    // bound is not allowed in a constant expression".  Obviously the bound for
+    // wheel_divisors could be determined during compilation, and so this seems
+    // to be a clang bug.  We use copy_array() defined here to work around this
+    // issue.
+    template <typename T, unsigned int N>
+    static constexpr std::array<std::remove_cv_t<T>, N> copy_array(T (&arr)[N])
+    {
+        std::array<std::remove_cv_t<T>, N> tmp{};
+        for (unsigned int i=0; i<N; ++i)
+            tmp[i] = arr[i];
+        return tmp;
+    }
+    static constexpr std::array<std::uint8_t, size_wheel_divs>
+                                        wheel_divs = copy_array(wheel_divisors);
+
+
+    // multiple places in this file rely on 2 being a wheel divisor
+    static_assert(wheel_divs[0] == 2);
+    // wheel_divs must be prime, and it saves no memory space to go past 19
+    static_assert(size_wheel_divs > 0);
+    static_assert(wheel_divs[0] == 2);
+    static_assert(size_wheel_divs <= 1 || wheel_divs[1] == 3);
+    static_assert(size_wheel_divs <= 2 || wheel_divs[2] == 5);
+    static_assert(size_wheel_divs <= 3 || wheel_divs[3] == 7);
+    static_assert(size_wheel_divs <= 4 || wheel_divs[4] == 11);
+    static_assert(size_wheel_divs <= 5 || wheel_divs[5] == 13);
+    static_assert(size_wheel_divs <= 6 || wheel_divs[6] == 17);
+    static_assert(size_wheel_divs <= 7 || wheel_divs[7] == 19);
+    static_assert(size_wheel_divs < 8); // there's little/no benefit past 19
 
 
     // use DUMMY to work around an undefined class error when initializing the
@@ -116,10 +136,10 @@ private:
     template <class DUMMY = void>
     static constexpr std::uint64_t get_wheel_size()
     {
-        static_assert(size_wheel_divisors > 0);
+        static_assert(size_wheel_divs > 0);
         uint64_t n = 1;
-        for (std::size_t i=0; i<size_wheel_divisors; ++i)
-            n *= wheel_divisors[i];
+        for (std::size_t i=0; i<size_wheel_divs; ++i)
+            n *= wheel_divs[i];
         return n;
     }
     static constexpr std::uint64_t wheel_size = get_wheel_size();
@@ -132,17 +152,24 @@ private:
     {
         // We should be able to get the count via Euler's totient function,
         // given the knowledge all divisors are prime (we know all are prime
-        // because of the static_asserts after defining wheel_divisors).
-        static_assert(size_wheel_divisors > 0);
-        static_assert(wheel_divisors[0] == 2);
+        // because of the static_asserts after defining wheel_divs).
+        static_assert(size_wheel_divs > 0);
+        static_assert(wheel_divs[0] == 2);
         uint64_t count = 1;
-        for (std::size_t i=0; i<size_wheel_divisors; ++i)
-            count *= (wheel_divisors[i] - 1);
+        for (std::size_t i=0; i<size_wheel_divs; ++i)
+            count = count * (wheel_divs[i] - 1);
 
         return count;
     }
     static constexpr uint64_t num_spokes = get_num_spokes();
 
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+// gcc issues a pointless warning for the std::conditionals below that a
+// comparison is always false, which we disable here
+#  pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
 
     // WI_T should be the smallest type that's able to hold any wheel index.
     using WI_T = typename std::conditional<
@@ -177,28 +204,32 @@ private:
       >::type;
     static_assert(num_spokes <= std::numeric_limits<SI_T>::max());
 
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
+
 
     // the returned array's indices represent odd numbers.
     template <class DUMMY = void>
     static constexpr std::array<SI_T, half_wheel_size>
     get_wheel_reindex()
     {
-        static_assert(wheel_divisors[0] == 2);
-        // Create sieve to test coprimality to the wheel_divisors.
+        static_assert(wheel_divs[0] == 2);
+        // Create sieve to test coprimality to the wheel_divs.
         // Indices represent odd numbers.
-        // We know all wheel_divisors after wheel_divisors[0] are odd, because
-        // of the static_asserts after defining wheel_divisors.
+        // We know all wheel_divs after wheel_divs[0] are odd, because
+        // of the static_asserts after defining wheel_divs.
 
         std::array<SI_T, half_wheel_size> odd_coprime_sieve{};
         for (WI_T i=0; i<half_wheel_size; ++i)
             odd_coprime_sieve[i] = 1;
 
-        // we skip j=0 since implicitly wheel_divisors[0] is already handled.
-        for (std::size_t j=1; j<size_wheel_divisors; ++j) {
-            int32_t wd = wheel_divisors[j];
-            int32_t two_wd = wd + wd;
+        // we skip j=0 since implicitly wheel_divs[0] is already handled.
+        for (std::size_t j=1; j<size_wheel_divs; ++j) {
+            std::uint64_t wd = wheel_divs[j];
+            std::uint64_t two_wd = wd + wd;
             odd_coprime_sieve[wd/2] = 0;
-            for (int32_t i=wd*wd; i<wheel_size; i+=two_wd) {
+            for (std::uint64_t i=wd*wd; i<wheel_size; i+=two_wd) {
                 HPBC_CONSTEXPR_ASSERT(i/2 < half_wheel_size);
                 odd_coprime_sieve[i/2] = 0;
             }
@@ -224,11 +255,11 @@ private:
         // (keep in mind wheel_reindex's indices represent odd numbers)
         static_assert(wheel_reindex[0] == 0);
         // Thus we set tmp_spokes[0] manually, and start count at 1 to include it.
-        tmp_spokes[0] = 2*0 + 1;
+        tmp_spokes[0] = static_cast<WI_T>(2*0 + 1);
         SI_T count = 1;
         for (WI_T i=1; i<half_wheel_size; ++i) {
             if (wheel_reindex[i] != 0)
-                tmp_spokes[count++] = 2*i + 1;
+                tmp_spokes[count++] = static_cast<WI_T>(2*i + 1);
         }
         HPBC_CONSTEXPR_ASSERT(count == num_spokes);
         return tmp_spokes;
@@ -258,21 +289,22 @@ private:
     template <class DUMMY = void>
     static constexpr std::uint32_t get_table_index_from_number(std::uint32_t n)
     {
-        // precondition: n is not divisible by any of the wheel_divisors
+        // precondition: n is not divisible by any of the wheel_divs
         HPBC_CONSTEXPR_PRECONDITION([&]{
-            static_assert(size_wheel_divisors > 0);
+            static_assert(size_wheel_divs > 0);
             bool is_coprime = true;
-            for (std::size_t i=0; i<size_wheel_divisors; ++i)
-                if (n % wheel_divisors[i] == 0)
+            for (std::size_t i=0; i<size_wheel_divs; ++i)
+                if (n % wheel_divs[i] == 0)
                     is_coprime = false;
             return is_coprime;
         }());
 
-        std::uint32_t quotient = n/wheel_size;
-        std::uint32_t remainder = n - quotient*wheel_size;
+        std::uint32_t quotient = static_cast<std::uint32_t>(n/wheel_size);
+        std::uint32_t remainder = static_cast<std::uint32_t>(n - quotient*wheel_size);
         HPBC_CONSTEXPR_ASSERT(remainder < wheel_size);
         static_assert(num_spokes < wheel_size);
-        std::uint32_t index = quotient*num_spokes + wheel_reindex[remainder/2];
+        std::uint32_t index = static_cast<std::uint32_t>(
+                              quotient*num_spokes + wheel_reindex[remainder/2]);
         return index;
     }
 
@@ -287,13 +319,13 @@ private:
         bool finished = false;
         while (!finished) {
             size_t i=0;
-            for (; i<size_wheel_divisors; ++i) {
-                if (maxval % wheel_divisors[i] == 0) {
+            for (; i<size_wheel_divs; ++i) {
+                if (maxval % wheel_divs[i] == 0) {
                     --maxval;
                     break;
                 }
             }
-            finished = (i >= size_wheel_divisors);
+            finished = (i >= size_wheel_divs);
         }
         uint32_t index_of_maxval = get_table_index_from_number(maxval);
         HPBC_CONSTEXPR_ASSERT(index_of_maxval < std::numeric_limits<uint32_t>::max());
@@ -319,11 +351,12 @@ private:
     // so if we wanted we could encode by using get_table_index_from_number().
     // We'd need a little under 2^14 numbers in that case.  However we take a
     // much simpler approach and only filter out all even numbers (since
-    // wheel_divisors[0] == 2), which means we only need 2^15 numbers.  When
+    // wheel_divs[0] == 2), which means we only need 2^15 numbers.  When
     // we add an extra bit to store whether the quotient (see above) is prime,
     // that gets us to 16, and 16 is an efficient table entry size.
     //
-    static constexpr int TABLE_ENTRY_BITLEN = (FAVOR_SMALL_SIZE) ? 14 : 16;
+    static constexpr unsigned int
+                              TABLE_ENTRY_BITLEN = (FAVOR_SMALL_SIZE) ? 14 : 16;
 
 
     using TableType = BitpackedUintVector<uint16_t, TABLE_ENTRY_BITLEN>;
@@ -331,7 +364,7 @@ private:
 
     static TableType makePopulatedTable()
     {
-        using size_type = TableType::size_type;
+        using size_type = typename TableType::size_type;
         // ensure the initializer for table was valid
         static_assert(sizeof(size_type) >= sizeof(num_table_elements));
 
@@ -350,7 +383,7 @@ private:
             // we know 2 will never (normally) be an entry that's used in the
             // factor table.  We'll repurpose 2 to mean that there are no factors
             // (i.e. the number is prime).  2 reindexes to the value 0.
-            static_assert(wheel_divisors[0] == 2);
+            static_assert(wheel_divs[0] == 2);
         }
 
         for (uint32_t i = 0;; ++i) {
@@ -360,7 +393,7 @@ private:
                 if (n > (static_cast<uint64_t>(1) << INPUT_BIT_LIMIT))
                     goto end;
                 uint32_t n32 = static_cast<uint32_t>(n);
-                uint32_t index = i*num_spokes + j;
+                uint32_t index = static_cast<uint32_t>(i*num_spokes + j);
                 HPBC_ASSERT2(index == get_table_index_from_number(n32));
 
                 uint32_t encoded;
@@ -370,7 +403,7 @@ private:
                     encoded = 0;
                 }
                 else {
-                    int num_factors;
+                    unsigned int num_factors;
                     auto array = hurchalla::factorize(n32, num_factors);
                     HPBC_ASSERT2(num_factors > 0);  // factorize() guarantees
                     if (num_factors == 1) {
@@ -379,7 +412,7 @@ private:
                     } else {
                         HPBC_ASSERT2(num_factors >= 2);
                         uint32_t largest_storable_factor = 0;
-                        for (int k = 0; k < num_factors; ++k) {
+                        for (unsigned int k = 0; k < num_factors; ++k) {
                             if (array[k] > largest_storable_factor &&
                                         array[k] < (static_cast<uint32_t>(1) << 16))
                                 largest_storable_factor = array[k];
@@ -389,10 +422,10 @@ private:
                         HPBC_ASSERT2(largest_storable_factor <=
                                      std::numeric_limits<uint16_t>::max());
 
-                        // wheel_divisors[0] == 2, so any number that survives
+                        // wheel_divs[0] == 2, so any number that survives
                         // the wheel's trial division would have already had all
                         // factors == 2 removed.
-                        static_assert(wheel_divisors[0] == 2);
+                        static_assert(wheel_divs[0] == 2);
                         if constexpr (FAVOR_SMALL_SIZE) {
                             // By the logic above, the factor 2 shouldn't be
                             // needed. (and it would be unacceptable here as a
@@ -472,7 +505,7 @@ public:
 
 
     std::array<std::uint32_t, 32> 
-    factorize(std::uint32_t x, int& num_factors) const
+    factorize(std::uint32_t x, unsigned int& num_factors) const
     {
         HPBC_PRECONDITION2(x >= 2);  // 0 and 1 do not have prime factorizations.
         static_assert(0 < INPUT_BIT_LIMIT && INPUT_BIT_LIMIT <= 32);
@@ -484,10 +517,10 @@ public:
             return factors;
 
         uint32_t q = x;
-        hurchalla::Unroll<size_wheel_divisors>::call([&](size_t i){
-            while (q % wheel_divisors[i] == 0) {
-                factors[num_factors++] = wheel_divisors[i];
-                q = static_cast<uint32_t>(q / wheel_divisors[i]);
+        hurchalla::Unroll<size_wheel_divs>::call([&](size_t i){
+            while (q % wheel_divs[i] == 0) {
+                factors[num_factors++] = wheel_divs[i];
+                q = static_cast<uint32_t>(q / wheel_divs[i]);
             }
         });
         if constexpr (extra_divisors.size() != 0) {
@@ -506,8 +539,8 @@ public:
 #  pragma warning(disable : 4127)
 #endif
             if (HPBC_ASSERT2_MACRO_IS_ACTIVE) {
-                for (int i=0; i<size_wheel_divisors; ++i) {
-                    HPBC_ASSERT2(q % wheel_divisors[i] != 0);
+                for (unsigned int i=0; i<size_wheel_divs; ++i) {
+                    HPBC_ASSERT2(q % wheel_divs[i] != 0);
                 }
             }
 #if defined(_MSC_VER)
@@ -515,7 +548,7 @@ public:
 #endif
             uint32_t index = get_table_index_from_number(q);
 
-            using size_type = TableType::size_type;
+            using size_type = typename TableType::size_type;
             static_assert(sizeof(size_type) >= sizeof(index));
             uint16_t encoded = table.getAt(index);
 
@@ -529,7 +562,7 @@ public:
                 HPBC_ASSERT2(encoded < PrimesUnder65536<>::num_primes);
                 tmp = PrimesUnder65536<>::prime[encoded];
             } else {
-                tmp = 2*encoded + 1;
+                tmp = static_cast<uint32_t>(2*encoded + 1);
             }
 
             // encoded == 0 indicates q is prime
@@ -567,7 +600,7 @@ private:
 
         uint32_t format = table.getFormatID();
         std::array<unsigned char, 4> format_array;
-        for (int i = 0; i<format_array.size(); ++i)
+        for (unsigned int i = 0; i<format_array.size(); ++i)
             format_array[i] = static_cast<unsigned char>(format >> 8*i);
 
         auto count = table.size();
@@ -575,15 +608,15 @@ private:
         uint32_t count32 = static_cast<uint32_t>(count);
         static_assert(std::numeric_limits<unsigned char>::digits == 8);
         std::array<unsigned char, 4> count_array;
-        for (int i = 0; i<count_array.size(); ++i)
+        for (unsigned int i = 0; i<count_array.size(); ++i)
             count_array[i] = static_cast<unsigned char>(count32 >> 8*i);
 
         std::size_t datasize = table.dataSizeBytes();
-        static_assert(wheel_divisors[0] == 2);  // should be enough to guarantee the next assert
+        static_assert(wheel_divs[0] == 2);  // should be enough to guarantee the next assert
         HPBC_ASSERT2(datasize <= std::numeric_limits<uint32_t>::max());
         uint32_t datasize32 = static_cast<uint32_t>(datasize);
         std::array<unsigned char, 4> datasize_array;
-        for (int i = 0; i<datasize_array.size(); ++i)
+        for (unsigned int i = 0; i<datasize_array.size(); ++i)
             datasize_array[i] = static_cast<unsigned char>(datasize32 >> 8*i);
 
         ofs.write(reinterpret_cast<char*>(format_array.data()), format_array.size());
@@ -594,7 +627,7 @@ private:
         // So potentially the table could have a data buffer with size
         // that (quite expectedly) fits in size_t, but that is too large to
         // write via std::streamsize.  Use static_asserts to prevent this.
-        static_assert(sizeof(TableType::size_type) >= sizeof(num_table_elements));
+        static_assert(sizeof(typename TableType::size_type) >= sizeof(num_table_elements));
         HPBC_ASSERT2(count32 == num_table_elements);
         constexpr std::size_t expected_datasize =
                              TableType::dataSizeBytes(num_table_elements);
@@ -627,11 +660,11 @@ private:
         uint32_t format32 = 0;
         uint32_t count32 = 0;
         uint32_t datasize32 = 0;
-        for (int i = 0; i<format_array.size(); ++i)
+        for (unsigned int i = 0; i<format_array.size(); ++i)
             format32 += static_cast<decltype(format32)>(format_array[i]) << 8*i;
-        for (int i = 0; i<count_array.size(); ++i)
+        for (unsigned int i = 0; i<count_array.size(); ++i)
             count32 += static_cast<decltype(count32)>(count_array[i]) << 8*i;
-        for (int i = 0; i<datasize_array.size(); ++i)
+        for (unsigned int i = 0; i<datasize_array.size(); ++i)
             datasize32 += static_cast<decltype(datasize32)>(datasize_array[i]) << 8*i;
 
         static_assert(sizeof(std::size_t) >= sizeof(uint32_t));
@@ -642,7 +675,8 @@ private:
         // So potentially the table could have a data buffer with size
         // that (quite expectedly) fits in size_t, but that is too large to
         // read via std::streamsize.  Use static_asserts to prevent this.
-        static_assert(sizeof(TableType::size_type) >= sizeof(num_table_elements));
+        static_assert(sizeof(typename TableType::size_type) >=
+                      sizeof(num_table_elements));
         constexpr std::size_t expected_datasize =
                              TableType::dataSizeBytes(num_table_elements);
         static_assert(expected_datasize
@@ -651,10 +685,11 @@ private:
                     format32 != TableType::getFormatID())
             throw FileFormatError("mismatch in values read vs values expected");
 
-        ifs.read(reinterpret_cast<char*>(data.get()), datasize);
+        ifs.read(reinterpret_cast<char*>(data.get()),
+                 static_cast<std::streamsize>(datasize));
         ifs.close();
 
-        static_assert(sizeof(TableType::size_type) >= sizeof(count32));
+        static_assert(sizeof(typename TableType::size_type) >= sizeof(count32));
         return TableType(std::move(data), datasize, count32);
     }
 };

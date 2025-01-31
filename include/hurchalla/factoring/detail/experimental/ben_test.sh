@@ -14,15 +14,15 @@ exit_on_failure () {
 
 # using a macro to index the semiprimes file number we want to use is a hack...
 # ...but it's easy and it works
-semiprime_filenum="-DUECM_SEMIPRIME_FILENUM=13"
+semiprime_filenum="-DUECM_SEMIPRIME_FILENUM=17"
 
 input_type="-DUECM_INPUT_TYPE=uint64_t"
 #input_type="-DUECM_INPUT_TYPE=__uint128_t"
 
-num_tries="-DUECM_NUM_TRIES=5"
+num_tries="-DUECM_NUM_TRIES=6"
 
 start=0
-length=100000
+length=80000
 
 
 

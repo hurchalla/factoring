@@ -14,7 +14,7 @@ The goal for EPR was to create a correct and easy to use library with extremely 
 
 ## Requirements
 
-The EPR library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, gcc7, gcc10, intel compiler 19, and Microsoft Visual C++ 2017 and 2019.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
+The EPR library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, clang18, gcc7, gcc10, gcc13, intel compiler 19, and Microsoft Visual C++ 2017, 2019, 2022.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
 
 For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
 
@@ -67,14 +67,15 @@ It may help to see a simple [example](examples/example_without_cmake).
 
 The API consists of five header files in total (all the headers that are not under the *detail* folder).  These files are the three general purpose files *factorize.h*, *is_prime.h*, *greatest_common_divisor.h*, and in the resource_intensive_api folder, the two special purpose files *factorize_intensive_uint32.h* and *IsPrimeIntensive.h*.  Please view these files for their documentation.  A quick summary of the functions is provided below; in all cases T is a template parameter of integral type.  
 
-*hurchalla::factorize(T x, int& num_factors)*.  Returns a std::array containing the factors of x.  
+*hurchalla::factorize(T x, unsigned int& num_factors)*.  Returns a std::array containing the factors of x.  
 *hurchalla::factorize(T x, std::vector& factors)*.  Clears a std::vector and fills it with the factors of x.  
 *hurchalla::greatest_common_divisor(T a, T b)*.  Returns the greatest common divisor of a and b.  
 *hurchalla::is_prime(T x)*.  Returns true if x is prime.  Otherwise returns false.  
 
 (from the resource_intensive_api folder)  
-*hurchalla::IsPrimeIntensive(T x)*.  This is a functor that returns true if x is prime, and otherwise returns false.  Depending on the type T, this functor can use a very large amount of memory and can take many seconds to construct.  See IsPrimeIntensive.h for details.  
-*hurchalla::factorize_intensive_uint32(uint32_t x, int& num_factors, const IsPrimeIntensive&lt;uint32_t,true&gt;& ipi)*.  Returns a std::array containing the factors of x.  Note that the IsPrimeIntensive argument will usually take many seconds for you to construct and will use a large amount of memory.  See IsPrimeIntensive.h for details.  
+*hurchalla::IsPrimeIntensive*.  This is a functor called with (T x) that returns true if x is prime, and otherwise returns false.  Depending on the type T, this functor can use a very large amount of memory and can take many seconds to construct.  See IsPrimeIntensive.h for details.  
+*hurchalla::factorize_intensive_uint32(uint32_t x, unsigned int& num_factors, const IsPrimeIntensive&lt;uint32_t,true&gt;& ipi)*.  Returns a std::array containing the factors of x.  Note that the IsPrimeIntensive argument will usually take many seconds for you to construct and will use a large amount of memory.  See IsPrimeIntensive.h for details.  
+*hurchalla::FactorByTable32*.  This is a functor called with (uint32_t x) that returns a std::array containing the factors of x.  The functor typically takes a few minutes to construct from scratch (i.e. when constructed without a pre-saved table file), since it creates a 1.5GB factor table in memory.  To save the table to file, so as to use the file later to quickly construct this functor, the class provides writeTableToFile().  See FactorByTable32.h for details.  
 
 ## Algorithms
 

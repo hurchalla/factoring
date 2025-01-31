@@ -47,7 +47,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
         using T = std::uint32_t;
         T max = ut_numeric_limits<T>::max()/2;
         for (T x = max; x >= max - 8000000; x = x-2) {
-            int num_factors;
+            unsigned int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
@@ -59,7 +59,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
         using T = std::uint64_t;
         T start = 1 + (static_cast<T>(1) << 33);
         for (T x = start; x < start + 8000000; x = x+2) {
-            int num_factors;
+            unsigned int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
@@ -71,7 +71,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
         using T = std::uint64_t;
         T max = ut_numeric_limits<T>::max();
         for (T x = max; x >= max - 400000; x = x-2) {
-            int num_factors;
+            unsigned int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
@@ -85,7 +85,7 @@ TEST(HurchallaFactoringFactorize, exhaustive_uint16_t) {
         T start = 1 + (static_cast<T>(1) << 65);
         for (T x = start; x < start + 200000; x = x+2) {
 //            COZ_PROGRESS
-            int num_factors;
+            unsigned int num_factors;
             auto arr = factorize(x, num_factors);
             // We need to prevent the compiler from completely removing
             // the factorize calls due to arr never being used.
@@ -107,9 +107,9 @@ void test_factorize(const std::vector<T>& answer)
 {
     // multiply all the factors in answer to get the number to factorize.
     T x = calculate_x(answer);
-    int num_factors;
+    unsigned int num_factors;
     auto arr = factorize(x, num_factors);
-    EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
+    EXPECT_TRUE(num_factors == answer.size());
     // at this time, I haven't made a guarantee for factorize()
     // that the destination range will be sorted, so we'll sort it here.
     std::sort(arr.begin(), arr.begin()+num_factors);

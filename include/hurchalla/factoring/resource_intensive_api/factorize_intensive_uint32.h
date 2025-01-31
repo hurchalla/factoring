@@ -45,7 +45,7 @@ namespace hurchalla {
 // contruction time (and memory use) of ipi, this function will almost always be
 // faster on a given system than factorize() for uint32_t values.
 inline std::array<std::uint32_t, 32>
-factorize_intensive_uint32(std::uint32_t x, int& num_factors,
+factorize_intensive_uint32(std::uint32_t x, unsigned int& num_factors,
                            const IsPrimeIntensive<std::uint32_t,true>& ipi,
                            bool expect_arbitrary_size_factors = true)
 {
@@ -62,11 +62,11 @@ factorize_intensive_uint32(std::uint32_t x, int& num_factors,
     // array with an index >= num_factors.  As a defensive measure, we'll set
     // all array entries at or beyond num_factors to 0 - this may help to make
     // an indexing error more obvious if a caller later makes this mistake.
-    for (auto i = static_cast<std::size_t>(num_factors); i < arr.size(); ++i)
+    for (auto i = num_factors; i < arr.size(); ++i)
         arr[i] = 0;
 
     HPBC_POSTCONDITION(num_factors > 0);
-    HPBC_POSTCONDITION(static_cast<std::size_t>(num_factors) <= arr.size());
+    HPBC_POSTCONDITION(num_factors <= arr.size());
     // all the factors multiplied together should == x
     HPBC_POSTCONDITION(x == std::accumulate(arr.begin(),
              arr.begin()+num_factors, static_cast<T>(1), std::multiplies<T>()));

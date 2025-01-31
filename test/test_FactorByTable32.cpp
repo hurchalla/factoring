@@ -5,6 +5,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// Gcc's libstdc++ prior to v9 doesn't include <filesystem>, since their C++17
+// library only partially supports c++17 until v9.  So we can't run these tests
+// with libstdc++ below 9.
+// We check libstdc++ version via _GLIBCXX_RELEASE, and we need to include at
+// least one standard library header so that it can potentially be defined.
+#include <cstddef>
+#if !defined(__GNUC__) || (defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9))
+
+
 #include "hurchalla/factoring/resource_intensive_api/FactorByTable32.h"
 #include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
 #include "hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h"
@@ -51,9 +60,9 @@ void test_factorize(const std::vector<T>& answer,
     T x = calculate_x(answer);
     HPBC_PRECONDITION2(x < (static_cast<uint64_t>(1) << BITLEN));
 
-    int num_factors;
+    unsigned int num_factors;
     auto arr = factorTable(x, num_factors);
-    EXPECT_TRUE(num_factors == static_cast<int>(answer.size()));
+    EXPECT_TRUE(num_factors == answer.size());
     // at this time, I haven't made a guarantee for FactorByTable32()
     // that the destination range will be sorted, so we'll sort it here.
     std::sort(arr.begin(), arr.begin()+num_factors);
@@ -69,10 +78,10 @@ void test_all_valid_inputs(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factor
                                       (static_cast<uint64_t>(1) << BITLEN) - 1);
     for (uint32_t x = maxvalid; x >= 2; --x)
     {
-        int numfactors;
+        unsigned int numfactors;
         auto arr = factorTable(x, numfactors);
         uint32_t product = 1;
-        for (int i=0; i<numfactors; ++i) {
+        for (unsigned int i=0; i<numfactors; ++i) {
             EXPECT_TRUE(arr[i] > 1);
             EXPECT_TRUE(is_prime(arr[i]));
             product = product * arr[i];
@@ -139,7 +148,7 @@ dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
 #if 0
     t0 = steady_clock::now();
     for (uint32_t x : randomvec) {
-        int num_factors;
+        unsigned int num_factors;
         auto arr = factorize(x, num_factors);
         // We need to prevent the compiler from completely removing
         // the factorize calls due to the array never being used.
@@ -155,7 +164,7 @@ dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
     IsPrimeIntensive<uint32_t, true> is_prime;
     t0 = steady_clock::now();
     for (uint32_t x : randomvec) {
-        int num_factors;
+        unsigned int num_factors;
         auto arr = factorize_intensive_uint32(x, num_factors, is_prime);
         if (arr[0] == 0) {
             impossible_happened = true;
@@ -169,7 +178,7 @@ dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
 
     t0 = steady_clock::now();
     for (uint32_t x : randomvec) {
-        int num_factors;
+        unsigned int num_factors;
         auto arr = factorTable(x, num_factors);
         if (arr[0] == 0) {
             impossible_happened = true;
@@ -253,7 +262,7 @@ void basic_tests_bit_limited(bool test_all_inputs, bool run_benchmark_32bit)
     if (test_all_inputs)
         test_all_valid_inputs(factorTable);
 
-    if constexpr (BITLEN == 32) {
+    if (BITLEN == 32) {
         if (run_benchmark_32bit) {
             dsec::rep besttime = 0;
             for (int i=0; i<10; ++i) {
@@ -261,7 +270,7 @@ void basic_tests_bit_limited(bool test_all_inputs, bool run_benchmark_32bit)
                 uint32_t min = max/2;
                 uint32_t samplesize = 4000000;
                 dsec tmp = quick_bench(factorTable, min, max, samplesize);
-                if (besttime == 0 || tmp.count() < besttime)
+                if (besttime <= 0 || tmp.count() < besttime)
                     besttime = tmp.count();
             }
             std::cout << "best bench time " << besttime << "\n";
@@ -289,7 +298,7 @@ TEST(HurchallaFactorByTable32, basic_tests_24bit_limited_bigger) {
     constexpr int BITLIMIT = 24;
     constexpr bool FAVOR_SMALL_SIZE = false;
 #if ((defined(_MSC_VER) && !defined(_DEBUG)) || defined(__OPTIMIZE__))
-    bool test_all_inputs = false;
+    bool test_all_inputs = true;
 #else
     bool test_all_inputs = false;
 #endif
@@ -311,19 +320,21 @@ TEST(HurchallaFactorByTable32, basic_tests_table_32bit_smaller) {
     constexpr int BITLIMIT = 32;
     constexpr bool FAVOR_SMALL_SIZE = true;
     bool test_all_inputs = false;
-    bool run_benchmark_32bit = true;
+    bool run_benchmark_32bit = false;
     basic_tests_bit_limited<BITLIMIT, FAVOR_SMALL_SIZE>(test_all_inputs, run_benchmark_32bit);
 }
 TEST(HurchallaFactorByTable32, basic_tests_table_32bit_bigger) {
     constexpr int BITLIMIT = 32;
     constexpr bool FAVOR_SMALL_SIZE = false;
     bool test_all_inputs = false;
-    bool run_benchmark_32bit = true;
+    bool run_benchmark_32bit = false;
     basic_tests_bit_limited<BITLIMIT, FAVOR_SMALL_SIZE>(test_all_inputs, run_benchmark_32bit);
 }
 #endif
 
 #endif
 
- 
+
 } // end namespace
+
+#endif

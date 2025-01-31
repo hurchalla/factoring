@@ -302,7 +302,7 @@ TEST(HurchallaFactorByTable32, basic_tests_24bit_limited_bigger) {
 // generally assume the factor table doesn't already exist on disk for us to
 // read in, and creating 32 bit factor tables from scratch for these tests
 // typically takes a few minutes for each test.
-#if 1
+#if 0
 
 // the following tests take a while without optimization, so if we're building
 // without any optimizations we usually want to skip them

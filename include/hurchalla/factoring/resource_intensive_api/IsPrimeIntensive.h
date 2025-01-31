@@ -34,8 +34,7 @@ namespace hurchalla {
 // uint8_t: 16 Bytes
 // uint16_t: 4 Kilobytes
 // uint32_t: 256 Megabytes
-// uint64_t: ~1.3 Kilobytes (with OPTIMIZE_PRIMES == false)
-// uint64_t: 448 Kilobytes (with OPTIMIZE_PRIMES == true)
+// uint64_t: 448 Kilobytes
 // __uint128_t: ~2 Kilobytes
 
 // The template parameter OPTIMIZE_PRIMES controls whether the functor will be

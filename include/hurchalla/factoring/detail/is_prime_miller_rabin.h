@@ -47,6 +47,7 @@
 
 #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/montgomery_form_aliases.h"
+#include "hurchalla/montgomery_arithmetic/detail/MontyQuarterRange.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/sized_uint.h"
@@ -364,6 +365,8 @@ struct IPMR_internal {
 //   32 bit, 2 bases - 16 byte hash table
 //   32 bit, 3 bases - 0 bytes (no hash table used)
 //
+//   44 bit, 3 bases - 64 byte hash table
+//
 //   62 bit, 2 bases - 240 KB hash table
 //   62 bit, 3 bases - 16 KB hash table
 //   62 bit, 4 bases - 1.4375 KB hash table
@@ -551,11 +554,11 @@ struct is_prime_miller_rabin_special {
 
 // Implementation Notes: there are three general principles guiding the choices
 // in the default functions below.
-// First, we avoid using large hash tables to optimize speed (specifying a small
-// number of bases means you get large tables).  We can't assume large memory
-// and cache usage would be justified for the average caller.  Nevertheless, we
-// do use the hashed bases optimization for the defaults if the associated hash
-// table is tiny (<= 320 bytes).
+// First, we avoid using large hash tables even though they would optimize speed
+// (we get large tables if we request a small number of bases).  We can't assume
+// large memory and cache usage would be justified for the average caller.
+// Nevertheless, we do use the hashed bases optimization for the defaults if the
+// associated hash table is tiny (<= 512 bytes).
 // Second, we normally choose an odd number of TOTAL_BASES and a TRIAL_SIZE of
 // 2, which ensures that the first miller-rabin trial has a trial size of 1 and
 // all the rest have a trial size of 2.  The first trial will almost always be
@@ -583,7 +586,7 @@ struct is_prime_miller_rabin_special {
 // when testing primes, we might perhaps expect a doubling in performance
 // compared to TRIAL_SIZE 1, due to better instruction level parallelism.  The
 // downside of a 3-4x increase in code size (for the involved functions) is
-// difficult to justify for defaults.
+// harder to justify than a 2x increase as the default.
 // Third, in order to minimize the compiled machine code size, we try to avoid
 // causing additional function template instantiations when it's reasonable.
 // For example, the 64bit is_prime_miller_rabin template function below has an
@@ -607,6 +610,7 @@ struct is_prime_miller_rabin_special {
 // Note: we use a struct and static functions in order to disallow ADL
 struct is_prime_miller_rabin {
 
+  // Montgomery argument version:
   template <typename MontType, int LOG2_MODULUS_LIMIT =
                       ut_numeric_limits<typename MontType::IntegerType>::digits>
   static bool call(const MontType& mf)
@@ -645,18 +649,16 @@ struct is_prime_miller_rabin {
                                      TOTAL_BASES>::is_prime(mf);
     }
     else if constexpr(16 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 32) {
-        // 2 base (hashed) miller-rabin with a trial size 1 should be a good 32
-        // bit default, since it's faster than 3 base (non-hashed) miller-rabin
-        // yet keeps essentially the same code size and static memory usage.
-        // Some compilers may use 16 bytes of static memory for the hash table
-        // rather than loading the values on the fly (which uses no static
-        // memory).  If this occurs and it is unacceptable for you, you can
-        // switch the default to 3 base miller-rabin by pre-defining the macro
-        // HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
+        // 1 base (hashed) miller-rabin should be a decent 32 bit default, since
+        // it uses a hash table with a size roughly similar to what we use for
+        // the miller-rabin 64 bit default.
+        // However, it does require 512 bytes of static memory - if this is not
+        // acceptable for you, you can switch the default to 3 base miller-rabin
+        // by pre-defining the macro HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN.
 #ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
         constexpr std::size_t TOTAL_BASES = 3;
 #else
-        constexpr std::size_t TOTAL_BASES = 2;
+        constexpr std::size_t TOTAL_BASES = 1;
 #endif
         constexpr std::size_t TRIAL_SIZE = 1;
         return MillerRabinMontgomery<MontType, LOG2_MODULUS_LIMIT, TRIAL_SIZE,
@@ -738,102 +740,52 @@ struct is_prime_miller_rabin {
   }
 
 
-  // ---------------------
-  // Integer argument versions:
 
-  // I'm assuming a caller would usually have already used trial division to
-  // find any factors<256 for a number x.  Thus a caller would (usually) have no
-  // need to determine primality for any x < 65536.  By this reasoning there is
-  // probably little benefit in a function for uint16_t.  We start instead by
-  // enable_if'ing for types T <= 32 bit.
-
+  // Integer argument version:
   template <typename T>
-  static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
-                           ut_numeric_limits<T>::digits <= 32), bool>::type
+  static typename std::enable_if<(ut_numeric_limits<T>::is_integer), bool>::type
   call(T x)
   {
     HPBC_PRECONDITION2(x % 2 == 1);
     HPBC_PRECONDITION2(x > 1);
-#ifndef HURCHALLA_TARGET_BIT_WIDTH
-#   error "HURCHALLA_TARGET_BIT_WIDTH must be defined"
-#endif
-#if HURCHALLA_TARGET_BIT_WIDTH >= 64
-    static_assert(ut_numeric_limits<T>::digits <= 32);
-    constexpr int digits = (ut_numeric_limits<T>::digits < 31) ? 30 :
-                                                   ut_numeric_limits<T>::digits;
-    using U = std::uint64_t;
-    MontgomeryQuarter<U> mf(static_cast<U>(x));
-    return call<decltype(mf),digits>(mf);
-#else
-    using U = std::uint32_t;
-    if constexpr (ut_numeric_limits<T>::digits < 31) {
-        MontgomeryQuarter<U> mf(static_cast<U>(x));
-        return call<decltype(mf),30>(mf);
-    }
-    else if constexpr (ut_numeric_limits<T>::digits == 31) {
-        MontgomeryHalf<U> mf(static_cast<U>(x));
-        return call<decltype(mf),31>(mf);
-    }
-    else {
-        static_assert(ut_numeric_limits<T>::digits == 32);
-        constexpr U Rdiv4 = static_cast<U>(1) << 30;
-        if (x < Rdiv4)
-            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
-        else
-            return call(MontgomeryForm<U>(static_cast<U>(x)));
-    }
-#endif
-  }
 
+    // if possible, recurse to a call that will complete much faster.
+    using U = typename extensible_make_unsigned<T>::type;
+    constexpr int digitsU = ut_numeric_limits<U>::digits;
+    if constexpr (digitsU > 32) {
+        static_assert(digitsU % 2 == 0);
+        if (x < (static_cast<T>(1) << (digitsU/2))) {
+            using uint_halfbits_U = typename sized_uint<digitsU/2>::type;
+            return call(static_cast<uint_halfbits_U>(x));
+        }
+    }
+    constexpr int digitsT = ut_numeric_limits<T>::digits;
+    static_assert(digitsT <= 128, "We disallow > 128 bit types because we have"
+           "no primality checking algorithm implemented for numbers > 128bit.");
 
-  template <typename T>
-  static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
-                           32 < ut_numeric_limits<T>::digits &&
-                           ut_numeric_limits<T>::digits <= 64), bool>::type
-  call(T x)
-  {
-    HPBC_PRECONDITION2(x % 2 == 1);
-    HPBC_PRECONDITION2(x > 1);
-    using U = std::uint64_t;
-    if constexpr (ut_numeric_limits<T>::digits < 63) {
-        MontgomeryQuarter<U> mf(static_cast<U>(x));
-        return call<decltype(mf),62>(mf);
-    }
-    else if constexpr (ut_numeric_limits<T>::digits == 63) {
-        MontgomeryHalf<U> mf(static_cast<U>(x));
-        return call<decltype(mf),63>(mf);
-    }
-    else {
-        static_assert(ut_numeric_limits<T>::digits == 64);
-        constexpr U Rdiv4 = static_cast<U>(1) << 62;
-        if (x < Rdiv4)
-            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
-        else
-            return call(MontgomeryForm<U>(static_cast<U>(x)));
-    }
-  }
+    using T2 = typename std::conditional<(digitsT<16), std::uint16_t, T>::type;
+    constexpr int bitsTable = ut_numeric_limits<T2>::digits;
+    // We consistently use bitsTable as a template argument to call<>(), so
+    // that we instantiate the same miller-rabin hash table in all calls.
 
+    if constexpr (std::is_same<MontgomeryForm<T2>::MontyTag,
+                               TagMontyQuarterrange>::value) {
+        MontgomeryForm<T2> mf(static_cast<T2>(x));
+        return call<decltype(mf),bitsTable>(mf);
+    } else {
+        using U2 = typename extensible_make_unsigned<T2>::type;
+        constexpr int digitsU2 = ut_numeric_limits<U2>::digits;
+        static_assert(digitsU2 >= 2);
+        constexpr U2 Rdiv4 = static_cast<U2>(1) << (digitsU2 - 2);
 
-  template <typename T>
-  static typename std::enable_if<(ut_numeric_limits<T>::is_integer &&
-                           64 < ut_numeric_limits<T>::digits), bool>::type
-  call(T x)
-  {
-    HPBC_PRECONDITION2(x % 2 == 1);
-    HPBC_PRECONDITION2(x > 1);
-    if (x > ut_numeric_limits<std::uint64_t>::max()) {
-        using U = typename extensible_make_unsigned<T>::type;
-        // this file doesn't have any set of bases to handle > 128 bit types
-        static_assert(ut_numeric_limits<U>::digits == 128);
-        constexpr U Rdiv4 =
-                        static_cast<U>(1) << (ut_numeric_limits<U>::digits - 2);
-        if (static_cast<U>(x) < Rdiv4)
-            return call(MontgomeryQuarter<U>(static_cast<U>(x)));
-        else
-            return call(MontgomeryForm<U>(static_cast<U>(x)));
+        if (static_cast<U2>(x) < Rdiv4) {
+            MontgomeryQuarter<U2> mf(static_cast<U2>(x));
+            return call<decltype(mf),bitsTable>(mf);
+        } else {
+            MontgomeryForm<T2> mf(static_cast<T2>(x));
+            return call<decltype(mf),bitsTable>(mf);
+        }
     }
-    else
-        return call(static_cast<std::uint64_t>(x));
   }
 
 }; // end struct is_prime_miller_rabin

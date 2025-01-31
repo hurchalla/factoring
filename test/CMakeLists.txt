@@ -35,6 +35,7 @@ target_sources(test_hurchalla_factoring PRIVATE
                test_greatest_common_divisor.cpp
                test_greatest_common_divisor_euclid.cpp
                test_is_prime.cpp
+               test_is_prime_intensive.cpp
                test_IsPrimeIntensive.cpp
                detail_tests/is_prime_wheel210.h
                detail_tests/test_FactorizeStage2.cpp

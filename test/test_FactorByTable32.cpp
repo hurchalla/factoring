@@ -262,7 +262,7 @@ void basic_tests_bit_limited(bool test_all_inputs, bool run_benchmark_32bit)
     if (test_all_inputs)
         test_all_valid_inputs(factorTable);
 
-    if (BITLEN == 32) {
+    if constexpr (BITLEN == 32) {
         if (run_benchmark_32bit) {
             dsec::rep besttime = 0;
             for (int i=0; i<10; ++i) {

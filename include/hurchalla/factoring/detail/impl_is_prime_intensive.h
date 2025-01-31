@@ -121,6 +121,13 @@ struct impl_is_prime_intensive {
             return is_prime_miller_rabin_special::
                           case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
         }
+        // For the rationale behind the following static_assert, see the struct
+        // MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128>
+        // inside is_prime_miller_rabin.h
+        static_assert(ut_numeric_limits<T>::digits == 128 ||
+                           (ut_numeric_limits<T>::is_signed &&
+                            ut_numeric_limits<T>::digits == 127));
+
         // 128 bit miller-rabin with 128 bases is going to be slow no matter
         // what, but a trial size of 3 will usually improve performance over
         // trial size 1, due to more efficient use of the CPU's pipelined and/or
@@ -141,10 +148,14 @@ struct impl_is_prime_intensive {
         // back to a much slower method (pollard-rho) if unexpectedly it's in
         // error.  There's no way to trivially check any primality test, which
         // includes BPSW.]
-        constexpr std::size_t TOTAL_BASES = 128;
         constexpr std::size_t TRIAL_SIZE = 3;
-        const auto bases = MillerRabinBases<128, TOTAL_BASES>::get(x);
+        const auto& bases = MillerRabinProbabilisticBases128<>::bases;
+#if 0
         return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
+#else
+        // using miller_rabin_trials128 improves perf by tuning to the modulus size
+        return IPMR_internal::miller_rabin_trials128<TRIAL_SIZE>(mf, bases);
+#endif
     }
     else {
         // C++ treats static_assert in constexpr-if as ill-formed if it is
@@ -223,7 +234,7 @@ struct impl_is_prime_intensive {
         // mont_miller_rabin<>(), so that we instantiate the same miller-rabin
         // hash table in all calls.
 
-        if constexpr (std::is_same<MontgomeryForm<T>::MontyTag,
+        if constexpr (std::is_same<typename MontgomeryForm<T>::MontyTag,
                                    TagMontyQuarterrange>::value) {
             MontgomeryForm<T> mf(x);
             return mont_miller_rabin<decltype(mf),bitsTable>(mf);

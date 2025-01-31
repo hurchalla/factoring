@@ -31,60 +31,23 @@
 // argument value.  The only difference between the two functions is the
 // structure used for the factors: the first function uses an array, and the
 // second uses a vector.  See the comments above each function for more details.
+//
+// Information on the algorithms they use, and on performance, is provided at
+// the bottom of this file.
 
 
 namespace hurchalla {
-
-
-
-// ------------------------------------
-// The Algorithms:
-// ------------------------------------
-// Prior to heavier-weight factorization, factorize() first uses a small trial
-// disivion stage.  It then uses either ECM or Pollard-Rho to find all remaining
-// factors, depending on the size of the number.  Prior to trying to extract
-// any factor with ECM or Pollard-Rho, it tests for primality by using the
-// deterministic Miller-Rabin algorithm - we usually speed up this algorithm by
-// using one of the very small hash tables (~100 bytes for example) in
-// factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
-//
-// For numbers below ~40 bits, factorize() uses the Pollard-Rho factorization
-// algorithm, with Brent's improvements (see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm)
-// along with other further improvements I made to the algorithm.
-//
-// For numbers above ~40 bits, factorize() uses ECM tailored for numbers between
-// 32 to 128 bits in size.  This ECM code was initially based on Ben Buhrow's
-// "micro-ecm", which was then improved, optimized, and extended to 128 bits.
-
-// ------------------------------------
-// Performance:
-// ------------------------------------
-// For 64 bit numbers, the resulting factorization functions below are likely
-// the fastest you will currently be able to find, both for factoring arbitrary
-// values and for factoring semiprimes with two large factors.
-//
-// For 128 bit numbers, this code needs to be performance tested against other
-// factoring libraries.  An initial expectation is that this code will be
-// be competitive or possibly do better than other libraries available for 128
-// bit numbers, but this is not yet known.
-//
-// For 32 bit numbers, a very well-optimized implementation of Hart's One Line
-// Factoring algorithm and/or Lehman's method might potentially be faster than
-// the functions here.  The functions here should nonetheless be fairly close to
-// the fastest currently available at 32 bits.
-//
-// For 256 bit or larger numbers - which this library does not support - you may
-// wish to seek out ECM for smaller bit depths, and then Quadratic Sieve and
-// GNFS for larger bit depths.  For example, see the GMP project/library.
 
 
 // ------------------------------------
 // The functions:
 // ------------------------------------
 
-// Returns a std::array that contains all factors of x, and writes the total
-// number of factors to num_factors.  The array entries with index < num_factor
-// are the factors.
+// There are two versions of the factorize function.
+
+// This first version returns a std::array that contains all factors of x, and
+// writes the total number of factors to num_factors.  The array entries with
+// index < num_factor are the factors.
 // The argument 'expect_arbitrary_size_factors' does not affect the results, but
 // it will optimize the factoring to be faster when you know or expect all the
 // factors will be large (assuming you set it to false), or it will optimize the
@@ -161,6 +124,47 @@ void factorize(T x, std::vector<T>& factors,
     HPBC_POSTCONDITION(x == std::accumulate(factors.begin(), factors.end(),
                                       static_cast<T>(1), std::multiplies<T>()));
 }
+
+
+// ------------------------------------
+// The Algorithms:
+// ------------------------------------
+// Prior to heavier-weight factorization, factorize() first uses a small trial
+// disivion stage.  It then uses either ECM or Pollard-Rho to find all remaining
+// factors, depending on the size of the number.  Prior to trying to extract
+// any factor with ECM or Pollard-Rho, it tests for primality by using the
+// deterministic Miller-Rabin algorithm - we usually speed up this algorithm by
+// using one of the very small hash tables (~100 bytes for example) in
+// factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
+//
+// For numbers below ~40 bits, factorize() uses the Pollard-Rho factorization
+// algorithm, with Brent's improvements (see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm)
+// along with other further improvements I made to the algorithm.
+//
+// For numbers above ~40 bits, factorize() uses ECM tailored for numbers between
+// 32 to 128 bits in size.  This ECM code was initially based on Ben Buhrow's
+// "micro-ecm", which was improved and optimized and extended to 128 bits.
+
+// ------------------------------------
+// Performance:
+// ------------------------------------
+// For 64 bit numbers, the resulting factorization functions above are likely
+// the fastest you will currently be able to find, both for factoring arbitrary
+// values and for factoring semiprimes with two large factors.
+//
+// For 128 bit numbers, this code needs to be performance tested against other
+// factoring libraries.  An initial expectation is that this code will be
+// be competitive or possibly do better than other libraries available for 128
+// bit numbers, but this is not yet known.
+//
+// For 32 bit numbers, a very well-optimized implementation of Hart's One Line
+// Factoring algorithm and/or Lehman's method might potentially be faster than
+// the functions here.  The functions here should nonetheless be fairly close to
+// the fastest currently available at 32 bits.
+//
+// For 256 bit or larger numbers - which this library does not support - you may
+// wish to seek out ECM for smaller bit depths, and then Quadratic Sieve and
+// GNFS for larger bit depths.  For example, see the GMP project/library.
 
 
 }  // end namespace

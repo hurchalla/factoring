@@ -408,6 +408,7 @@ struct MillerRabinMontgomery {
   static bool is_prime(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
+    using UT = typename extensible_make_unsigned<T>::type;
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(LOG2_MODULUS_LIMIT <= ut_numeric_limits<T>::digits, "");
     T modulus = mf.getModulus();
@@ -416,7 +417,7 @@ struct MillerRabinMontgomery {
     static_assert(POW2_LIMIT >= LOG2_MODULUS_LIMIT, "");
     using U = typename sized_uint<POW2_LIMIT>::type;
     // Ensure that 1 < modulus < (1 << LOG2_MODULUS_LIMIT)
-    HPBC_PRECONDITION2(1 < modulus && modulus <=
+    HPBC_PRECONDITION2(1 < modulus && static_cast<UT>(modulus) <=
                              (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)) - 1 +
                              (static_cast<U>(1) << (LOG2_MODULUS_LIMIT-1)));
     const auto bases = MillerRabinBases<LOG2_MODULUS_LIMIT, TOTAL_BASES>::
@@ -669,14 +670,16 @@ struct is_prime_miller_rabin {
         // than the 5 base test below.
         // Note: the hashed version covers ~64x larger range than the unhashed.
         // It uses 64 bytes of static memory though, whereas unhashed uses none.
+        using U = typename extensible_make_unsigned<T>::type;
+        auto umodulus = static_cast<U>(mf.getModulus());
 #ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
-        if (mf.getModulus() < UINT64_C(273919523041)) {
+        if (umodulus < UINT64_C(273919523041)) {
             constexpr std::size_t TRIAL_SIZE = 2;
             return is_prime_miller_rabin_special::
                                      case_273919523041_64_3<TRIAL_SIZE>(mf);
         }
 #else
-        if (mf.getModulus() < (static_cast<std::uint64_t>(1) << 44)) {
+        if (umodulus < (static_cast<std::uint64_t>(1) << 44)) {
             constexpr std::size_t TOTAL_BASES = 3;
             constexpr std::size_t TRIAL_SIZE = 2;
             return MillerRabinMontgomery<MontType, 44, TRIAL_SIZE,
@@ -768,7 +771,7 @@ struct is_prime_miller_rabin {
     // We consistently use bitsTable as a template argument to call<>(), so
     // that we instantiate the same miller-rabin hash table in all calls.
 
-    if constexpr (std::is_same<MontgomeryForm<T2>::MontyTag,
+    if constexpr (std::is_same<typename MontgomeryForm<T2>::MontyTag,
                                TagMontyQuarterrange>::value) {
         MontgomeryForm<T2> mf(static_cast<T2>(x));
         return call<decltype(mf),bitsTable>(mf);

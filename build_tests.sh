@@ -9,10 +9,13 @@
 # Description of this script -----------
 # This is a working convenience script for invoking the testing builds and then
 # running the tests.
-# The syntax is 
-# ./build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
+# The syntax is
+# ./build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
 #
 # -c allows you to select the compiler, rather than using the default.
+# -j specifies the number of jobs (typically threads) that you want the compiler
+#    to use when building.  If you omit this option, the compiler's default
+#    number of jobs will be used.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
 # -a specifies you want to compile the code using typically helpful (how much it
 #    helps depends on your compiler) inline asm optimizations, which makes for
@@ -168,16 +171,19 @@
 
 
 
-while getopts ":m:l:c:h-:raut" opt; do
+while getopts ":m:l:c:j:h-:raut" opt; do
   case $opt in
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
       exit 1
       ;;
     c)
       compiler=$OPTARG
+      ;;
+    j)
+      num_jobs="-j$OPTARG"
       ;;
     m)
       mode=$OPTARG
@@ -519,7 +525,7 @@ if [ "${mode,,}" = "release" ]; then
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config Release
+    cmake --build ./$build_dir $num_jobs --config Release
     exit_on_failure
     popd > /dev/null 2>&1
 elif [ "${mode,,}" = "debug" ]; then
@@ -536,7 +542,7 @@ elif [ "${mode,,}" = "debug" ]; then
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config Debug
+    cmake --build ./$build_dir $num_jobs --config Debug
     exit_on_failure
     popd > /dev/null 2>&1
 elif [ "${mode,,}" = "profile" ]; then
@@ -551,7 +557,7 @@ elif [ "${mode,,}" = "profile" ]; then
             $use_inline_asm  $use_all_inline_asm" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config RelWithDebInfo
+    cmake --build ./$build_dir $num_jobs --config RelWithDebInfo
     exit_on_failure
     popd > /dev/null 2>&1
 else

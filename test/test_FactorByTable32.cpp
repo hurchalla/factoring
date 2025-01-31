@@ -92,6 +92,7 @@ void test_all_valid_inputs(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factor
 
 
 template <int BITLEN, bool FAVOR_SMALL_SIZE>
+[[maybe_unused]]
 dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
                  uint32_t min, uint32_t max, uint32_t samplesize)
 {

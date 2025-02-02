@@ -41,7 +41,7 @@ typename std::enable_if<
    (ut_numeric_limits<typename MontType::IntegerType>::digits==128), bool>::type
 operator()(const MontType& mf) const
 {
-    return is_prime_miller_rabin::call(mf);
+    return is_prime_miller_rabin::call_mont(mf);
 }
 
 

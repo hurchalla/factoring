@@ -15,7 +15,7 @@
 
 
 #include "hurchalla/factoring/resource_intensive_api/FactorByTable32.h"
-#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeTable.h"
 #include "hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h"
 #include "hurchalla/factoring/factorize.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -73,7 +73,7 @@ void test_factorize(const std::vector<T>& answer,
 template <int BITLEN, bool FAVOR_SMALL_SIZE>
 void test_all_valid_inputs(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable)
 {
-    IsPrimeIntensive<uint32_t, true> is_prime;
+    IsPrimeTable<uint32_t> is_prime;
     constexpr uint32_t maxvalid = static_cast<uint32_t>(
                                       (static_cast<uint64_t>(1) << BITLEN) - 1);
     for (uint32_t x = maxvalid; x >= 2; --x)
@@ -162,7 +162,7 @@ dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
     t1 = steady_clock::now();
     std::cout << "factorize time " << dsec(t1-t0).count() << "\n";
 
-    IsPrimeIntensive<uint32_t, true> is_prime;
+    IsPrimeTable<uint32_t> is_prime;
     t0 = steady_clock::now();
     for (uint32_t x : randomvec) {
         unsigned int num_factors;

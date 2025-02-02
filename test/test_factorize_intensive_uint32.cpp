@@ -6,7 +6,7 @@
  */
 
 #include "hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h"
-#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeTable.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
 
@@ -27,9 +27,9 @@ using namespace hurchalla;
 #if 0
 // I used this speed test to do a quick and dirty initial performance tuning of
 // PollardRhoTrial and PollardRhoBrentTrial.  This test is not needed normally.
-    const IsPrimeIntensive<std::uint32_t,true>& get_ipi32()
+    const IsPrimeTable<std::uint32_t>& get_ipi32()
     {
-        static IsPrimeIntensive<std::uint32_t,true> ipi;
+        static IsPrimeTable<std::uint32_t> ipi;
         return ipi;
     }
     TEST(HurchallaFactoringFactorizeIntensiveUint32, speed_test_primer) {
@@ -64,7 +64,7 @@ T calculate_x(const std::vector<T>& answer)
 
 template <typename T>
 void test_factorize(const std::vector<T>& answer,
-                    const IsPrimeIntensive<std::uint32_t,true>& ipi)
+                    const IsPrimeTable<std::uint32_t>& ipi)
 {
     // multiply all the factors in answer to get the number to factorize.
     T x = calculate_x(answer);
@@ -80,7 +80,7 @@ void test_factorize(const std::vector<T>& answer,
 
 TEST(HurchallaFactoringFactorizeIntensiveUint32, basic_tests_and_hard_semiprimes) {
     using U = std::uint32_t;
-    IsPrimeIntensive<std::uint32_t,true> ipi;
+    IsPrimeTable<std::uint32_t> ipi;
 
     // basic test
     std::vector<U> answer1 = { 2, 3, 5, 13, 17 };

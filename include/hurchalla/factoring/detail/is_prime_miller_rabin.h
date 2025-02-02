@@ -175,7 +175,9 @@ struct IPMR_internal {
   {
     HPBC_PRECONDITION2(num >= 2);
     d = static_cast<T>(num - 1);
-    HPBC_ASSERT2(d > 0);
+#if !defined(__GNUC__) || defined(__clang__)
+    HPBC_ASSERT2(d > 0);  // gcc stupidly complains with -Werror=strict-overflow
+#endif
     r = 0;
   // Usually we don't want to allow even numbers, since they can't be used with
   // any true Montgomery Form.  Only MontgomeryStandardMathWrapper will work
@@ -611,16 +613,18 @@ struct is_prime_miller_rabin_special {
 // Note: we use a struct and static functions in order to disallow ADL
 struct is_prime_miller_rabin {
 
-  // Montgomery argument version:
-  template <typename MontType, int LOG2_MODULUS_LIMIT =
-                      ut_numeric_limits<typename MontType::IntegerType>::digits>
-  static bool call(const MontType& mf)
+  template <typename MontType>
+  static bool call_mont(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
+    using U = typename extensible_make_unsigned<T>::type;
+
+    constexpr int digitsT = ut_numeric_limits<T>::digits;
+
     HPBC_PRECONDITION2(mf.getModulus() > 1);
 
-    if constexpr(LOG2_MODULUS_LIMIT <= 16) {
+    if constexpr(digitsT <= 16) {
         // It's questionable whether using miller-rabin is a good idea for
         // primality testing values under 2^16.  For any intensive repeated
         // primality testing, the sieve of eratosthenes (see
@@ -628,10 +632,10 @@ struct is_prime_miller_rabin {
         // be faster.  For a one time primality test you could just trial divide
         // by all primes < 256, and have trivial CPU cost.
 
-        // Don't allow  ut_numeric_limits<T>::digits < 16.  The bases we will
-        // use will be type uint16_t (they will have 16 binary digits) and the
-        // bases need to fit in type T.  Thus, T with < 16 digits won't work.
-        static_assert(ut_numeric_limits<T>::digits >= 16);
+        // Don't allow digitsT < 16.  The bases that we'll use will be type
+        // uint16_t (they will have 16 binary digits) and the bases need to fit
+        // in type T.  Thus, T with < 16 digits won't work.
+        static_assert(digitsT >= 16);
         // 1 base (hashed) miller-rabin with a trial size 1 should be a good 16
         // bit default, since it's faster than 2 base (non-hashed) miller-rabin
         // yet keeps essentially the same code size and static memory usage.
@@ -649,7 +653,7 @@ struct is_prime_miller_rabin {
         return MillerRabinMontgomery<MontType, 16, TRIAL_SIZE,
                                      TOTAL_BASES>::is_prime(mf);
     }
-    else if constexpr(16 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 32) {
+    else if constexpr(16 < digitsT && digitsT <= 32) {
         // 1 base (hashed) miller-rabin should be a decent 32 bit default, since
         // it uses a hash table with a size roughly similar to what we use for
         // the miller-rabin 64 bit default.
@@ -662,15 +666,14 @@ struct is_prime_miller_rabin {
         constexpr std::size_t TOTAL_BASES = 1;
 #endif
         constexpr std::size_t TRIAL_SIZE = 1;
-        return MillerRabinMontgomery<MontType, LOG2_MODULUS_LIMIT, TRIAL_SIZE,
+        return MillerRabinMontgomery<MontType, digitsT, TRIAL_SIZE,
                                      TOTAL_BASES>::is_prime(mf);
     }
-    else if constexpr(32 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 64) {
+    else if constexpr(32 < digitsT && digitsT <= 64) {
         // We use a 3 base test if the modulus is small enough.  It's faster
         // than the 5 base test below.
         // Note: the hashed version covers ~64x larger range than the unhashed.
         // It uses 64 bytes of static memory though, whereas unhashed uses none.
-        using U = typename extensible_make_unsigned<T>::type;
         auto umodulus = static_cast<U>(mf.getModulus());
 #ifdef HURCHALLA_DEFAULT_TO_UNHASHED_MILLER_RABIN
         if (umodulus < UINT64_C(273919523041)) {
@@ -707,16 +710,17 @@ struct is_prime_miller_rabin {
         constexpr std::size_t TOTAL_BASES = 5;
 #endif
         constexpr std::size_t TRIAL_SIZE = 2;
-        return MillerRabinMontgomery<MontType, LOG2_MODULUS_LIMIT, TRIAL_SIZE,
+        return MillerRabinMontgomery<MontType, digitsT, TRIAL_SIZE,
                                      TOTAL_BASES>::is_prime(mf);
     }
-    else if constexpr(64 < LOG2_MODULUS_LIMIT && LOG2_MODULUS_LIMIT <= 128) {
+    else if constexpr(64 < digitsT && digitsT <= 128) {
         // Use a 13 base test if the modulus is small enough.  It's a lot faster
         // than the 128 base test below.
         // Note: 3317044064679887385961981 == (179817<<64) + 5885577656943027709
-        constexpr T limit13 =
-                 (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
-        if (mf.getModulus() < limit13) {
+        static_assert(ut_numeric_limits<U>::digits >= 128);
+        constexpr U limit13 =
+                 (static_cast<U>(179817) << 64) + UINT64_C(5885577656943027709);
+        if (static_cast<U>(mf.getModulus()) < limit13) {
             constexpr std::size_t TRIAL_SIZE = 3;
             return is_prime_miller_rabin_special::
                           case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
@@ -738,17 +742,17 @@ struct is_prime_miller_rabin {
         // C++ treats static_assert in constexpr-if as ill-formed if it is
         // always false and does not depend on a template param.  So we use
         // sizeof(T)==0 here instead of plain 'false'.
-        static_assert(sizeof(T) == 0, "LOG2_MODULUS_LIMIT<=128 required");
+        static_assert(sizeof(T) == 0, "digitsT <= 128 required");
     }
   }
 
 
 
-  // Integer argument version:
   template <typename T>
-  static typename std::enable_if<(ut_numeric_limits<T>::is_integer), bool>::type
-  call(T x)
+  static bool call(T x)
   {
+    static_assert(ut_numeric_limits<T>::is_integer);
+
     HPBC_PRECONDITION2(x % 2 == 1);
     HPBC_PRECONDITION2(x > 1);
 
@@ -767,27 +771,20 @@ struct is_prime_miller_rabin {
            "no primality checking algorithm implemented for numbers > 128bit.");
 
     using T2 = typename std::conditional<(digitsT<16), std::uint16_t, T>::type;
-    constexpr int bitsTable = ut_numeric_limits<T2>::digits;
-    // We consistently use bitsTable as a template argument to call<>(), so
-    // that we instantiate the same miller-rabin hash table in all calls.
 
     if constexpr (std::is_same<typename MontgomeryForm<T2>::MontyTag,
                                TagMontyQuarterrange>::value) {
-        MontgomeryForm<T2> mf(static_cast<T2>(x));
-        return call<decltype(mf),bitsTable>(mf);
+        return call_mont(MontgomeryForm<T2>(static_cast<T2>(x)));
     } else {
         using U2 = typename extensible_make_unsigned<T2>::type;
         constexpr int digitsU2 = ut_numeric_limits<U2>::digits;
         static_assert(digitsU2 >= 2);
         constexpr U2 Rdiv4 = static_cast<U2>(1) << (digitsU2 - 2);
 
-        if (static_cast<U2>(x) < Rdiv4) {
-            MontgomeryQuarter<U2> mf(static_cast<U2>(x));
-            return call<decltype(mf),bitsTable>(mf);
-        } else {
-            MontgomeryForm<T2> mf(static_cast<T2>(x));
-            return call<decltype(mf),bitsTable>(mf);
-        }
+        if (static_cast<U2>(x) < Rdiv4)
+            return call_mont(MontgomeryQuarter<T2>(static_cast<T2>(x)));
+        else
+            return call_mont(MontgomeryForm<T2>(static_cast<T2>(x)));
     }
   }
 

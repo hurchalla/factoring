@@ -27,30 +27,34 @@ namespace hurchalla { namespace detail {
 // Note: we use a struct and static functions in order to disallow ADL
 struct impl_is_prime_intensive {
 
-  template <typename MontType, int BITS_TABLE>
+  template <typename MontType>
   static bool mont_miller_rabin(const MontType& mf)
   {
     using T = typename MontType::IntegerType;
     static_assert(ut_numeric_limits<T>::is_integer, "");
-    T x = mf.getModulus();
-    HPBC_PRECONDITION2(x > 1);
+    using U = typename extensible_make_unsigned<T>::type;
 
+    constexpr int digitsT = ut_numeric_limits<T>::digits;
     // MillerRabinBases produces bases that are (usually) type uint16_t, and
     // is_miller_rabin.h needs the bases to fit in type T.  Thus, T with < 16
     // digits won't work.
-    static_assert(ut_numeric_limits<T>::digits >= 16);
+    static_assert(digitsT >= 16);
 
-    if constexpr(BITS_TABLE <= 32) {
+    T x = mf.getModulus();
+    HPBC_PRECONDITION2(x > 1);
+    U xu = static_cast<U>(x);
+
+    if constexpr(digitsT <= 32) {
         constexpr std::size_t TOTAL_BASES = 1;
         constexpr std::size_t TRIAL_SIZE = 1;
-        const auto bases = MillerRabinBases<BITS_TABLE, TOTAL_BASES>::get(x);
+        const auto bases = MillerRabinBases<digitsT, TOTAL_BASES>::get(xu);
         return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
     }
-    else if constexpr(32 < BITS_TABLE && BITS_TABLE <= 64) {
+    else if constexpr(32 < digitsT && digitsT <= 64) {
         constexpr std::size_t TOTAL_BASES = 2;
         // Specifying TRIAL_SIZE 2 causes both tests to run at the same time.
         constexpr std::size_t TRIAL_SIZE = 2;
-        const auto bases = MillerRabinBases<BITS_TABLE, TOTAL_BASES>::get(x);
+        const auto bases = MillerRabinBases<digitsT, TOTAL_BASES>::get(xu);
         return IPMR_internal::miller_rabin_trials<TRIAL_SIZE>(mf, bases);
         //
         // Note: we *always* run *two* miller-rabin tests above.  Normally an
@@ -110,23 +114,24 @@ struct impl_is_prime_intensive {
         // Lucas portion would add extra code over the MR testing we have
         // implemented here, which would increase the potential of coding error.
     }
-    else if constexpr(64 < BITS_TABLE && BITS_TABLE <= 128) {
-        // Use a 13 base test if x is small enough.  It's a lot faster than the
-        // 128 base test below.
-        // Note: 3317044064679887385961981 == (179817<<64) + 5885577656943027709
-        constexpr T limit13 =
-                 (static_cast<T>(179817) << 64) + UINT64_C(5885577656943027709);
-        if (x < limit13) {
-            constexpr std::size_t TRIAL_SIZE = 3;
-            return is_prime_miller_rabin_special::
-                          case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
-        }
+    else if constexpr(64 < digitsT && digitsT <= 128) {
         // For the rationale behind the following static_assert, see the struct
         // MillerRabinMontgomery<MontType, 128, TRIAL_SIZE, 128>
         // inside is_prime_miller_rabin.h
         static_assert(ut_numeric_limits<T>::digits == 128 ||
                            (ut_numeric_limits<T>::is_signed &&
                             ut_numeric_limits<T>::digits == 127));
+
+        // Use a 13 base test if x is small enough.  It's a lot faster than the
+        // 128 base test below.
+        // Note: 3317044064679887385961981 == (179817<<64) + 5885577656943027709
+        constexpr U limit13 =
+                 (static_cast<U>(179817) << 64) + UINT64_C(5885577656943027709);
+        if (xu < limit13) {
+            constexpr std::size_t TRIAL_SIZE = 3;
+            return is_prime_miller_rabin_special::
+                          case_3317044064679887385961981_128_13<TRIAL_SIZE>(mf);
+        }
 
         // 128 bit miller-rabin with 128 bases is going to be slow no matter
         // what, but a trial size of 3 will usually improve performance over
@@ -161,8 +166,16 @@ struct impl_is_prime_intensive {
         // C++ treats static_assert in constexpr-if as ill-formed if it is
         // always false and does not depend on a template param.  So we use
         // sizeof(T)==0 here instead of plain 'false'.
-        static_assert(sizeof(T) == 0, "BITS_TABLE<=128 required");
+        static_assert(sizeof(T) == 0, "digitsT <= 128 required");
     }
+  }
+
+
+
+  template <typename T>
+  constexpr static unsigned int defaultTrialDivisionSize()
+  {
+    return (ut_numeric_limits<T>::digits > 32) ? 150u : 80u;
   }
 
 
@@ -190,8 +203,18 @@ struct impl_is_prime_intensive {
     // First try small trial divisions to find easy factors.
     // If primality still unknown, use miller-rabin to prove prime or not prime.
 
-    if constexpr (digitsU <= 16)
-    {
+    if constexpr (digitsU <= 8) {
+        // note: the 6th prime is 13, which is the last prime under 2^4 - thus
+        // trial division using all primes up to and including the 6th prime
+        // will be sufficient to determine primality of any number under 2^8.
+        constexpr int SIZE = 6;
+        bool success;
+        bool isprime = is_prime_trialdivision::call<PrimeTrialDivisionWarren,
+                                              SIZE>(static_cast<U>(x), success);
+        // trial division with the first 6 primes should always succeed here
+        HPBC_ASSERT2(success);
+        return isprime;
+    } else if constexpr (digitsU <= 16) {
         // note: the 54th prime is 251, which is the last prime under 2^8 - thus
         // trial division using all primes up to and including the 54th prime
         // will be sufficient to determine primality of any number under 2^16.
@@ -228,27 +251,16 @@ struct impl_is_prime_intensive {
         // At this point, we couldn't detect whether x is prime.  So we fall
         // back to determining primality via miller-rabin.
 
-        static_assert(digitsT > 16);
-        constexpr int bitsTable = digitsT;
-        // We consistently use bitsTable as a template argument to
-        // mont_miller_rabin<>(), so that we instantiate the same miller-rabin
-        // hash table in all calls.
-
         if constexpr (std::is_same<typename MontgomeryForm<T>::MontyTag,
                                    TagMontyQuarterrange>::value) {
-            MontgomeryForm<T> mf(x);
-            return mont_miller_rabin<decltype(mf),bitsTable>(mf);
+            return mont_miller_rabin(MontgomeryForm<T>(x));
         } else {
             static_assert(digitsU >= 2);
             constexpr U Rdiv4 = static_cast<U>(1) << (digitsU - 2);
-
-            if (static_cast<U>(x) < Rdiv4) {
-                MontgomeryQuarter<U> mf(static_cast<U>(x));
-                return mont_miller_rabin<decltype(mf),bitsTable>(mf);
-            } else {
-                MontgomeryForm<T> mf(x);
-                return mont_miller_rabin<decltype(mf),bitsTable>(mf);
-            }
+            if (static_cast<U>(x) < Rdiv4)
+                return mont_miller_rabin(MontgomeryQuarter<T>(x));
+            else
+                return mont_miller_rabin(MontgomeryForm<T>(x));
         }
     }
   }

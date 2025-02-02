@@ -24,7 +24,7 @@ namespace hurchalla {
 // A general purpose function for testing primality of an integer x.
 // (As an alternative, if you are doing intensive repeated primality testing,
 // you might prefer either  /resource_intensive_api/is_prime_intensive.h
-// or  resource_intensive_api/IsPrimeIntensive.h)
+// or  resource_intensive_api/IsPrimeTable.h)
 
 // T can be any integral type <= 128 bits.
 //

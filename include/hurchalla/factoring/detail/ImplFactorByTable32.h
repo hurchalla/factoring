@@ -16,6 +16,7 @@
 #include <fstream>
 #include <exception>
 #include <type_traits>
+#include <limits>
 
 namespace hurchalla { namespace detail {
 
@@ -228,10 +229,12 @@ private:
         for (std::size_t j=1; j<size_wheel_divs; ++j) {
             std::uint64_t wd = wheel_divs[j];
             std::uint64_t two_wd = wd + wd;
-            odd_coprime_sieve[wd/2] = 0;
+            odd_coprime_sieve[static_cast<std::size_t>(wd/2)] = 0;
             for (std::uint64_t i=wd*wd; i<wheel_size; i+=two_wd) {
                 HPBC_CONSTEXPR_ASSERT(i/2 < half_wheel_size);
-                odd_coprime_sieve[i/2] = 0;
+                static_assert((wheel_size-1)/2 <=
+                              std::numeric_limits<std::size_t>::max());
+                odd_coprime_sieve[static_cast<std::size_t>(i/2)] = 0;
             }
         }
 

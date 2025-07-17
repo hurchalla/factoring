@@ -5,12 +5,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/factoring/factorize.h"
 #include <iostream>
 #include <chrono>
-#if defined(__GNUC__)
+#if defined(__GNUC__) && (defined(HURCHALLA_TARGET_ISA_X86_64) \
+                         || defined(HURCHALLA_TARGET_ISA_X86_32))
 #  include <cpuid.h>
 #  include <string>
 #  include <cstring>
@@ -25,7 +27,8 @@
 #define STRINGIFYMACRO(y) STRINGIFY(y)
 
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && (defined(HURCHALLA_TARGET_ISA_X86_64) \
+                         || defined(HURCHALLA_TARGET_ISA_X86_32))
 std::string displayCPU()
 {
     // this code is copied from https://stackoverflow.com/a/50021699
@@ -109,7 +112,8 @@ void print_int_type()
 
 int main()
 {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && (defined(HURCHALLA_TARGET_ISA_X86_64) \
+                         || defined(HURCHALLA_TARGET_ISA_X86_32))
    std::cout << displayCPU() << "\n";
 #endif
     

@@ -201,7 +201,7 @@ struct IPMR_internal {
 
   template <std::size_t TRIAL_SIZE, std::size_t TOTAL_BASES,
             typename B, typename MontType>
-  static HURCHALLA_FORCE_INLINE bool miller_rabin_trials(const MontType& mf,
+  static bool miller_rabin_trials(const MontType& mf,
                                          const std::array<B,TOTAL_BASES>& bases)
   {
     using T = typename MontType::IntegerType;
@@ -244,7 +244,7 @@ struct IPMR_internal {
 
   template <std::size_t TRIAL_SIZE, std::size_t TOTAL_BASES,
             typename B, typename MontType>
-  static HURCHALLA_FORCE_INLINE bool miller_rabin_trials128(const MontType& mf,
+  static bool miller_rabin_trials128(const MontType& mf,
                                          const std::array<B,TOTAL_BASES>& bases)
   {
     using T = typename MontType::IntegerType;

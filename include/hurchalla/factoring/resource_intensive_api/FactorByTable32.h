@@ -47,10 +47,11 @@ public:
     // table in memory from scratch.
     FactorByTable() : impl() {}
 
-    // If you call this next constructor with an argument of false for
-    // createTableIfCantOpen, then the constructor will throw if it is unable
-    // to open table_filepath.  Otherwise (and by default), it will create the
-    // table, which will very likely take a few minutes to complete.
+    // If the constructor is unable to open table_filepath, and you specify
+    // false for createTableIfCantOpen then the constructor will throw.  If the
+    // constructor is unable to open table_filepath, and you specify true for
+    // createTableIfCantOpen, then the constructor will create the table
+    // from scratch which will likely take a few minutes to complete.
     //
     // Can throw from a file open failure, a read failure, or mismatch in
     // file values read vs values expected.

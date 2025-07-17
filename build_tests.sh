@@ -1,18 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright (c) 2020-2022 Jeffrey Hurchalla.
+# Copyright (c) 2020-2024 Jeffrey Hurchalla.
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#TODO
+# test_factoring with gcc in debug  5:46 to compile.  Using the standard MontgomeryForm
 
 # Description of this script -----------
 # This is a working convenience script for invoking the testing builds and then
 # running the tests.
 # The syntax is 
-# ./build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
+# ./build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
 #
 # -c allows you to select the compiler, rather than using the default.
+# -j specifies the number of jobs (typically threads) that you want the compiler
+#    to use when building.  If you omit this option, the compiler's default
+#    number of jobs will be used.
 # -r specifies to run all tests after the build.  Without -r, no tests will run.
 # -a specifies you want to compile the code using typically helpful (how much it
 #    helps depends on your compiler) inline asm optimizations, which makes for
@@ -167,17 +172,25 @@
 #   update-alternatives for both icc and icpc. ]
 
 
+if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
+   >&2 echo "This script requires some verion of bash >= 4.0.  Bash 3.2.57 is known to fail, but the minimum required version is unknown"
+   exit 1
+fi
 
-while getopts ":m:l:c:h-:raut" opt; do
+
+while getopts ":m:l:c:j:h-:raut" opt; do
   case $opt in
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c<compiler_name>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
       exit 1
       ;;
     c)
       compiler=$OPTARG
+      ;;
+    j)
+      num_jobs="-j$OPTARG"
       ;;
     m)
       mode=$OPTARG
@@ -395,9 +408,18 @@ fi
 # "[The] UndefinedBehaviorSanitizer ... test suite is integrated into the CMake
 # build and can be run with check-ubsan command."
 if [ "$compiler_name" = "gcc" ]; then
-  gcc_ubsan="-fsanitize=undefined -fno-sanitize-recover \
-           -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow"
+  if [[ $(uname -m) == 'arm64' ]]; then
+    # At the time of this writing, gcc does not seem to have implemented sanitizers
+    # (at least not ubsan) for Silicon MacOS.  I get link errors if compiling
+    # with them on mac.  See  https://github.com/orgs/Homebrew/discussions/3384
+    # https://github.com/orgs/Homebrew/discussions/3260
+    # https://stackoverflow.com/questions/65259300/detect-apple-silicon-from-command-line
 
+    : # do nothing, at least for now
+  else
+    gcc_ubsan="-fsanitize=undefined -fno-sanitize-recover \
+             -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow"
+  fi
 elif [ "$compiler_name" = "clang" ] && [[ $compiler_version -ge 6 ]]; then
   # clang6 doesn't support -fsanitize=implicit-conversion.  Clang10 does support
   # it.  I don't know if clang7,8,9 support it.

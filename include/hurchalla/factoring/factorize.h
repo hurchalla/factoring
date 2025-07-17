@@ -44,9 +44,9 @@ namespace hurchalla {
 // disivion stage.  It then uses either ECM or Pollard-Rho to find all remaining
 // factors, depending on the size of the number.  Prior to trying to extract
 // any factor with ECM or Pollard-Rho, it tests for primality by using the
-// deterministic Miller-Rabin algorithm - we usually speed up this algorithm by
-// using one of the very small hash tables (~100 bytes for example) in
-// factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
+// deterministic Miller-Rabin algorithm - internally this algorithm is usually
+// sped up by using one of the very small hash tables (~100 bytes for example)
+// in factoring/include/hurchalla/factoring/detail/miller_rabin_bases/
 //
 // For numbers below ~40 bits, factorize() uses the Pollard-Rho factorization
 // algorithm, with Brent's improvements (see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm)
@@ -59,8 +59,8 @@ namespace hurchalla {
 // ------------------------------------
 // Performance:
 // ------------------------------------
-// For 64 bit numbers, the resulting factorization functions below are likely
-// the fastest you will currently be able to find, both for factoring arbitrary
+// For 64 bit numbers, the factorization functions above are likely the fastest
+// available anywhere at the time of this writing, both for factoring arbitrary
 // values and for factoring semiprimes with two large factors.
 //
 // For 128 bit numbers, this code needs to be performance tested against other
@@ -70,8 +70,8 @@ namespace hurchalla {
 //
 // For 32 bit numbers, a very well-optimized implementation of Hart's One Line
 // Factoring algorithm and/or Lehman's method might potentially be faster than
-// the functions here.  The functions here should nonetheless be fairly close to
-// the fastest currently available at 32 bits.
+// the functions in this file.  Nevertheless the functions here should be fairly
+// close to the fastest currently available at 32 bits.
 //
 // For 256 bit or larger numbers - which this library does not support - you may
 // wish to seek out ECM for smaller bit depths, and then Quadratic Sieve and

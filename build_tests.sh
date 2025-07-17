@@ -12,7 +12,7 @@
 # This is a working convenience script for invoking the testing builds and then
 # running the tests.
 # The syntax is
-# ./build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
+# ./build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
 #
 # -c allows you to select the compiler, rather than using the default.
 # -j specifies the number of jobs (typically threads) that you want the compiler
@@ -26,8 +26,6 @@
 # -u specifies that you want to compile the code using all available inline asm
 #    routines, so that the tests will cover all of them (this is not expected to
 #    result in the fastest binaries).
-# -t specifies to compile tests for all Hurchalla libraries, as well as for this
-#    repository.  Without -t, only tests for this repository will be compiled.
 # -m allows you to choose between Release, Debug, and Profile(Release with
 #    debug symbols) build configurations, rather than using the default.
 # -l allows you to choose between either libstdc++ or libc++ when using clang.
@@ -177,12 +175,12 @@ if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
    exit 1
 fi
 
-while getopts ":m:l:c:j:h-:raut" opt; do
+while getopts ":m:l:c:j:h-:rau" opt; do
   case $opt in
     h)
       ;&
     -)
-      echo "Usage: build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
+      echo "Usage: build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-m<Release|Debug|Profile>] [-l<standard_library_name>]" >&2
       exit 1
       ;;
     c)
@@ -205,10 +203,6 @@ while getopts ":m:l:c:j:h-:raut" opt; do
       ;;
     u)
       use_all_inline_asm="-DHURCHALLA_ALLOW_INLINE_ASM_ALL=1"
-      ;;
-    t)
-      test_all_hurchalla_libs="-DTEST_HURCHALLA_LIBS=ON"
-      run_all_hurchalla_tests=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -533,7 +527,6 @@ if [ "${mode,,}" = "release" ]; then
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
             -DBENCH_HURCHALLA_FACTORING=ON \
-            $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
             $use_inline_asm  $use_all_inline_asm \
@@ -548,7 +541,6 @@ elif [ "${mode,,}" = "debug" ]; then
     build_dir=build/debug_$compiler_name$compiler_version
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
-            $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXE_LINKER_FLAGS="$clang_ubsan_link_flags" \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
@@ -565,7 +557,6 @@ elif [ "${mode,,}" = "profile" ]; then
     build_dir=build/profile_$compiler_name$compiler_version
     mkdir -p $build_dir
     cmake -S. -B./$build_dir -DTEST_HURCHALLA_FACTORING=ON \
-            $test_all_hurchalla_libs \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_EXE_LINKER_FLAGS="-ldl" \
             -DCMAKE_CXX_FLAGS="$cpp_standard  $cpp_stdlib \
@@ -582,21 +573,11 @@ fi
 
 
 # -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
-# cmake  -S.  -B./build_tmp  -DCMAKE_CXX_FLAGS="-std=c++17"  -DTEST_HURCHALLA_LIBS=ON  -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=icpc  -DCMAKE_C_COMPILER=icc
+# cmake  -S.  -B./build_tmp  -DCMAKE_CXX_FLAGS="-std=c++17"  -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=icpc  -DCMAKE_C_COMPILER=icc
 # cmake --build ./build_tmp --config Debug
 
 
 if [ "$run_tests" = true ]; then
-  if [ "$run_all_hurchalla_tests" = true ]; then
-    ./$build_dir/test_ndebug_programming_by_contract --gtest_break_on_failure
-    exit_on_failure
-    ./$build_dir/test_programming_by_contract --gtest_break_on_failure
-    exit_on_failure
-    ./$build_dir/test_hurchalla_util --gtest_break_on_failure
-    exit_on_failure
-    ./$build_dir/test_hurchalla_modular_arithmetic --gtest_break_on_failure
-    exit_on_failure
-  fi
   ./$build_dir/test_hurchalla_factoring --gtest_break_on_failure
   exit_on_failure
 fi

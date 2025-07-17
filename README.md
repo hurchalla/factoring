@@ -2,7 +2,7 @@
 
 ![Alt text](images/epr.jpg?raw=true "Elliptic curve, and rho cycle")
 
-EPR is a high performance, easy to use factoring and primality checking C++ library (header-only) for any integer up to 128 bits in size.  At the time of this writing, EPR provides the fastest factoring functions known for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see [How to use the library](#how-to-use-the-library).
+EPR is a high performance, easy to use factoring and primality checking C++ library (header-only, written in C++17) for any integer up to 128 bits in size.  At the time of this writing, EPR provides the fastest factoring functions known for 64 bit integers (i.e. types int64_t and uint64_t).  Note that for good performance you *must* ensure that the standard macro NDEBUG is defined when compiling - see [How to use the library](#how-to-use-the-library).
 
 The name EPR is an abbreviation of Ecm and Pollard-Rho, since those are the two main algorithms this library uses for factoring.  It's also a play on [Einstein-Podolsky-Rosen](https://en.wikipedia.org/wiki/EPR_paradox) for fun ([for now](https://en.wikipedia.org/wiki/Shor%27s_algorithm)).
 
@@ -14,9 +14,11 @@ The goal for EPR was to create a correct and easy to use library with extremely 
 
 ## Requirements
 
-The EPR library requires compiler support for C++17 (if you are not using CMake, you may need to specify the option *-std="c++17"* when compiling).  Compilers that are confirmed to build the library without warnings or errors on x86 include clang6, clang10, clang18, gcc7, gcc10, gcc13, intel compiler 19, and Microsoft Visual C++ 2017, 2019, 2022.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V, Power), but has been tested only on x86/x64.  
+The EPR library requires compiler support for C++17.  If you are not using CMake, you may need to specify the option *-std="c++17"* when compiling.  Any C++ version higher than C++17 is also fine.  
 
-For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.
+For good performance you absolutely *must* ensure that the standard macro NDEBUG (see &lt;cassert&gt;) is defined when compiling.  
+
+Compilers that are confirmed to build this library without warnings or errors on Ubuntu linux (x64) include clang6, clang10, clang18, gcc7, gcc10, gcc13, and intel compiler 19.  On Windows, Microsoft Visual C++ 2017, 2019, 2022 are all confirmed to build it without warnings or errors.  On MacOS, clang16 and gcc14 are confirmed to build it without warnings or errors.  The library is intended for use on all architectures (e.g. x86/64, ARM, RISC-V), but has so far been tested only with x86, x64 (Windows and Ubuntu), and ARM64 (MacOS).
 
 ## Status
 

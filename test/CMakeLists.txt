@@ -8,7 +8,8 @@ if(TARGET test_hurchalla_factoring)
     return()
 endif()
 
-cmake_minimum_required(VERSION 3.14)
+# later versions are probably fine, but are untested
+cmake_minimum_required(VERSION 3.14...4.03)
 
 
 include(FetchGoogleTest.cmake)

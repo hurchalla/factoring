@@ -7,7 +7,8 @@ if(TARGET hurchalla_factoring)
     return()
 endif()
 
-cmake_minimum_required(VERSION 3.14)
+# later versions are probably fine, but are untested
+cmake_minimum_required(VERSION 3.14...4.03)
 
 project(hurchalla_factoring VERSION 1.0.0 LANGUAGES CXX)
 
@@ -19,28 +20,16 @@ endif()
 
 
 # TODO: this section seems slightly messy for detecting/setting up testing
-# --------------------
-option(TEST_HURCHALLA_LIBS
-       "Build the tests for all Hurchalla library projects."
-       OFF)
-
+#
 # if this is the top level CMakeLists.txt, add testing options, and enable
 # testing when testing options have been set to ON.
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     option(TEST_HURCHALLA_FACTORING
         "Build the tests for the Hurchalla modular arithmetic library project."
         ON)
-    if(TEST_HURCHALLA_FACTORING OR TEST_HURCHALLA_LIBS)
+    if(TEST_HURCHALLA_FACTORING)
         enable_testing()
         # include(CTest)
-    endif()
-elseif(TEST_HURCHALLA_LIBS)
-    # If TEST_HURCHALLA_LIBS is set to ON, enable_testing() should have been
-    # called either directly or indirectly by the top level project. (Note that
-    # if a project calls include(CTest), the included CTest.cmake defines a
-    # BUILT_TESTING option and calls enable_testing if BUILD_TESTING is ON.)
-    if (NOT CMAKE_TESTING_ENABLED)
-        message(FATAL_ERROR "Fatal error: TEST_HURCHALLA_LIBS was set, but enable_testing() was never called")
     endif()
 endif()
 
@@ -170,11 +159,9 @@ target_link_libraries(hurchalla_factoring
 
 # if this is the top level CMakeLists.txt
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    if(TEST_HURCHALLA_FACTORING OR TEST_HURCHALLA_LIBS)
+    if(TEST_HURCHALLA_FACTORING)
         add_subdirectory(test)
     endif()
-elseif(TEST_HURCHALLA_LIBS)
-    add_subdirectory(test)
 endif()
 
 

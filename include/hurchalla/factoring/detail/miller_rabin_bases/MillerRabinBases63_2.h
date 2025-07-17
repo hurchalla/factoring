@@ -45,7 +45,8 @@ public:
         bases[0] = 2;
         uint32_t num32 = static_cast<uint32_t>(num);
         num32 = num32 * 27u;
-        uint32_t hash_bucket = (static_cast<uint64_t>(num32) * 5u) >> 17;
+        uint32_t hash_bucket = static_cast<std::uint32_t>(
+                                     (static_cast<uint64_t>(num32) * 5u) >> 17);
         bases[1] = table[hash_bucket];
         return bases;
     }

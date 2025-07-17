@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2020-2024 Jeffrey Hurchalla.
+# Copyright (c) 2020-2025 Jeffrey Hurchalla.
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -11,7 +11,7 @@
 # Description of this script -----------
 # This is a working convenience script for invoking the testing builds and then
 # running the tests.
-# The syntax is 
+# The syntax is
 # ./build_tests [-c<compiler_name>] [-j<num_jobs>] [-r] [-a] [-u] [-t] [-m<Release|Debug|Profile>] [-l<standard_library_name>]
 #
 # -c allows you to select the compiler, rather than using the default.
@@ -176,7 +176,6 @@ if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
    >&2 echo "This script requires some verion of bash >= 4.0.  Bash 3.2.57 is known to fail, but the minimum required version is unknown"
    exit 1
 fi
-
 
 while getopts ":m:l:c:j:h-:raut" opt; do
   case $opt in
@@ -541,7 +540,7 @@ if [ "${mode,,}" = "release" ]; then
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config Release
+    cmake --build ./$build_dir $num_jobs --config Release
     exit_on_failure
     popd > /dev/null 2>&1
 elif [ "${mode,,}" = "debug" ]; then
@@ -558,7 +557,7 @@ elif [ "${mode,,}" = "debug" ]; then
             $gcc_static_analysis"  "${clang_static_analysis[@]}" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config Debug
+    cmake --build ./$build_dir $num_jobs --config Debug
     exit_on_failure
     popd > /dev/null 2>&1
 elif [ "${mode,,}" = "profile" ]; then
@@ -573,7 +572,7 @@ elif [ "${mode,,}" = "profile" ]; then
             $use_inline_asm  $use_all_inline_asm" \
             $cmake_cpp_compiler $cmake_c_compiler
     exit_on_failure
-    cmake --build ./$build_dir --config RelWithDebInfo
+    cmake --build ./$build_dir $num_jobs --config RelWithDebInfo
     exit_on_failure
     popd > /dev/null 2>&1
 else

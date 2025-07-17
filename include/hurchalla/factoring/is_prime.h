@@ -23,7 +23,8 @@ namespace hurchalla {
 
 // A general purpose function for testing primality of an integer x.
 // (As an alternative, if you are doing intensive repeated primality testing,
-// you might prefer /resource_intensive_api/IsPrimeIntensive.h)
+// you might prefer either  /resource_intensive_api/is_prime_intensive.h
+// or  resource_intensive_api/IsPrimeTable.h)
 
 // T can be any integral type <= 128 bits.
 //
@@ -33,6 +34,7 @@ bool is_prime(T x)
 {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(ut_numeric_limits<T>::digits <= 128, "");
+    HPBC_PRECONDITION2(x >= 0);
 
     return ::hurchalla::detail::impl_is_prime::call(x);
 }

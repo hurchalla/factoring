@@ -14,7 +14,7 @@
 #  define HURCHALLA_ALLOW_INLINE_ASM_ALL
 #endif
 
-#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeTable.h"
 #include "hurchalla/factoring/detail/impl_factorize.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/programming_by_contract.h"
@@ -36,17 +36,17 @@ namespace hurchalla {
 // factoring for arbitrary size factors (if set to true, which is the default).
 //
 // This function is generally recommended only for the case where you have
-// already created the IsPrimeIntensive object for other uses (presumably for
+// already created the IsPrimeTable object for other uses (presumably for
 // primality testing), or for the unusual case where you need to maximize
 // performance of factoring an extremely large collection of 32 bit integers.
-// Prior to calling this function you will need to create the IsPrimeIntensive
-// object 'ipi'.  'Ipi' has very high overhead - it needs ~256MB of memory, and
+// Prior to calling this function you will need to create the IsPrimeTable
+// object 'ipt'.  'Ipt' has very high overhead - it needs ~256MB of memory, and
 // it takes a few seconds to construct.  If you can disregard the considerable
-// contruction time (and memory use) of ipi, this function will almost always be
+// contruction time (and memory use) of ipt, this function will almost always be
 // faster on a given system than factorize() for uint32_t values.
 inline std::array<std::uint32_t, 32>
 factorize_intensive_uint32(std::uint32_t x, unsigned int& num_factors,
-                           const IsPrimeIntensive<std::uint32_t,true>& ipi,
+                           const IsPrimeTable<std::uint32_t>& ipt,
                            bool expect_arbitrary_size_factors = true)
 {
     using T = std::uint32_t;
@@ -56,7 +56,7 @@ factorize_intensive_uint32(std::uint32_t x, unsigned int& num_factors,
     // The max possible number of factors occurs when all factors equal 2,
     // so 32 is sufficient to hold all factors of a uint32_t number.
     std::array<T, 32> arr = impl_factorize::factorize_to_array(x, num_factors,
-                      [&ipi](const auto& mf) { return ipi(mf.getModulus()); },
+                      [&ipt](const auto& mf) { return ipt(mf.getModulus()); },
                       expect_arbitrary_size_factors);
     // After calling this function, a client should not index the returned
     // array with an index >= num_factors.  As a defensive measure, we'll set

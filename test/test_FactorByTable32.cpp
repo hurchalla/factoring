@@ -15,7 +15,7 @@
 
 
 #include "hurchalla/factoring/resource_intensive_api/FactorByTable32.h"
-#include "hurchalla/factoring/resource_intensive_api/IsPrimeIntensive.h"
+#include "hurchalla/factoring/resource_intensive_api/IsPrimeTable.h"
 #include "hurchalla/factoring/resource_intensive_api/factorize_intensive_uint32.h"
 #include "hurchalla/factoring/factorize.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
@@ -73,7 +73,7 @@ void test_factorize(const std::vector<T>& answer,
 template <int BITLEN, bool FAVOR_SMALL_SIZE>
 void test_all_valid_inputs(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable)
 {
-    IsPrimeIntensive<uint32_t, true> is_prime;
+    IsPrimeTable<uint32_t> is_prime;
     constexpr uint32_t maxvalid = static_cast<uint32_t>(
                                       (static_cast<uint64_t>(1) << BITLEN) - 1);
     for (uint32_t x = maxvalid; x >= 2; --x)
@@ -92,6 +92,7 @@ void test_all_valid_inputs(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factor
 
 
 template <int BITLEN, bool FAVOR_SMALL_SIZE>
+[[maybe_unused]]
 dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
                  uint32_t min, uint32_t max, uint32_t samplesize)
 {
@@ -161,7 +162,7 @@ dsec quick_bench(const FactorByTable<BITLEN, FAVOR_SMALL_SIZE>& factorTable,
     t1 = steady_clock::now();
     std::cout << "factorize time " << dsec(t1-t0).count() << "\n";
 
-    IsPrimeIntensive<uint32_t, true> is_prime;
+    IsPrimeTable<uint32_t> is_prime;
     t0 = steady_clock::now();
     for (uint32_t x : randomvec) {
         unsigned int num_factors;
@@ -262,7 +263,7 @@ void basic_tests_bit_limited(bool test_all_inputs, bool run_benchmark_32bit)
     if (test_all_inputs)
         test_all_valid_inputs(factorTable);
 
-    if (BITLEN == 32) {
+    if constexpr (BITLEN == 32) {
         if (run_benchmark_32bit) {
             dsec::rep besttime = 0;
             for (int i=0; i<10; ++i) {
@@ -311,7 +312,7 @@ TEST(HurchallaFactorByTable32, basic_tests_24bit_limited_bigger) {
 // generally assume the factor table doesn't already exist on disk for us to
 // read in, and creating 32 bit factor tables from scratch for these tests
 // typically takes a few minutes for each test.
-#if 1
+#if 0
 
 // the following tests take a while without optimization, so if we're building
 // without any optimizations we usually want to skip them

@@ -102,22 +102,27 @@ struct is_prime_trialdivision {
     constexpr auto next_prime_squared =
                               std::integral_constant<decltype(tmp), tmp>::value;
 
-    for (int i=0; i<TD_SIZE; ++i) {
-        if (TD::oddPrimeSquared(i) > x) {
-            // Since no primes <= sqrt(x) were factors of x, x must be a prime
-            return true;
-        }
-        T div_result;
-        // next line is roughly equivalent to  if (x % TD::oddPrime(i) == 0)
-        if (TD::isDivisible(div_result, x, i))
-            return false;
-    }
-
     if (x < next_prime_squared) {
+        for (int i=0; i<TD_SIZE; ++i) {
+            if (x < TD::oddPrimeSquared(i)) {
+                // Since no primes <= sqrt(x) were factors of x, x must be a prime
+                return true;
+            }
+            T div_result;
+            // next line is roughly equivalent to  if (x % TD::oddPrime(i) == 0)
+            if (TD::isDivisible(div_result, x, i))
+                return false;
+        }
         // we know x is prime, because we tested all possible factors for x.
         return true;
     }
     else {
+        for (int i=0; i<TD_SIZE; ++i) {
+            T div_result;
+            // next line is roughly equivalent to  if (x % TD::oddPrime(i) == 0)
+            if (TD::isDivisible(div_result, x, i))
+                return false;
+        }
         // We weren't able to determine if x is prime.
         is_successful = false;
         return false;  // it doesn't matter what bool value we return.

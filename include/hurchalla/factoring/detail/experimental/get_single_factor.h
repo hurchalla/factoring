@@ -16,7 +16,7 @@
 
 #ifndef NDEBUG
 // you can remove this if you are *sure* you really want to run with asserts enabled..  It is SLOW.
-#  error "Performance will be severely harmed if you don't predefine the standard macro NDEBUG."
+#  error "Performance will be severely harmed if you don't define the standard macro NDEBUG."
 #endif
 
 

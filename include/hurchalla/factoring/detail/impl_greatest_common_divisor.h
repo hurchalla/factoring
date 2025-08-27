@@ -25,9 +25,9 @@ struct impl_greatest_common_divisor {
 // The binary GCD algorithm is usually considerably faster than the Euclidean
 // GCD algorithm.  However for native types T, some new CPUs have very fast
 // dividers that potentially could make the Euclidean GCD implementation faster
-// than the Binary GCD implementation.  You can predefine the macro 
+// than the Binary GCD implementation.  You can define the macro
 // HURCHALLA_PREFER_EUCLIDEAN_GCD in such a case.  You will also need to make
-// sure that you have predefined HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.
+// sure that you have defined HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE.
 
 #if defined(HURCHALLA_PREFER_EUCLIDEAN_GCD) && \
         defined(HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE)

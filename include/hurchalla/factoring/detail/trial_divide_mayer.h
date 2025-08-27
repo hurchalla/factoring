@@ -23,7 +23,7 @@ namespace hurchalla { namespace detail {
 
 
 #if defined(HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE)
-#  error "HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE must not be predefined"
+#  error "HURCHALLA_USE_TRIAL_DIVIDE_VIA_INVERSE must not be defined"
 #endif
 #if defined(HURCHALLA_TARGET_ISA_HAS_NO_DIVIDE) || \
     !defined(HURCHALLA_TARGET_CPU_HAS_FAST_DIVIDE)

@@ -1,13 +1,13 @@
 
 The PollardRho\*.h header files in this folder are experimental functors for Pollard-Rho trials.  
-To use an experimental functor, predefine the macro HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME and give it the name of the experimental functor.  For example, if you want PollardRhoTrial and you are compiling with clang, you could invoke clang as follows:  
+To use an experimental functor, define the macro HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME and give it the name of the experimental functor.  For example, if you want PollardRhoTrial and you are compiling with clang, you could invoke clang as follows:  
 clang++ -DHURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME=PollardRhoTrial  ...more options and files...  
 
 valid names to give HURCHALLA_POLLARD_RHO_TRIAL_FUNCTOR_NAME are:  
 PollardRhoTrial  
 PollardRhoBrentTrial  
 PollardRhoBrentTrialParallel  
-PollardRhoBrentSwitchingTrial  (currently this is the default, so it's not necessary to predefine the macro to this functor)  
+PollardRhoBrentSwitchingTrial  (currently this is the default, so it's not necessary to define the macro to this functor)  
 
 The PollardRhoBrentSwitchingTrial functor or the PollardRhoBrentTrialParallel functor will likely perform best on your system, but you can try others.
 

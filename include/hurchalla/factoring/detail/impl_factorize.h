@@ -26,7 +26,7 @@ namespace hurchalla { namespace detail {
 
 // Do *NOT* change the values for the macro in the code immediately below.  If
 // you wish to use a different value for the macro (which is fine), please
-// predefine the macro when compiling.
+// define the macro when compiling.
 #ifndef HURCHALLA_FACTORING_ECM_THRESHOLD_BITS
 #  define HURCHALLA_FACTORING_ECM_THRESHOLD_BITS 34
 #endif

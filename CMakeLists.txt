@@ -137,7 +137,7 @@ include(FetchContent)
 FetchContent_Declare(
     hurchalla_util
     GIT_REPOSITORY https://github.com/hurchalla/util.git
-    GIT_TAG        master
+    GIT_TAG        9163344ee69f21a21cb8928dd30fc2ff15e94f0c
 )
 FetchContent_MakeAvailable(hurchalla_util)
 target_link_libraries(hurchalla_factoring

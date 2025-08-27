@@ -99,7 +99,7 @@ else()
                     -Wno-c++20-extensions -Wctad-maybe-unsupported
                     -Wextra-semi-stmt -Wformat-type-confusion
                     -Wimplicit-int-float-conversion -Wmisexpect
-                    -Wpoison-system-directories -Wnon-modular-include-in-module
+                    -Wnon-modular-include-in-module
                     -Wquoted-include-in-framework-header -Wsuspicious-memaccess)
         endif()
 

@@ -139,18 +139,17 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/hurchalla/util.git
     GIT_TAG        9163344ee69f21a21cb8928dd30fc2ff15e94f0c
 )
-FetchContent_MakeAvailable(hurchalla_util)
-target_link_libraries(hurchalla_factoring
-                      INTERFACE hurchalla_util)
-
 
 FetchContent_Declare(
     modular_arithmetic
     GIT_REPOSITORY https://github.com/hurchalla/modular_arithmetic.git
     GIT_TAG        cb5e74a154dc665ffd50ab04348677e596dd362a
 )
-FetchContent_MakeAvailable(modular_arithmetic)
+
+FetchContent_MakeAvailable(hurchalla_util modular_arithmetic)
+
 target_link_libraries(hurchalla_factoring
+                      INTERFACE hurchalla_util
                       INTERFACE hurchalla_modular_arithmetic)
 
 

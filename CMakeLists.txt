@@ -25,7 +25,7 @@ endif()
 # testing when testing options have been set to ON.
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     option(TEST_HURCHALLA_FACTORING
-        "Build the tests for the Hurchalla modular arithmetic library project."
+        "Build the tests for the Hurchalla factoring library project."
         ON)
     if(TEST_HURCHALLA_FACTORING)
         enable_testing()
@@ -147,7 +147,7 @@ target_link_libraries(hurchalla_factoring
 FetchContent_Declare(
     modular_arithmetic
     GIT_REPOSITORY https://github.com/hurchalla/modular_arithmetic.git
-    GIT_TAG        master
+    GIT_TAG        cb5e74a154dc665ffd50ab04348677e596dd362a
 )
 FetchContent_MakeAvailable(modular_arithmetic)
 target_link_libraries(hurchalla_factoring
